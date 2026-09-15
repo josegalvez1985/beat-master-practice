@@ -1,25 +1,30 @@
-"use client";
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import { colors } from "@/lib/theme";
 
-import * as React from "react";
-import * as ProgressPrimitive from "@radix-ui/react-progress";
+export function Progress({ value = 0, style }: { value?: number; style?: StyleProp<ViewStyle> }) {
+  const clamped = Math.min(100, Math.max(0, value));
 
-import { cn } from "@/lib/utils";
+  return (
+    <View
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: 100, now: clamped }}
+      style={[styles.track, style]}
+    >
+      <View style={[styles.indicator, { width: `${clamped}%` }]} />
+    </View>
+  );
+}
 
-const Progress = React.forwardRef<
-  React.ElementRef<typeof ProgressPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>
->(({ className, value, ...props }, ref) => (
-  <ProgressPrimitive.Root
-    ref={ref}
-    className={cn("relative h-2 w-full overflow-hidden rounded-full bg-primary/20", className)}
-    {...props}
-  >
-    <ProgressPrimitive.Indicator
-      className="h-full w-full flex-1 bg-primary transition-all"
-      style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
-    />
-  </ProgressPrimitive.Root>
-));
-Progress.displayName = ProgressPrimitive.Root.displayName;
-
-export { Progress };
+const styles = StyleSheet.create({
+  track: {
+    width: "100%",
+    height: 8,
+    overflow: "hidden",
+    borderRadius: 999,
+    backgroundColor: "rgba(249, 161, 41, 0.2)",
+  },
+  indicator: {
+    height: "100%",
+    backgroundColor: colors.primary,
+  },
+});

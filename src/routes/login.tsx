@@ -1,138 +1,299 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import {
+  ActivityIndicator,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import { Link, useRouter } from "expo-router";
+import Head from "expo-router/head";
+import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Eye, EyeOff } from "lucide-react-native";
 import heroImage from "@/assets/drums-hero.jpg";
-import { Button } from "@/components/ui/button";
+import { Button, buttonForeground } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { GradientText } from "@/components/ui/gradient-text";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { StageGlow } from "@/components/ui/stage-glow";
+import { colors, fonts } from "@/lib/theme";
 
-export const Route = createFileRoute("/login")({
-  head: () => ({
-    meta: [
-      { title: "Iniciar sesión — Pulso batería" },
-      {
-        name: "description",
-        content: "Entra a Pulso para retomar tus rudimentos, grooves y racha de práctica.",
-      },
-      { property: "og:title", content: "Iniciar sesión — Pulso batería" },
-      {
-        property: "og:description",
-        content: "Accede a tus lecciones de batería y continúa tu racha.",
-      },
-    ],
-  }),
-  component: LoginPage,
-});
-
-function LoginPage() {
-  const navigate = useNavigate();
+export default function LoginPage() {
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const lg = width >= 1024;
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [remember, setRemember] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
 
-  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const onSubmit = () => {
     if (!form.email.includes("@") || form.password.length < 6) {
       setError("Revisa tu correo y usa una contraseña de al menos 6 caracteres.");
       return;
     }
     setError(null);
     setLoading(true);
-    window.setTimeout(() => {
+    setTimeout(() => {
       setLoading(false);
-      navigate({ to: "/" });
+      router.navigate("/");
     }, 900);
   };
 
   return (
-    <main className="grid min-h-screen lg:grid-cols-2">
-      <div className="relative hidden lg:block">
-        <img
-          src={heroImage}
-          alt="Batería iluminada en un escenario oscuro"
-          width={1536}
-          height={1024}
-          className="absolute inset-0 h-full w-full object-cover"
+    <View style={[styles.screen, lg && styles.row]}>
+      <Head>
+        <title>Iniciar sesión — Pulso batería</title>
+        <meta
+          name="description"
+          content="Entra a Pulso para retomar tus rudimentos, grooves y racha de práctica."
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-        <div className="relative flex h-full flex-col justify-end p-12">
-          <span className="font-display text-2xl tracking-widest">PULSO</span>
-          <h2 className="mt-4 max-w-sm text-4xl leading-tight">
-            Cada sesión cuenta.
-            <span className="text-amber-gradient"> Vuelve al kit.</span>
-          </h2>
-        </div>
-      </div>
+      </Head>
 
-      <div className="stage-glow flex items-center justify-center px-6 py-16">
-        <div className="w-full max-w-sm">
-          <span className="font-display text-2xl tracking-widest lg:hidden">PULSO</span>
-          <h1 className="mt-6 text-4xl">Iniciar sesión</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Retoma tus rudimentos y mantén tu racha viva.
-          </p>
+      {lg ? (
+        <View style={styles.aside}>
+          <Image
+            source={heroImage}
+            accessibilityLabel="Batería iluminada en un escenario oscuro"
+            resizeMode="cover"
+            style={[StyleSheet.absoluteFill, styles.asideImage]}
+          />
+          <LinearGradient
+            colors={[colors.background, "rgba(16, 12, 10, 0.6)", "rgba(16, 12, 10, 0)"]}
+            start={{ x: 0, y: 1 }}
+            end={{ x: 0, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.asideContent}>
+            <Text style={styles.brand}>PULSO</Text>
+            <View style={styles.asideTitle}>
+              <Text style={styles.asideHeading}>Cada sesión cuenta.</Text>
+              <GradientText style={styles.asideHeading}>Vuelve al kit.</GradientText>
+            </View>
+          </View>
+        </View>
+      ) : null}
 
-          <form className="mt-8 space-y-5" onSubmit={onSubmit} noValidate>
-            <div className="space-y-2">
-              <Label htmlFor="email">Correo</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                placeholder="baterista@pulso.app"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-            </div>
+      <KeyboardAvoidingView
+        style={styles.formSide}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <StageGlow />
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[
+            styles.formScroll,
+            { paddingTop: insets.top + 64, paddingBottom: insets.bottom + 64 },
+          ]}
+        >
+          <View style={styles.formWrap}>
+            {lg ? null : <Text style={styles.brand}>PULSO</Text>}
+            <Text style={styles.heading}>Iniciar sesión</Text>
+            <Text style={styles.subtitle}>Retoma tus rudimentos y mantén tu racha viva.</Text>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <div className="relative">
+            <View style={styles.form}>
+              <View style={styles.field}>
+                <Label>Correo</Label>
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="pr-10"
+                  accessibilityLabel="Correo"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                  placeholder="baterista@pulso.app"
+                  value={form.email}
+                  onChangeText={(email) => setForm({ ...form, email })}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute inset-y-0 right-0 grid w-10 place-items-center text-muted-foreground transition-colors hover:text-foreground"
-                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                >
-                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
-              </div>
-            </div>
+              </View>
 
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2 text-muted-foreground">
-                <Checkbox id="remember" /> Recordarme
-              </label>
-              <span className="text-primary">¿Olvidaste tu contraseña?</span>
-            </div>
+              <View style={styles.field}>
+                <Label>Contraseña</Label>
+                <View>
+                  <Input
+                    accessibilityLabel="Contraseña"
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="current-password"
+                    textContentType="password"
+                    placeholder="••••••••"
+                    returnKeyType="go"
+                    value={form.password}
+                    onChangeText={(password) => setForm({ ...form, password })}
+                    onSubmitEditing={onSubmit}
+                    style={styles.passwordInput}
+                  />
+                  <Pressable
+                    onPress={() => setShowPassword((v) => !v)}
+                    accessibilityRole="button"
+                    accessibilityLabel={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    style={styles.eye}
+                  >
+                    {showPassword ? (
+                      <EyeOff size={16} color={colors.mutedForeground} />
+                    ) : (
+                      <Eye size={16} color={colors.mutedForeground} />
+                    )}
+                  </Pressable>
+                </View>
+              </View>
 
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+              <View style={styles.optionsRow}>
+                <Pressable style={styles.remember} onPress={() => setRemember((v) => !v)}>
+                  <Checkbox
+                    checked={remember}
+                    onCheckedChange={setRemember}
+                    accessibilityLabel="Recordarme"
+                  />
+                  <Text style={styles.muted}>Recordarme</Text>
+                </Pressable>
+                <Text style={styles.link}>¿Olvidaste tu contraseña?</Text>
+              </View>
 
-            <Button type="submit" size="lg" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin" /> : null}
-              {loading ? "Entrando..." : "Entrar al kit"}
-            </Button>
-          </form>
+              {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            ¿Primera vez aquí?{" "}
-            <Link to="/" className="text-primary">
-              Explora las lecciones
-            </Link>
-          </p>
-        </div>
-      </div>
-    </main>
+              <Button size="lg" disabled={loading} onPress={onSubmit}>
+                {loading ? <ActivityIndicator size="small" color={buttonForeground()} /> : null}
+                {loading ? "Entrando..." : "Entrar al kit"}
+              </Button>
+            </View>
+
+            <Text style={styles.footer}>
+              ¿Primera vez aquí?{" "}
+              <Link href="/" style={styles.link}>
+                Explora las lecciones
+              </Link>
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  row: {
+    flexDirection: "row",
+  },
+  aside: {
+    flex: 1,
+    overflow: "hidden",
+  },
+  asideImage: {
+    width: "100%",
+    height: "100%",
+  },
+  asideContent: {
+    flex: 1,
+    justifyContent: "flex-end",
+    padding: 48,
+  },
+  asideTitle: {
+    marginTop: 16,
+    maxWidth: 384,
+  },
+  asideHeading: {
+    fontFamily: fonts.display,
+    fontSize: 36,
+    lineHeight: 40,
+    letterSpacing: 0.7,
+    color: colors.foreground,
+  },
+  formSide: {
+    flex: 1,
+  },
+  formScroll: {
+    flexGrow: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  formWrap: {
+    width: "100%",
+    maxWidth: 384,
+  },
+  brand: {
+    fontFamily: fonts.display,
+    fontSize: 24,
+    letterSpacing: 2.4,
+    color: colors.foreground,
+  },
+  heading: {
+    marginTop: 24,
+    fontFamily: fonts.display,
+    fontSize: 36,
+    letterSpacing: 0.7,
+    color: colors.foreground,
+  },
+  subtitle: {
+    marginTop: 8,
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.mutedForeground,
+  },
+  form: {
+    marginTop: 32,
+    gap: 20,
+  },
+  field: {
+    gap: 8,
+  },
+  passwordInput: {
+    paddingRight: 40,
+  },
+  eye: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  optionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  remember: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  muted: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.mutedForeground,
+  },
+  link: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.primary,
+  },
+  error: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.destructive,
+  },
+  footer: {
+    marginTop: 24,
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    textAlign: "center",
+    color: colors.mutedForeground,
+  },
+});

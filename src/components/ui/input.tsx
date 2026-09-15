@@ -1,22 +1,42 @@
-import * as React from "react";
+import { useState } from "react";
+import { StyleSheet, TextInput, type TextInputProps } from "react-native";
+import { colors, fonts, radius } from "@/lib/theme";
 
-import { cn } from "@/lib/utils";
+export function Input({ style, onFocus, onBlur, ...props }: TextInputProps) {
+  const [focused, setFocused] = useState(false);
 
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
-    return (
-      <input
-        type={type}
-        className={cn(
-          "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-          className,
-        )}
-        ref={ref}
-        {...props}
-      />
-    );
+  return (
+    <TextInput
+      placeholderTextColor={colors.mutedForeground}
+      selectionColor={colors.primary}
+      {...props}
+      onFocus={(event) => {
+        setFocused(true);
+        onFocus?.(event);
+      }}
+      onBlur={(event) => {
+        setFocused(false);
+        onBlur?.(event);
+      }}
+      style={[styles.input, focused && styles.focused, style]}
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  input: {
+    width: "100%",
+    height: 36,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: colors.input,
+    borderRadius: radius.md,
+    backgroundColor: "transparent",
+    fontFamily: fonts.sans,
+    fontSize: 16,
+    color: colors.foreground,
   },
-);
-Input.displayName = "Input";
-
-export { Input };
+  focused: {
+    borderColor: colors.ring,
+  },
+});

@@ -30,3 +30,21 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Expo
+.expo/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+*.tsbuildinfo
+.env*.local
+
+# generated native folders
+/ios
+/android

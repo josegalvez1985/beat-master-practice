@@ -1,49 +1,124 @@
-import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
-import { cva, type VariantProps } from "class-variance-authority";
+import { Children, type ReactNode } from "react";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  type PressableProps,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
+import { colors, fonts, radius } from "@/lib/theme";
 
-import { cn } from "@/lib/utils";
+type ButtonVariant = "default" | "secondary" | "outline";
+type ButtonSize = "default" | "sm" | "lg" | "icon";
 
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
-        outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-      },
-      size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-10 rounded-md px-8",
-        icon: "h-9 w-9",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
-  },
-);
+export type ButtonProps = Omit<PressableProps, "children" | "style"> & {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  children?: ReactNode;
+  style?: StyleProp<ViewStyle>;
+};
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
-  asChild?: boolean;
+const foregrounds: Record<ButtonVariant, string> = {
+  default: colors.primaryForeground,
+  secondary: colors.secondaryForeground,
+  outline: colors.foreground,
+};
+
+// Color for icons rendered inside a button of the given variant.
+export function buttonForeground(variant: ButtonVariant = "default") {
+  return foregrounds[variant];
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button";
-    return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
-    );
-  },
-);
-Button.displayName = "Button";
+export function Button({
+  variant = "default",
+  size = "default",
+  disabled,
+  children,
+  style,
+  ...props
+}: ButtonProps) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      disabled={disabled}
+      {...props}
+      style={({ pressed }) => [
+        styles.base,
+        variants[variant],
+        sizes[size],
+        pressed && styles.pressed,
+        disabled && styles.disabled,
+        style,
+      ]}
+    >
+      {Children.map(children, (child) =>
+        typeof child === "string" || typeof child === "number" ? (
+          <Text
+            style={[styles.label, size === "sm" && styles.labelSm, { color: foregrounds[variant] }]}
+          >
+            {child}
+          </Text>
+        ) : (
+          child
+        ),
+      )}
+    </Pressable>
+  );
+}
 
-export { Button, buttonVariants };
+const styles = StyleSheet.create({
+  base: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: radius.md,
+  },
+  label: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+  },
+  labelSm: {
+    fontSize: 12,
+  },
+  pressed: {
+    opacity: 0.9,
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+});
+
+const variants = StyleSheet.create({
+  default: {
+    backgroundColor: colors.primary,
+  },
+  secondary: {
+    backgroundColor: colors.secondary,
+  },
+  outline: {
+    borderWidth: 1,
+    borderColor: colors.input,
+    backgroundColor: colors.background,
+  },
+});
+
+const sizes = StyleSheet.create({
+  default: {
+    height: 36,
+    paddingHorizontal: 16,
+  },
+  sm: {
+    height: 32,
+    paddingHorizontal: 12,
+  },
+  lg: {
+    height: 40,
+    paddingHorizontal: 32,
+  },
+  icon: {
+    width: 36,
+    height: 36,
+  },
+});

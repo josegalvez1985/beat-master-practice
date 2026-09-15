@@ -1,26 +1,52 @@
-import * as React from "react";
-import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
-import { Check } from "lucide-react";
+import { useState } from "react";
+import { Pressable, StyleSheet } from "react-native";
+import { Check } from "lucide-react-native";
+import { colors } from "@/lib/theme";
 
-import { cn } from "@/lib/utils";
+type CheckboxProps = {
+  checked?: boolean;
+  defaultChecked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+  accessibilityLabel?: string;
+};
 
-const Checkbox = React.forwardRef<
-  React.ElementRef<typeof CheckboxPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
->(({ className, ...props }, ref) => (
-  <CheckboxPrimitive.Root
-    ref={ref}
-    className={cn(
-      "grid place-content-center peer h-4 w-4 shrink-0 rounded-sm border border-primary shadow cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
-      className,
-    )}
-    {...props}
-  >
-    <CheckboxPrimitive.Indicator className={cn("grid place-content-center text-current")}>
-      <Check className="h-4 w-4" />
-    </CheckboxPrimitive.Indicator>
-  </CheckboxPrimitive.Root>
-));
-Checkbox.displayName = CheckboxPrimitive.Root.displayName;
+export function Checkbox({
+  checked,
+  defaultChecked = false,
+  onCheckedChange,
+  accessibilityLabel,
+}: CheckboxProps) {
+  const [internal, setInternal] = useState(defaultChecked);
+  const isChecked = checked ?? internal;
 
-export { Checkbox };
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: isChecked }}
+      accessibilityLabel={accessibilityLabel}
+      hitSlop={8}
+      onPress={() => {
+        setInternal(!isChecked);
+        onCheckedChange?.(!isChecked);
+      }}
+      style={[styles.box, isChecked && styles.checked]}
+    >
+      {isChecked ? <Check size={12} strokeWidth={3} color={colors.primaryForeground} /> : null}
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  box: {
+    width: 16,
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 4,
+  },
+  checked: {
+    backgroundColor: colors.primary,
+  },
+});

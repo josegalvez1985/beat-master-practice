@@ -1,8 +1,7 @@
 node_modules
 dist
-.output
-.vinxi
-pnpm-lock.yaml
+.expo
+web-build
+ios
+android
 package-lock.json
-bun.lock
-routeTree.gen.ts

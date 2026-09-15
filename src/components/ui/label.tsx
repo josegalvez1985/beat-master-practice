@@ -1,21 +1,14 @@
-"use client";
+import { StyleSheet, Text, type TextProps } from "react-native";
+import { colors, fonts } from "@/lib/theme";
 
-import * as React from "react";
-import * as LabelPrimitive from "@radix-ui/react-label";
-import { cva, type VariantProps } from "class-variance-authority";
+export function Label({ style, ...props }: TextProps) {
+  return <Text style={[styles.label, style]} {...props} />;
+}
 
-import { cn } from "@/lib/utils";
-
-const labelVariants = cva(
-  "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
-);
-
-const Label = React.forwardRef<
-  React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> & VariantProps<typeof labelVariants>
->(({ className, ...props }, ref) => (
-  <LabelPrimitive.Root ref={ref} className={cn(labelVariants(), className)} {...props} />
-));
-Label.displayName = LabelPrimitive.Root.displayName;
-
-export { Label };
+const styles = StyleSheet.create({
+  label: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.foreground,
+  },
+});

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { Minus, Plus, Pause, Play } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Animated, Easing, Platform, StyleSheet, Text, View } from "react-native";
+import { Minus, Pause, Play, Plus } from "lucide-react-native";
+import { Button, buttonForeground } from "@/components/ui/button";
+import { colors, fonts, radius, shared } from "@/lib/theme";
 
 export function Metronome() {
   const [bpm, setBpm] = useState(90);
@@ -9,44 +11,131 @@ export function Metronome() {
 
   useEffect(() => {
     if (!playing) return;
-    const id = window.setInterval(() => setBeat((b) => (b + 1) % 4), (60 / bpm) * 1000);
-    return () => window.clearInterval(id);
+    const id = setInterval(() => setBeat((b) => (b + 1) % 4), (60 / bpm) * 1000);
+    return () => clearInterval(id);
   }, [playing, bpm]);
 
   return (
-    <div className="panel rounded-2xl p-6">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          Metrónomo
-        </p>
-        <span className="font-display text-2xl text-primary">{bpm} BPM</span>
-      </div>
+    <View style={[shared.panel, styles.card]}>
+      <View style={styles.header}>
+        <Text style={styles.label}>Metrónomo</Text>
+        <Text style={styles.bpm}>{bpm} BPM</Text>
+      </View>
 
-      <div className="mt-6 flex items-center justify-center gap-4">
+      <View style={styles.dots}>
         {[0, 1, 2, 3].map((i) => (
-          <span
-            key={i}
-            className={`h-3 w-3 rounded-full transition-colors ${
-              playing && beat === i ? "bg-primary beat-dot" : "bg-muted"
-            }`}
-          />
+          <BeatDot key={i} active={playing && beat === i} />
         ))}
-      </div>
+      </View>
 
-      <div className="mt-6 flex items-center justify-between gap-3">
-        <Button variant="secondary" size="icon" onClick={() => setBpm((v) => Math.max(40, v - 5))}>
-          <Minus />
-          <span className="sr-only">Bajar tempo</span>
+      <View style={styles.controls}>
+        <Button
+          variant="secondary"
+          size="icon"
+          accessibilityLabel="Bajar tempo"
+          onPress={() => setBpm((v) => Math.max(40, v - 5))}
+        >
+          <Minus size={16} color={buttonForeground("secondary")} />
         </Button>
-        <Button className="flex-1" onClick={() => setPlaying((p) => !p)}>
-          {playing ? <Pause /> : <Play />}
+        <Button style={styles.toggle} onPress={() => setPlaying((p) => !p)}>
+          {playing ? (
+            <Pause size={16} color={buttonForeground()} />
+          ) : (
+            <Play size={16} color={buttonForeground()} />
+          )}
           {playing ? "Detener" : "Iniciar práctica"}
         </Button>
-        <Button variant="secondary" size="icon" onClick={() => setBpm((v) => Math.min(220, v + 5))}>
-          <Plus />
-          <span className="sr-only">Subir tempo</span>
+        <Button
+          variant="secondary"
+          size="icon"
+          accessibilityLabel="Subir tempo"
+          onPress={() => setBpm((v) => Math.min(220, v + 5))}
+        >
+          <Plus size={16} color={buttonForeground("secondary")} />
         </Button>
-      </div>
-    </div>
+      </View>
+    </View>
   );
 }
+
+// Native counterpart of the web `beat-dot` pulse animation.
+function BeatDot({ active }: { active: boolean }) {
+  const [pulse] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    if (!active) {
+      pulse.setValue(0);
+      return;
+    }
+    const timing = (toValue: number) =>
+      Animated.timing(pulse, {
+        toValue,
+        duration: 600,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: Platform.OS !== "web",
+      });
+    const loop = Animated.loop(Animated.sequence([timing(1), timing(0)]));
+    loop.start();
+    return () => loop.stop();
+  }, [active, pulse]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.dot,
+        active && {
+          backgroundColor: colors.primary,
+          opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1] }),
+          transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.35] }) }],
+        },
+      ]}
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: radius["2xl"],
+    padding: 24,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  label: {
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    letterSpacing: 2.4,
+    textTransform: "uppercase",
+    color: colors.mutedForeground,
+  },
+  bpm: {
+    fontFamily: fonts.display,
+    fontSize: 24,
+    color: colors.primary,
+  },
+  dots: {
+    marginTop: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+  },
+  dot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.muted,
+  },
+  controls: {
+    marginTop: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  toggle: {
+    flex: 1,
+  },
+});
