@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Animated, Easing, Platform, StyleSheet, Text, View } from "react-native";
-import { Minus, Pause, Play, Plus } from "lucide-react-native";
+import { Animated, Easing, StyleSheet, Text, View } from "react-native";
+import { Minus, Pause, Play, Plus } from "lucide-react";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { colors, fonts, radius, shared } from "@/lib/theme";
 
@@ -58,7 +58,7 @@ export function Metronome() {
   );
 }
 
-// Native counterpart of the web `beat-dot` pulse animation.
+// Pulsing dot for the active beat.
 function BeatDot({ active }: { active: boolean }) {
   const [pulse] = useState(() => new Animated.Value(0));
 
@@ -72,7 +72,7 @@ function BeatDot({ active }: { active: boolean }) {
         toValue,
         duration: 600,
         easing: Easing.inOut(Easing.ease),
-        useNativeDriver: Platform.OS !== "web",
+        useNativeDriver: false,
       });
     const loop = Animated.loop(Animated.sequence([timing(1), timing(0)]));
     loop.start();

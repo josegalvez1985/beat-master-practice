@@ -1,12 +1,19 @@
-// https://docs.expo.dev/guides/using-eslint/
-const { defineConfig } = require("eslint/config");
-const expoConfig = require("eslint-config-expo/flat");
-const eslintPluginPrettierRecommended = require("eslint-plugin-prettier/recommended");
+import js from "@eslint/js";
+import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
+import reactHooks from "eslint-plugin-react-hooks";
+import { defineConfig } from "eslint/config";
+import globals from "globals";
+import tseslint from "typescript-eslint";
 
-module.exports = defineConfig([
-  expoConfig,
+export default defineConfig([
+  { ignores: ["dist/*"] },
+  js.configs.recommended,
+  tseslint.configs.recommended,
+  reactHooks.configs.flat.recommended,
   eslintPluginPrettierRecommended,
   {
-    ignores: ["dist/*", ".expo/*", "web-build/*"],
+    languageOptions: {
+      globals: globals.browser,
+    },
   },
 ]);

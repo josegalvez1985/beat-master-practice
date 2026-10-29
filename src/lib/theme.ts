@@ -1,12 +1,6 @@
 import { StyleSheet } from "react-native";
 
-/*
- * Design system definition.
- *
- * Dark-only stage theme: charcoal + amber cymbal light.
- * React Native has no oklch support, so these are the hex equivalents of the
- * oklch tokens from the original web design system.
- */
+// Dark-only stage theme: charcoal + amber cymbal light.
 
 export const colors = {
   background: "#100c0a",
@@ -47,7 +41,7 @@ export const fonts = {
 } as const;
 
 export const shared = StyleSheet.create({
-  // Equivalent of the web `panel` utility.
+  // Translucent card surface.
   panel: {
     backgroundColor: "rgba(28, 23, 20, 0.8)",
     borderWidth: 1,

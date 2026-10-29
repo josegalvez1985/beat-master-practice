@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { Link } from "expo-router";
+import { Link } from "@/components/Link";
 import { Button } from "@/components/ui/button";
 import { colors, fonts } from "@/lib/theme";
 
@@ -7,12 +7,10 @@ export default function NotFoundScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.code}>404</Text>
-      <Text style={styles.title}>Page not found</Text>
-      <Text style={styles.body}>
-        {"The page you're looking for doesn't exist or has been moved."}
-      </Text>
-      <Link href="/" asChild>
-        <Button style={styles.action}>Go home</Button>
+      <Text style={styles.title}>Página no encontrada</Text>
+      <Text style={styles.body}>La página que buscas no existe o se ha movido.</Text>
+      <Link href="/">
+        <Button style={styles.action}>Ir al inicio</Button>
       </Link>
     </View>
   );

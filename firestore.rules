@@ -1,0 +1,140 @@
+rules_version = '2';
+
+// Data model and the reasoning behind these rules: docs/arquitectura.md
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function me() {
+      return request.auth.uid;
+    }
+
+    function usuario(uid) {
+      return get(/databases/$(database)/documents/usuarios/$(uid)).data;
+    }
+
+    function esProfesor() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/usuarios/$(me()))
+        && usuario(me()).rol == 'profesor';
+    }
+
+    // The alumno signed in belongs to that profesor's list for that instrument.
+    function inscripto(profesorId, instrumento) {
+      return exists(/databases/$(database)/documents/inscripciones/$(profesorId + '_' + me() + '_' + instrumento));
+    }
+
+    function instrumentosValidos(lista) {
+      return lista is list && lista.size() >= 1 && lista.size() <= 9
+        && lista.hasOnly(['guitarra', 'piano', 'bateria', 'voz', 'bajo', 'violin', 'ukelele', 'saxofon', 'flauta']);
+    }
+
+    function textoValido(valor, min, max) {
+      return valor is string && valor.size() >= min && valor.size() <= max;
+    }
+
+    function archivosValidos(lista) {
+      return lista is list && lista.size() <= 30;
+    }
+
+    // documentos/{nro_documento} -> { uid, email }: makes the document number unique and lets
+    // the login turn it into the account email. Readable one by one, never listable.
+    match /documentos/{nroDocumento} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if signedIn()
+        && nroDocumento.matches('^[0-9]{5,10}$')
+        && request.resource.data.keys().hasOnly(['uid', 'email'])
+        && request.resource.data.uid == me()
+        && request.resource.data.email == request.auth.token.email;
+      allow update, delete: if false;
+    }
+
+    // usuarios/{uid}: public profile. The owner and every profesor (to find alumnos) can read it.
+    match /usuarios/{uid} {
+      allow read: if signedIn() && (uid == me() || esProfesor());
+      allow create: if signedIn() && uid == me()
+        && request.resource.data.keys().hasOnly(['rol', 'nombre', 'nro_documento', 'instrumentos', 'terminos', 'creadoEn'])
+        && request.resource.data.rol in ['alumno', 'profesor']
+        && textoValido(request.resource.data.nombre, 2, 80)
+        && getAfter(/databases/$(database)/documents/documentos/$(request.resource.data.nro_documento)).data.uid == me()
+        && instrumentosValidos(request.resource.data.instrumentos)
+        && request.resource.data.terminos is list && request.resource.data.terminos.size() <= 100
+        && request.resource.data.creadoEn == request.time;
+      // Role and document number never change.
+      allow update: if signedIn() && uid == me()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nombre', 'instrumentos', 'terminos'])
+        && textoValido(request.resource.data.nombre, 2, 80)
+        && instrumentosValidos(request.resource.data.instrumentos)
+        && request.resource.data.terminos is list && request.resource.data.terminos.size() <= 100;
+      allow delete: if false;
+    }
+
+    // inscripciones/{profesorId}_{alumnoId}_{instrumento}: the profesor's student lists.
+    match /inscripciones/{id} {
+      allow read: if signedIn() && (resource.data.profesorId == me() || resource.data.alumnoId == me());
+      allow create: if esProfesor()
+        && request.resource.data.keys().hasOnly(['profesorId', 'profesorNombre', 'alumnoId', 'alumnoNombre', 'alumnoDocumento', 'instrumento', 'creadoEn'])
+        && request.resource.data.profesorId == me()
+        && id == me() + '_' + request.resource.data.alumnoId + '_' + request.resource.data.instrumento
+        && request.resource.data.instrumento in usuario(me()).instrumentos
+        && request.resource.data.profesorNombre == usuario(me()).nombre
+        && usuario(request.resource.data.alumnoId).rol == 'alumno'
+        && request.resource.data.alumnoNombre == usuario(request.resource.data.alumnoId).nombre
+        && request.resource.data.alumnoDocumento == usuario(request.resource.data.alumnoId).nro_documento
+        && request.resource.data.creadoEn == request.time;
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.profesorId == me();
+    }
+
+    function claseValida(data) {
+      return data.keys().hasOnly(['profesorId', 'profesorNombre', 'instrumento', 'titulo', 'descripcion', 'fecha', 'materiales', 'creadoEn'])
+        && textoValido(data.titulo, 1, 120)
+        && textoValido(data.descripcion, 0, 4000)
+        && data.fecha is string && data.fecha.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && archivosValidos(data.materiales);
+    }
+
+    // clases/{id}: planned by a profesor; visible to the alumnos in that instrument's list.
+    match /clases/{claseId} {
+      allow read: if signedIn()
+        && (resource.data.profesorId == me() || inscripto(resource.data.profesorId, resource.data.instrumento));
+      allow create: if esProfesor()
+        && request.resource.data.profesorId == me()
+        && request.resource.data.profesorNombre == usuario(me()).nombre
+        && request.resource.data.instrumento in usuario(me()).instrumentos
+        && request.resource.data.creadoEn == request.time
+        && claseValida(request.resource.data);
+      allow update: if signedIn() && resource.data.profesorId == me()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['titulo', 'descripcion', 'fecha', 'materiales'])
+        && claseValida(request.resource.data);
+      allow delete: if signedIn() && resource.data.profesorId == me();
+    }
+
+    function clase(claseId) {
+      return get(/databases/$(database)/documents/clases/$(claseId)).data;
+    }
+
+    function entregaValida(entregaId, data) {
+      return data.keys().hasOnly(['claseId', 'profesorId', 'alumnoId', 'alumnoNombre', 'instrumento', 'archivos', 'comentario', 'actualizadoEn'])
+        && entregaId == data.claseId + '_' + me()
+        && data.alumnoId == me()
+        && data.alumnoNombre == usuario(me()).nombre
+        && data.profesorId == clase(data.claseId).profesorId
+        && data.instrumento == clase(data.claseId).instrumento
+        && inscripto(data.profesorId, data.instrumento)
+        && archivosValidos(data.archivos) && data.archivos.size() >= 1
+        && (!('comentario' in data) || textoValido(data.comentario, 0, 2000))
+        && data.actualizadoEn == request.time;
+    }
+
+    // entregas/{claseId}_{alumnoId}: what an alumno uploads for a class.
+    match /entregas/{entregaId} {
+      allow read: if signedIn() && (resource.data.alumnoId == me() || resource.data.profesorId == me());
+      allow create, update: if signedIn() && entregaValida(entregaId, request.resource.data);
+      allow delete: if signedIn() && resource.data.alumnoId == me();
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet } from "react-native";
-import { Check } from "lucide-react-native";
+import { Check } from "lucide-react";
 import { colors } from "@/lib/theme";
 
 type CheckboxProps = {
@@ -22,7 +22,7 @@ export function Checkbox({
   return (
     <Pressable
       accessibilityRole="checkbox"
-      accessibilityState={{ checked: isChecked }}
+      aria-checked={isChecked}
       accessibilityLabel={accessibilityLabel}
       hitSlop={8}
       onPress={() => {

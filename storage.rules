@@ -1,0 +1,43 @@
+rules_version = '2';
+
+// Files are checked against the Firestore documents they belong to (cross-service rules).
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function clase(claseId) {
+      return firestore.get(/databases/(default)/documents/clases/$(claseId)).data;
+    }
+
+    function esDelProfesor(claseId) {
+      return clase(claseId).profesorId == request.auth.uid;
+    }
+
+    function inscripto(claseId) {
+      return firestore.exists(/databases/(default)/documents/inscripciones/$(clase(claseId).profesorId + '_' + request.auth.uid + '_' + clase(claseId).instrumento));
+    }
+
+    // 200 MB per file; keep in sync with MAX_BYTES in src/lib/files.ts.
+    function tamanoValido() {
+      return request.resource.size < 200 * 1024 * 1024;
+    }
+
+    // Class materials: audio, video, PDF, images and sheet music (MusicXML).
+    match /clases/{claseId}/{archivo} {
+      allow read: if signedIn() && (esDelProfesor(claseId) || inscripto(claseId));
+      allow create: if signedIn() && esDelProfesor(claseId) && tamanoValido()
+        && request.resource.contentType.matches('audio/.*|video/.*|image/.*|application/pdf|application/vnd[.]recordare[.].*|application/xml|text/xml|application/octet-stream');
+      allow delete: if signedIn() && esDelProfesor(claseId);
+    }
+
+    // Alumno deliveries: audio and video only.
+    match /entregas/{claseId}/{alumnoId}/{archivo} {
+      allow read: if signedIn() && (alumnoId == request.auth.uid || esDelProfesor(claseId));
+      allow create: if signedIn() && alumnoId == request.auth.uid && inscripto(claseId) && tamanoValido()
+        && request.resource.contentType.matches('audio/.*|video/.*');
+      allow delete: if signedIn() && alumnoId == request.auth.uid;
+    }
+  }
+}

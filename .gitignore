@@ -9,16 +9,7 @@ lerna-debug.log*
 
 node_modules
 dist
-dist-ssr
-.output
-.vinxi
-.tanstack/**
-.nitro
 *.local
-
-# Wrangler / Cloudflare
-.wrangler/
-.dev.vars
 
 # Editor directories and files
 .vscode/*
@@ -31,20 +22,11 @@ dist-ssr
 *.sln
 *.sw?
 
-# Expo
-.expo/
-web-build/
-expo-env.d.ts
-.metro-health-check*
-*.jks
-*.p8
-*.p12
 *.key
-*.mobileprovision
 *.pem
 *.tsbuildinfo
 .env*.local
 
-# generated native folders
-/ios
-/android
+# Firebase
+.firebase/
+*-debug.log

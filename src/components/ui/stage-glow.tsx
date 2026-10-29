@@ -1,8 +1,8 @@
-import { LinearGradient } from "expo-linear-gradient";
+import { LinearGradient } from "@/components/ui/linear-gradient";
 import { StyleSheet } from "react-native";
 import { gradients } from "@/lib/theme";
 
-// Native counterpart of the web `stage-glow` utility: amber light from the top.
+// Amber light falling from the top of the screen.
 export function StageGlow() {
   return (
     <LinearGradient

@@ -1,36 +1,21 @@
-import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Link, Stack, type ErrorBoundaryProps } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import * as SplashScreen from "expo-splash-screen";
-import { useFonts } from "expo-font";
-import { BebasNeue_400Regular } from "@expo-google-fonts/bebas-neue";
-import {
-  Barlow_400Regular,
-  Barlow_500Medium,
-  Barlow_600SemiBold,
-  Barlow_700Bold,
-} from "@expo-google-fonts/barlow";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Outlet, useRouteError } from "react-router";
+import { Link } from "@/components/Link";
 import { Button } from "@/components/ui/button";
 import { colors, fonts } from "@/lib/theme";
 
-SplashScreen.preventAutoHideAsync();
-
-export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+export function ErrorBoundary() {
+  const error = useRouteError();
   console.error(error);
 
   return (
     <View style={styles.center}>
-      <Text style={styles.title}>{"This page didn't load"}</Text>
-      <Text style={styles.body}>
-        Something went wrong on our end. You can try refreshing or head back home.
-      </Text>
+      <Text style={styles.title}>No se pudo cargar esta página</Text>
+      <Text style={styles.body}>Algo salió mal. Intenta de nuevo o vuelve al inicio.</Text>
       <View style={styles.actions}>
-        <Button onPress={retry}>Try again</Button>
-        <Link href="/" asChild>
-          <Button variant="outline">Go home</Button>
+        <Button onPress={() => window.location.reload()}>Reintentar</Button>
+        <Link href="/">
+          <Button variant="outline">Ir al inicio</Button>
         </Link>
       </View>
     </View>
@@ -38,38 +23,18 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 }
 
 export default function RootLayout() {
-  const [queryClient] = useState(() => new QueryClient());
-  const [fontsLoaded, fontError] = useFonts({
-    BebasNeue_400Regular,
-    Barlow_400Regular,
-    Barlow_500Medium,
-    Barlow_600SemiBold,
-    Barlow_700Bold,
-  });
-
-  useEffect(() => {
-    if (fontsLoaded || fontError) SplashScreen.hideAsync();
-  }, [fontsLoaded, fontError]);
-
-  if (!fontsLoaded && !fontError) return null;
-
   return (
-    <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        <StatusBar style="light" />
-        {/* Required: nested routes render here. */}
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        />
-      </SafeAreaProvider>
-    </QueryClientProvider>
+    <View style={styles.screen}>
+      <Outlet />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   center: {
     flex: 1,
     alignItems: "center",

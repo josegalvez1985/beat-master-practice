@@ -1,7 +1,3 @@
 node_modules
 dist
-.expo
-web-build
-ios
-android
 package-lock.json
