@@ -29,15 +29,17 @@ Como Pages no conoce las rutas de la app, el workflow copia `index.html` a `404.
 ## Usar el dominio www.pypulso.online
 
 1. **DNS** (en el proveedor del dominio):
-   - `www` → registro **CNAME** a `josegalvez1985.github.io`
+   - `www` → registro **CNAME** a `josegalvez1985.github.io`. Si el dominio vino con un hosting,
+     `www` suele apuntar a ese hosting: edita ese registro en lugar de agregar otro.
    - Opcional, para que `pypulso.online` sin www también funcione: registros **A** del dominio raíz
-     a `185.199.108.153`, `185.199.109.153`, `185.199.110.153` y `185.199.111.153`.
+     a `185.199.108.153`, `185.199.109.153`, `185.199.110.153` y `185.199.111.153`, y borra los
+     registros **AAAA** que apunten a otro servidor.
 2. **GitHub**: _Settings → Pages → Custom domain_ → `www.pypulso.online` → _Save_. Cuando el
    certificado esté listo, marca **Enforce HTTPS**.
-3. **Ruta base**: con dominio propio el sitio vive en la raíz. Crea la variable del repositorio
-   `BASE_PATH` con el valor `/` (_Settings → Secrets and variables → Actions → Variables_) y vuelve a
-   correr el workflow. Con el dominio configurado, la dirección de github.io redirige sola a
-   www.pypulso.online.
+3. **Ruta base**: no hay que configurar nada. Con dominio propio el sitio vive en la raíz, y el
+   workflow lo detecta cada vez que publica. Si agregas o quitas el dominio, vuelve a correr
+   _Publicar en GitHub Pages_ desde _Actions_ para que compile con la ruta nueva. Con el dominio
+   configurado, la dirección de github.io redirige sola a www.pypulso.online.
 4. **Firebase**: agrega `www.pypulso.online` a los dominios autorizados
    ([guía de Firebase](firebase.md#1-configurar-el-proyecto-una-sola-vez)).
 
@@ -46,6 +48,9 @@ Como Pages no conoce las rutas de la app, el workflow copia `index.html` a `404.
 `vite.config.ts` toma la variable de entorno `BASE_PATH` (por defecto `/`). El router usa esa misma
 base (`basename` en `src/main.tsx`) y los enlaces la incluyen en su `href`, así que funcionan igual
 bajo `/beat-master-practice/` que en la raíz del dominio.
+
+En GitHub Actions, `pages.yml` toma ese valor de la configuración de Pages (`base_path` de
+`actions/configure-pages`): `/` con dominio propio y `/beat-master-practice/` sin él.
 
 Para probar localmente el build de Pages:
 

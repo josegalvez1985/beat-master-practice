@@ -32,19 +32,19 @@ jobs:
 
       - run: npm ci
 
+      # Ruta base según la configuración de Pages: base_path es "" con el dominio propio
+      # (www.pypulso.online) y "/beat-master-practice" en josegalvez1985.github.io.
+      - id: pages
+        uses: actions/configure-pages@v5
+
       - name: Build
         run: npm run build
         env:
-          # En josegalvez1985.github.io el sitio vive en /beat-master-practice/.
-          # Con el dominio propio (www.pypulso.online) crea la variable del repositorio
-          # BASE_PATH con el valor "/" (Settings → Secrets and variables → Actions → Variables).
-          BASE_PATH: ${{ vars.BASE_PATH || '/beat-master-practice/' }}
+          BASE_PATH: ${{ format('{0}/', steps.pages.outputs.base_path) }}
 
       # Abrir /login o recargar cualquier pantalla: GitHub Pages responde con 404.html,
       # que es la misma app, y el router muestra la pantalla correcta.
       - run: cp dist/index.html dist/404.html
-
-      - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v4
         with:
