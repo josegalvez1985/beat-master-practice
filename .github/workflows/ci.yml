@@ -1,0 +1,24 @@
+# Verifica cada push y cada pull request: tipos, lint y build.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verificar:
+    name: Tipos, lint y build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run build

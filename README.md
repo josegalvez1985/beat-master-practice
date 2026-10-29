@@ -1,67 +1,83 @@
 # Pulso
 
-Plataforma web de práctica y enseñanza de instrumentos musicales: guitarra, piano,
-batería, voz y más. Construida con React Native Web, Vite y React Router.
-Es exclusivamente una aplicación web.
+Plataforma web para **enseñar y practicar instrumentos musicales**: guitarra, piano, batería, voz,
+bajo, violín, ukelele, saxofón y flauta.
 
-## Desarrollo
+- **Profesores**: se registran con su número de documento y los instrumentos que enseñan, arman sus
+  listas de alumnos (buscándolos por documento o nombre), planifican clases por semana, mes o año,
+  suben materiales (audio, video, PDF, partituras) y ven el progreso de cada alumno.
+- **Alumnos**: se registran con su número de documento y sus instrumentos. Cuando un profesor los
+  agrega a su lista, ven sus clases, suben sus prácticas en audio o video y siguen su barra de
+  progreso.
 
-Requisitos: Node.js y npm.
+Sitio: **https://www.pypulso.online** · GitHub Pages:
+**https://josegalvez1985.github.io/beat-master-practice/** · Repositorio:
+**https://github.com/josegalvez1985/beat-master-practice**
+
+Es una aplicación **solo web** (React Native Web + Vite + React Router) con **Firebase**
+(Authentication, Firestore y Storage).
+
+## Empezar
+
+Requisitos: Node.js 20.19 o superior y npm.
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
+git clone https://github.com/josegalvez1985/beat-master-practice.git
+cd beat-master-practice
 npm i
 npm run dev
 ```
 
-Abre la URL que muestra la terminal (por defecto http://localhost:5173).
+Abre http://localhost:5173. La primera pantalla es el login.
 
-## Cómo funciona
+> Antes de usar la app con el proyecto real hay que configurar Firebase una vez (crear Firestore,
+> activar el login con correo, Storage y publicar las reglas): ver **[docs/firebase.md](docs/firebase.md)**.
+> Para probar sin tocar datos reales, usa los emuladores (misma guía, sección 3).
 
-- Los componentes se escriben con la API de React Native (`View`, `Text`, `Pressable`…) y
-  Vite los resuelve a `react-native-web` mediante un alias (`vite.config.ts`).
-- Las rutas se definen en `src/main.tsx` con React Router.
-- `src/react-native-web.d.ts` añade a los tipos de React Native las props solo web que usamos
-  (`href`, `backgroundImage`).
+## Guías
 
-## Sesión y rutas
-
-- Sitio: https://pypulso.online (`src/lib/site.ts`).
-- Sin sesión, cualquier pantalla privada redirige a `/login`. Con sesión, `/login` lleva al inicio.
-- La sesión (token y usuario) se guarda en `localStorage`, que comparten todas las pestañas y
-  ventanas del dominio: se mantiene al recargar y al abrir pestañas nuevas, y entrar o salir en
-  una pestaña actualiza las demás. "Recordarme" la mantiene 30 días; si no, dura 1 día.
-- Crear cuenta y recuperar contraseña son modales del login con URL propia:
-  `/login?modal=registro` y `/login?modal=recuperar`. `/registro` redirige al primero.
-- El login, el registro y la recuperación están simulados hasta conectar un backend
-  (`src/lib/auth.ts`).
-- Al publicar, el servidor debe devolver `index.html` para cualquier ruta (fallback de SPA); si
-  no, abrir `/login` directamente o recargar fuera del inicio da 404.
-
-## Estructura
-
-| Ruta                     | Contenido                                                               |
-| ------------------------ | ----------------------------------------------------------------------- |
-| `index.html`             | Documento HTML de entrada                                               |
-| `src/main.tsx`           | Arranque: fuentes, React Query y rutas                                  |
-| `src/routes/`            | Pantallas: inicio, login, 404 y layout raíz                             |
-| `src/components/`        | Componentes de la app (`AuthLayout`, `RouteGuards`, diálogos del login) |
-| `src/components/ui/`     | Componentes base (`Button`, `Input`, `Dialog`, `Chip`…)                 |
-| `src/lib/auth.ts`        | Sesión compartida entre pestañas                                        |
-| `src/lib/theme.ts`       | Colores, fuentes y estilos compartidos                                  |
-| `src/lib/fonts.ts`       | Carga de las fuentes Barlow y Bebas Neue                                |
-| `src/lib/instruments.ts` | Instrumentos disponibles                                                |
-| `src/assets/`            | Imágenes                                                                |
-| `public/`                | Archivos estáticos servidos tal cual (manifest, iconos, robots.txt)     |
+| Guía                                         | Contenido                                                                                      |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| [docs/firebase.md](docs/firebase.md)         | Configurar Firebase, publicar reglas, emuladores y problemas comunes                           |
+| [docs/arquitectura.md](docs/arquitectura.md) | Rutas, sesión, login por documento, modelo de datos, permisos, progreso y pagos (próximamente) |
+| [docs/diseno.md](docs/diseno.md)             | Identidad visual, componentes, diseño de cada pantalla e ideas de mejora                       |
+| [docs/despliegue.md](docs/despliegue.md)     | GitHub Actions, GitHub Pages, dominio www.pypulso.online y Firebase Hosting                    |
 
 ## Scripts
 
-| Script              | Descripción                                |
-| ------------------- | ------------------------------------------ |
-| `npm run dev`       | Servidor de desarrollo                     |
-| `npm run build`     | Compilar el sitio de producción en `dist/` |
-| `npm run preview`   | Servir localmente el build de producción   |
-| `npm run typecheck` | Comprobar tipos con TypeScript             |
-| `npm run lint`      | Ejecutar ESLint                            |
-| `npm run format`    | Formatear con Prettier                     |
+| Script                  | Descripción                                                             |
+| ----------------------- | ----------------------------------------------------------------------- |
+| `npm run dev`           | Servidor de desarrollo contra el proyecto real de Firebase              |
+| `npm run dev:emulators` | Servidor de desarrollo contra los emuladores locales                    |
+| `npm run emulators`     | Levanta los emuladores de Auth, Firestore y Storage (requiere Java 21+) |
+| `npm run build`         | Compila el sitio en `dist/`                                             |
+| `npm run preview`       | Sirve localmente el build                                               |
+| `npm run deploy:reglas` | Publica `firestore.rules` y `storage.rules` en Firebase                 |
+| `npm run typecheck`     | Comprueba tipos con TypeScript                                          |
+| `npm run lint`          | ESLint                                                                  |
+| `npm run format`        | Formatea con Prettier                                                   |
+
+## Estructura
+
+| Ruta                               | Contenido                                                                                             |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `index.html`                       | Documento HTML de entrada                                                                             |
+| `src/main.tsx`                     | Arranque: fuentes, rutas y guardas de sesión                                                          |
+| `src/routes/`                      | Pantallas: login, inicio, `profesor/` (inicio, planificación, alumno), `alumno/` (inicio), clase, 404 |
+| `src/components/`                  | Componentes de la app: barra superior, modales del login, materiales, formulario de clase…            |
+| `src/components/ui/`               | Componentes base: `Button`, `Input`, `Dialog`, `Chip`, `Segmented`, `Progress`…                       |
+| `src/lib/firebase.ts`              | Conexión a Firebase (o a los emuladores)                                                              |
+| `src/lib/auth.ts`                  | Sesión compartida entre pestañas, registro, login y recuperación por documento                        |
+| `src/lib/data.ts`                  | Lecturas en vivo y escrituras de Firestore; cálculo del progreso                                      |
+| `src/lib/files.ts`                 | Subida y descarga de archivos en Storage                                                              |
+| `src/lib/theme.ts`                 | Colores, fuentes y estilos compartidos                                                                |
+| `firestore.rules`, `storage.rules` | Reglas de seguridad                                                                                   |
+| `firebase.json`                    | Emuladores, reglas y Firebase Hosting                                                                 |
+| `.github/workflows/`               | CI y publicación en GitHub Pages                                                                      |
+| `docs/`                            | Guías                                                                                                 |
+
+## Próximamente
+
+- **Pagos**: cada profesor y alumno pagará una suscripción para usar el sitio. La propuesta está en
+  [docs/arquitectura.md](docs/arquitectura.md#próximamente-pagos).
+- Ideas de diseño para las siguientes versiones en [docs/diseno.md](docs/diseno.md#ideas-para-las-próximas-versiones).

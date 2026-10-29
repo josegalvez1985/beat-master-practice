@@ -1,0 +1,62 @@
+# Publica el sitio en GitHub Pages en cada push a main (o a mano desde la pestaña Actions).
+# Requiere una vez: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+# Guía completa: docs/despliegue.md
+name: Publicar en GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Una publicación a la vez; si llega un push nuevo, reemplaza a la que estaba en curso.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compilar el sitio
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          # En josegalvez1985.github.io el sitio vive en /beat-master-practice/.
+          # Con el dominio propio (www.pypulso.online) crea la variable del repositorio
+          # BASE_PATH con el valor "/" (Settings → Secrets and variables → Actions → Variables).
+          BASE_PATH: ${{ vars.BASE_PATH || '/beat-master-practice/' }}
+
+      # Abrir /login o recargar cualquier pantalla: GitHub Pages responde con 404.html,
+      # que es la misma app, y el router muestra la pantalla correcta.
+      - run: cp dist/index.html dist/404.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    name: Publicar
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

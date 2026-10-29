@@ -2,20 +2,20 @@
   "name": "Pulso — Práctica de instrumentos",
   "short_name": "Pulso",
   "description": "Aprende y practica guitarra, piano, batería, voz y más con lecciones guiadas.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "background_color": "#100c0a",
   "theme_color": "#100c0a",
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"

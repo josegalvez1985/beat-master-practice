@@ -24,7 +24,7 @@ export function ForgotPasswordDialog({
       visible={visible}
       onClose={onClose}
       title="Recuperar contraseña"
-      description="Escribe tu número de documento y te enviaremos un enlace al correo de tu cuenta para crear una contraseña nueva."
+      description="Escribe tu número de documento y el correo de tu cuenta. Te enviaremos un enlace para crear una contraseña nueva."
     >
       <ForgotPasswordForm onClose={onClose} initialDocumento={initialDocumento} />
     </Dialog>
@@ -40,9 +40,10 @@ function ForgotPasswordForm({
   initialDocumento: string;
 }) {
   const [documento, setDocumento] = useState(initialDocumento);
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [enviadoA, setEnviadoA] = useState<string | null>(null);
+  const [enviado, setEnviado] = useState(false);
 
   const onSubmit = async () => {
     const nroDocumento = normalizarDocumento(documento);
@@ -50,10 +51,15 @@ function ForgotPasswordForm({
       setError("Escribe tu número de documento (solo números).");
       return;
     }
+    if (!email.includes("@")) {
+      setError("Escribe el correo de tu cuenta.");
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
-      setEnviadoA(await resetPassword(nroDocumento));
+      await resetPassword(nroDocumento, email);
+      setEnviado(true);
     } catch (e) {
       setError(mensajeDeError(e));
     } finally {
@@ -61,14 +67,14 @@ function ForgotPasswordForm({
     }
   };
 
-  if (enviadoA) {
+  if (enviado) {
     return (
       <View style={styles.form}>
         <View style={styles.sent}>
           <MailCheck size={20} color={colors.primary} />
           <Text style={styles.sentText}>
-            Te enviamos un enlace a {enviadoA}. Ábrelo para crear tu contraseña nueva; si no lo ves,
-            revisa la carpeta de spam.
+            Te enviamos un enlace a {email.trim()}. Ábrelo para crear tu contraseña nueva; si no lo
+            ves, revisa la carpeta de spam.
           </Text>
         </View>
         <Button size="lg" onPress={onClose}>
@@ -86,9 +92,23 @@ function ForgotPasswordForm({
           accessibilityLabel="Número de documento"
           inputMode="numeric"
           placeholder="Ej. 4567890"
-          returnKeyType="send"
           value={documento}
           onChangeText={setDocumento}
+        />
+      </View>
+
+      <View style={authStyles.field}>
+        <Label>Correo</Label>
+        <Input
+          accessibilityLabel="Correo"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="email"
+          placeholder="tu@correo.com"
+          returnKeyType="send"
+          value={email}
+          onChangeText={setEmail}
           onSubmitEditing={onSubmit}
         />
       </View>

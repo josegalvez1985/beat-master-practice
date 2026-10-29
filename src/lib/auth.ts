@@ -42,6 +42,10 @@ export type Session =
 let session: Session = { status: "loading" };
 const listeners = new Set<() => void>();
 let stopPerfil: Unsubscribe | null = null;
+// True after "Salir" in this tab: the next login starts at the home instead of the last page.
+let salidaVoluntaria = false;
+
+export const fueSalidaVoluntaria = () => salidaVoluntaria;
 
 function setSession(next: Session) {
   session = next;
@@ -55,6 +59,7 @@ onAuthStateChanged(auth, (user) => {
     setSession({ status: "guest" });
     return;
   }
+  salidaVoluntaria = false;
   stopPerfil = onSnapshot(
     doc(db, "usuarios", user.uid),
     (snap) => {
@@ -126,16 +131,17 @@ export async function register(datos: {
   }
 }
 
-// Sends the reset link to the account email and returns it masked ("jo***@gmail.com").
-export async function resetPassword(nroDocumento: string) {
-  const email = await emailDeDocumento(nroDocumento);
-  if (!email) throw new AuthError("sin-cuenta");
-  await sendPasswordResetEmail(auth, email);
-  const [local = "", domain = ""] = email.split("@");
-  return `${local.slice(0, 2)}***@${domain}`;
+// Both must match the same account: the document number and its email.
+export async function resetPassword(nroDocumento: string, email: string) {
+  const emailCuenta = await emailDeDocumento(nroDocumento);
+  if (!emailCuenta) throw new AuthError("sin-cuenta");
+  if (emailCuenta.toLowerCase() !== email.trim().toLowerCase())
+    throw new AuthError("correo-no-coincide");
+  await sendPasswordResetEmail(auth, emailCuenta);
 }
 
 export function signOut() {
+  salidaVoluntaria = true;
   return firebaseSignOut(auth);
 }
 
@@ -154,6 +160,8 @@ export function mensajeDeError(error: unknown) {
       return "Ya existe una cuenta con ese número de documento.";
     case "sin-cuenta":
       return "No hay ninguna cuenta con ese número de documento.";
+    case "correo-no-coincide":
+      return "El correo no coincide con el de la cuenta de ese número de documento.";
     case "auth/email-already-in-use":
       return "Ese correo ya está registrado en otra cuenta.";
     case "auth/invalid-email":

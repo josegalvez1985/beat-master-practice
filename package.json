@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:emulators": "vite --mode emulators",
     "build": "vite build",
     "preview": "vite preview",
+    "emulators": "firebase emulators:start --project demo-pulso --only auth,firestore,storage",
+    "deploy:reglas": "firebase deploy --only firestore,storage",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write ."

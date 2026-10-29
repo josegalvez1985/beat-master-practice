@@ -5,6 +5,7 @@ import { AuthLayout, authStyles } from "@/components/AuthLayout";
 import { ForgotPasswordDialog } from "@/components/ForgotPasswordDialog";
 import { Link } from "@/components/Link";
 import { PageMeta } from "@/components/PageMeta";
+import { PrimerosPasosDialog } from "@/components/PrimerosPasosDialog";
 import { RegisterDialog } from "@/components/RegisterDialog";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +14,12 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { mensajeDeError, signIn } from "@/lib/auth";
 import { documentoValido, normalizarDocumento } from "@/lib/documento";
 
-// The open modal lives in the URL (?modal=registro|recuperar), so it can be opened in a new tab.
+// The open modal lives in the URL (?modal=registro|recuperar|primeros-pasos),
+// so it can be opened in a new tab.
 const titles: Record<string, string> = {
   registro: "Crear cuenta — Pulso",
   recuperar: "Recuperar contraseña — Pulso",
+  "primeros-pasos": "Primeros pasos — Pulso",
 };
 
 export default function LoginPage() {
@@ -96,7 +99,18 @@ export default function LoginPage() {
             <Text style={authStyles.link}>Crea tu cuenta</Text>
           </Link>
         </Text>
+        <Text style={styles.help}>
+          <Link href="/login?modal=primeros-pasos">
+            <Text style={authStyles.link}>¿Cómo empiezo? Mira los primeros pasos</Text>
+          </Link>
+        </Text>
       </AuthLayout>
+
+      <PrimerosPasosDialog
+        visible={modal === "primeros-pasos"}
+        onClose={closeModal}
+        onRegistrarse={() => setParams({ modal: "registro" }, { replace: true })}
+      />
 
       <RegisterDialog visible={modal === "registro"} onClose={closeModal} />
       <ForgotPasswordDialog
@@ -109,6 +123,10 @@ export default function LoginPage() {
 }
 
 const styles = StyleSheet.create({
+  help: {
+    marginTop: 12,
+    textAlign: "center",
+  },
   optionsRow: {
     flexDirection: "row",
     justifyContent: "flex-end",

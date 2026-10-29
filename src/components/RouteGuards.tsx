@@ -1,7 +1,7 @@
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { Navigate, Outlet, useLocation } from "react-router";
 import { Button } from "@/components/ui/button";
-import { signOut, useSession, type Role } from "@/lib/auth";
+import { fueSalidaVoluntaria, signOut, useSession, type Role } from "@/lib/auth";
 import { colors, fonts } from "@/lib/theme";
 
 function Cargando() {
@@ -19,7 +19,8 @@ export function RequireAuth() {
 
   if (session.status === "loading") return <Cargando />;
   if (session.status === "guest") {
-    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+    const state = fueSalidaVoluntaria() ? undefined : { from: location.pathname + location.search };
+    return <Navigate to="/login" replace state={state} />;
   }
   if (session.status === "incomplete") {
     return (

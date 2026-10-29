@@ -16,7 +16,12 @@ export function formatearDocumento(nroDocumento: string) {
 
 // Lowercase, no accents: "José Pérez" -> "jose perez".
 export function normalizarTexto(value: string) {
-  return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim().replace(/\s+/g, " ");
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
 }
 
 // Every prefix (2+ letters) of every word of the name, so profesores can find

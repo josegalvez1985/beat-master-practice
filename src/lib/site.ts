@@ -1,1 +1,1 @@
-export const SITE_URL = "https://pypulso.online";
+export const SITE_URL = "https://www.pypulso.online";

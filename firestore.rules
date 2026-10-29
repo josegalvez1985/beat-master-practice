@@ -132,7 +132,9 @@ service cloud.firestore {
 
     // entregas/{claseId}_{alumnoId}: what an alumno uploads for a class.
     match /entregas/{entregaId} {
-      allow read: if signedIn() && (resource.data.alumnoId == me() || resource.data.profesorId == me());
+      // `resource == null`: the alumno listens to their delivery before it exists.
+      allow read: if signedIn()
+        && (resource == null || resource.data.alumnoId == me() || resource.data.profesorId == me());
       allow create, update: if signedIn() && entregaValida(entregaId, request.resource.data);
       allow delete: if signedIn() && resource.data.alumnoId == me();
     }
