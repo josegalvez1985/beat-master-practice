@@ -1,3 +1,5 @@
 node_modules
 dist
 package-lock.json
+# Google Search Console verification: must stay byte-identical.
+public/google*.html

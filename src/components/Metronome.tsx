@@ -2,18 +2,19 @@ import { useEffect, useState } from "react";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import { Minus, Pause, Play, Plus } from "lucide-react";
 import { Button, buttonForeground } from "@/components/ui/button";
+import { useMetronomo } from "@/lib/metronomo";
 import { colors, fonts, radius, shared } from "@/lib/theme";
 
-export function Metronome() {
-  const [bpm, setBpm] = useState(90);
+// Audible metronome (accent on beat one); `bpmInicial` lets a class suggest the tempo.
+export function Metronome({ bpmInicial = 90 }: { bpmInicial?: number }) {
+  const [bpm, setBpm] = useState(bpmInicial);
   const [playing, setPlaying] = useState(false);
-  const [beat, setBeat] = useState(0);
-
-  useEffect(() => {
-    if (!playing) return;
-    const id = setInterval(() => setBeat((b) => (b + 1) % 4), (60 / bpm) * 1000);
-    return () => clearInterval(id);
-  }, [playing, bpm]);
+  const beat = useMetronomo({
+    activo: playing,
+    bpm,
+    slots: 4,
+    sonidoDe: (slot) => (slot === 0 ? "acento" : "pulso"),
+  });
 
   return (
     <View style={[shared.panel, styles.card]}>
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: fonts.semibold,
-    fontSize: 12,
+    fontSize: 13,
     letterSpacing: 2.4,
     textTransform: "uppercase",
     color: colors.mutedForeground,
@@ -113,6 +114,7 @@ const styles = StyleSheet.create({
   bpm: {
     fontFamily: fonts.display,
     fontSize: 24,
+    fontVariant: ["tabular-nums"],
     color: colors.primary,
   },
   dots: {

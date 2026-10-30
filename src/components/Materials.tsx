@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   },
   meta: {
     fontFamily: fonts.sans,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.mutedForeground,
   },
   error: {

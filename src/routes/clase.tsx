@@ -3,11 +3,12 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useNavigate, useParams } from "react-router";
 import { ChevronLeft, FolderOpen, Lock, Pencil, Trash2 } from "lucide-react";
 import { shellStyles } from "@/components/AppShell";
-import { Avatar } from "@/components/ClaseItem";
+import { Avatar } from "@/components/ui/avatar";
 import { ClaseFormDialog } from "@/components/ClaseFormDialog";
 import { Link } from "@/components/Link";
 import { MaterialList, UploadButton } from "@/components/Materials";
 import { PageMeta } from "@/components/PageMeta";
+import { PlanClase } from "@/components/plan/PlanClase";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -114,28 +115,35 @@ function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
         </Section>
       ) : null}
 
-      <Section
-        title="Materiales"
-        subtitle={esDueno ? "Audio, video, PDF, imágenes y partituras (MusicXML)." : undefined}
-      >
-        {clase.materiales.length === 0 ? (
-          <Text style={styles.muted}>
-            {esDueno
-              ? "Sube lo que tus alumnos necesitan para esta clase."
-              : "Esta clase no tiene materiales."}
-          </Text>
-        ) : (
-          <MaterialList materiales={clase.materiales} onRemove={esDueno ? quitar : undefined} />
-        )}
-        {esDueno ? (
-          <UploadButton
-            label="Subir materiales"
-            carpeta={`clases/${clase.id}`}
-            accept={ACCEPT_MATERIAL}
-            onUploaded={(material) => agregarMaterial(clase.id, material)}
-          />
-        ) : null}
-      </Section>
+      <PlanClase clase={clase} esDueno={esDueno} alumnoId={perfil.uid} />
+
+      {/* With a plan, an alumno does not need an empty "no materials" card. */}
+      {esDueno || clase.materiales.length > 0 || !clase.bloques?.length ? (
+        <Section
+          title={clase.bloques?.length ? "Otros materiales" : "Materiales"}
+          subtitle={
+            esDueno ? "Audio, video, PDF, imágenes y partituras (MusicXML, Guitar Pro)." : undefined
+          }
+        >
+          {clase.materiales.length === 0 ? (
+            <Text style={styles.muted}>
+              {esDueno
+                ? "Sube lo que tus alumnos necesitan para esta clase."
+                : "Esta clase no tiene materiales."}
+            </Text>
+          ) : (
+            <MaterialList materiales={clase.materiales} onRemove={esDueno ? quitar : undefined} />
+          )}
+          {esDueno ? (
+            <UploadButton
+              label="Subir materiales"
+              carpeta={`clases/${clase.id}`}
+              accept={ACCEPT_MATERIAL}
+              onUploaded={(material) => agregarMaterial(clase.id, material)}
+            />
+          ) : null}
+        </Section>
+      ) : null}
 
       {esDueno ? (
         <EntregasDeAlumnos clase={clase} perfil={perfil} />
@@ -289,7 +297,7 @@ const styles = StyleSheet.create({
   },
   date: {
     fontFamily: fonts.semibold,
-    fontSize: 12,
+    fontSize: 13,
     letterSpacing: 2.4,
     textTransform: "uppercase",
     color: colors.primary,

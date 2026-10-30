@@ -44,6 +44,18 @@ responde con estado 200, que es lo que indexa Google.
 4. **Firebase**: agrega `www.pypulso.online` a los dominios autorizados
    ([guía de Firebase](firebase.md#1-configurar-el-proyecto-una-sola-vez)).
 
+### Google Search Console
+
+El sitio se verifica de dos formas (alcanza con una):
+
+- Archivo [`public/googled2cf06541ff338e8.html`](../public/googled2cf06541ff338e8.html), servido en
+  `https://www.pypulso.online/googled2cf06541ff338e8.html`. Tiene que quedar **idéntico**: está
+  excluido de Prettier en `.prettierignore`. No lo borres aunque ya esté verificado.
+- Etiqueta `<meta name="google-site-verification">` en [`index.html`](../index.html).
+
+Después de verificar: _Sitemaps_ → enviar `sitemap.xml`, e _Inspección de URLs_ → pedir la
+indexación de la portada.
+
 ### Comprobar que el dominio funciona
 
 | Prueba                                                       | Resultado esperado                                                          |

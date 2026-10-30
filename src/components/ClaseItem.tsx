@@ -35,21 +35,6 @@ export function ClaseItem({ clase, estado }: { clase: Clase; estado?: "entregada
   );
 }
 
-// Round badge with the person's initials.
-export function Avatar({ nombre }: { nombre: string }) {
-  const iniciales = nombre
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((parte) => parte[0]?.toUpperCase())
-    .join("");
-  return (
-    <View style={styles.avatar}>
-      <Text style={styles.avatarText}>{iniciales || "?"}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
@@ -92,18 +77,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.mutedForeground,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 999,
-    backgroundColor: "rgba(249, 161, 41, 0.16)",
-  },
-  avatarText: {
-    fontFamily: fonts.semibold,
-    fontSize: 14,
-    color: colors.primary,
   },
 });

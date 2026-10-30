@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   label: {
     marginTop: 10,
     fontFamily: fonts.sans,
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 2,
     textTransform: "uppercase",
     color: colors.mutedForeground,
@@ -39,6 +39,7 @@ const styles = StyleSheet.create({
   value: {
     fontFamily: fonts.display,
     fontSize: 30,
+    fontVariant: ["tabular-nums"],
     color: colors.foreground,
   },
 });

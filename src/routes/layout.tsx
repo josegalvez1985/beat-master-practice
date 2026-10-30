@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Outlet, useRouteError } from "react-router";
 import { Link } from "@/components/Link";
 import { Button } from "@/components/ui/button";
+import { Avisos } from "@/components/ui/toast";
 import { colors, fonts } from "@/lib/theme";
 
 export function ErrorBoundary() {
@@ -26,6 +27,7 @@ export default function RootLayout() {
   return (
     <View style={styles.screen}>
       <Outlet />
+      <Avisos />
     </View>
   );
 }
@@ -43,9 +45,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   title: {
-    fontFamily: fonts.display,
+    fontFamily: fonts.heading,
     fontSize: 24,
-    letterSpacing: 0.5,
     color: colors.foreground,
     textAlign: "center",
   },

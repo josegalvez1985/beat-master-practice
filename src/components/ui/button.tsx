@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   labelSm: {
-    fontSize: 12,
+    fontSize: 13,
   },
   pressed: {
     opacity: 0.9,
@@ -104,21 +104,22 @@ const variants = StyleSheet.create({
   },
 });
 
+// Comfortable touch targets: 40 px by default, 46 px for the main action of a screen.
 const sizes = StyleSheet.create({
   default: {
-    height: 36,
-    paddingHorizontal: 16,
+    height: 40,
+    paddingHorizontal: 18,
   },
   sm: {
-    height: 32,
-    paddingHorizontal: 12,
+    height: 36,
+    paddingHorizontal: 14,
   },
   lg: {
-    height: 40,
+    height: 46,
     paddingHorizontal: 32,
   },
   icon: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
   },
 });

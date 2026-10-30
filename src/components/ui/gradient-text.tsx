@@ -1,7 +1,7 @@
 import { Text, type StyleProp, type TextStyle } from "react-native";
-import { gradients } from "@/lib/theme";
+import { colors } from "@/lib/theme";
 
-// Amber accent text (first stop of the amber gradient).
+// Amber accent text (brighter on dark, deeper on light).
 export function GradientText({
   children,
   style,
@@ -9,5 +9,5 @@ export function GradientText({
   children: string;
   style?: StyleProp<TextStyle>;
 }) {
-  return <Text style={[style, { color: gradients.amber[0] }]}>{children}</Text>;
+  return <Text style={[style, { color: colors.highlight }]}>{children}</Text>;
 }

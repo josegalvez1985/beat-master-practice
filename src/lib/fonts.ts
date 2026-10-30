@@ -2,12 +2,16 @@ import barlow400 from "@fontsource/barlow/files/barlow-latin-400-normal.woff2";
 import barlow500 from "@fontsource/barlow/files/barlow-latin-500-normal.woff2";
 import barlow600 from "@fontsource/barlow/files/barlow-latin-600-normal.woff2";
 import barlow700 from "@fontsource/barlow/files/barlow-latin-700-normal.woff2";
+import barlowSemiCondensed600 from "@fontsource/barlow-semi-condensed/files/barlow-semi-condensed-latin-600-normal.woff2";
+import barlowSemiCondensed700 from "@fontsource/barlow-semi-condensed/files/barlow-semi-condensed-latin-700-normal.woff2";
 import bebasNeue400 from "@fontsource/bebas-neue/files/bebas-neue-latin-400-normal.woff2";
 import { fonts } from "@/lib/theme";
 
 // Each weight is registered as its own family, matching the names in `fonts`.
 const faces: [family: string, url: string][] = [
   [fonts.display, bebasNeue400],
+  [fonts.heading, barlowSemiCondensed600],
+  [fonts.headingBold, barlowSemiCondensed700],
   [fonts.sans, barlow400],
   [fonts.medium, barlow500],
   [fonts.semibold, barlow600],

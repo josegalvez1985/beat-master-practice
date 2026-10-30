@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     fontFamily: fonts.sans,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.mutedForeground,
   },
   instruments: {

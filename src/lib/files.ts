@@ -3,6 +3,7 @@ import {
   deleteObject,
   getDownloadURL,
   ref,
+  uploadBytes,
   uploadBytesResumable,
   type StorageError,
 } from "firebase/storage";
@@ -23,10 +24,12 @@ export type Material = {
 // Keep in sync with the size limit in storage.rules.
 export const MAX_BYTES = 200 * 1024 * 1024;
 
-export const ACCEPT_MATERIAL = "audio/*,video/*,image/*,application/pdf,.musicxml,.mxl,.xml";
+export const ACCEPT_MATERIAL =
+  "audio/*,video/*,image/*,application/pdf,.musicxml,.mxl,.xml,.gp,.gp3,.gp4,.gp5,.gpx";
 export const ACCEPT_ENTREGA = "audio/*,video/*";
 
-const PARTITURA = /\.(musicxml|mxl|xml)$/i;
+// Sheet music alphaTab can draw: MusicXML and Guitar Pro.
+const PARTITURA = /\.(musicxml|mxl|xml|gp|gp3|gp4|gp5|gpx)$/i;
 
 export function tipoDeArchivo(nombre: string, contentType: string): MaterialTipo {
   if (PARTITURA.test(nombre)) return "partitura";
@@ -40,7 +43,7 @@ export function tipoDeArchivo(nombre: string, contentType: string): MaterialTipo
 function contentTypeDe(file: File) {
   if (file.type) return file.type;
   if (/\.mxl$/i.test(file.name)) return "application/vnd.recordare.musicxml";
-  if (PARTITURA.test(file.name)) return "application/vnd.recordare.musicxml+xml";
+  if (/\.(musicxml|xml)$/i.test(file.name)) return "application/vnd.recordare.musicxml+xml";
   return "application/octet-stream";
 }
 
@@ -109,20 +112,67 @@ export async function borrarArchivo(ruta: string) {
 }
 
 // Download URL of a stored file, or null until it resolves (or if it fails).
-export function useDownloadUrl(ruta: string | null) {
-  const [url, setUrl] = useState<{ ruta: string; url: string | null } | null>(null);
+// `version` changes when a file is replaced at the same path, so the browser skips its cached copy.
+export function useDownloadUrl(ruta: string | null, version?: number) {
+  const key = ruta && `${ruta}#${version ?? ""}`;
+  const [url, setUrl] = useState<{ key: string; url: string | null } | null>(null);
 
   useEffect(() => {
-    if (!ruta) return;
+    if (!ruta || !key) return;
     let activo = true;
     getDownloadURL(ref(storage, ruta)).then(
-      (value) => activo && setUrl({ ruta, url: value }),
-      () => activo && setUrl({ ruta, url: null }),
+      (value) => activo && setUrl({ key, url: version ? `${value}&v=${version}` : value }),
+      () => activo && setUrl({ key, url: null }),
     );
     return () => {
       activo = false;
     };
-  }, [ruta]);
+  }, [ruta, key, version]);
 
-  return url && url.ruta === ruta ? url.url : null;
+  return url && url.key === key ? url.url : null;
+}
+
+// --- Profile photo ---
+
+export const ACCEPT_FOTO = "image/jpeg,image/png,image/webp";
+// One fixed path per user: a new photo overwrites the previous one, which is never orphaned.
+export const fotoRuta = (uid: string) => `usuarios/${uid}/foto.jpg`;
+const FOTO_LADO = 512;
+
+// Crops the center square and scales it down to at most 512 px JPEG in the browser (about
+// 50–120 KB), whatever the size of the original; smaller photos are never enlarged.
+// It shrinks by halves: one big jump (4000 → 512 px) blurs or aliases in some browsers.
+export async function prepararFoto(file: File) {
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+  const lado = Math.min(bitmap.width, bitmap.height);
+  // First step: crop to the largest 512 × 2^n that fits, then halve down to 512.
+  let size = lado <= FOTO_LADO ? lado : FOTO_LADO * 2 ** Math.floor(Math.log2(lado / FOTO_LADO));
+  let canvas = dibujar(bitmap, (bitmap.width - lado) / 2, (bitmap.height - lado) / 2, lado, size);
+  bitmap.close();
+  while (size > FOTO_LADO) {
+    size /= 2;
+    canvas = dibujar(canvas, 0, 0, size * 2, size);
+  }
+  return new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("Sin imagen"))),
+      "image/jpeg",
+      0.9,
+    ),
+  );
+}
+
+// Draws the square (x, y, lado) of `source` into a new size × size canvas.
+function dibujar(source: CanvasImageSource, x: number, y: number, lado: number, size: number) {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Sin canvas");
+  context.imageSmoothingQuality = "high";
+  context.drawImage(source, x, y, lado, lado, 0, 0, size, size);
+  return canvas;
+}
+
+export async function subirFoto(uid: string, foto: Blob) {
+  await uploadBytes(ref(storage, fotoRuta(uid)), foto, { contentType: "image/jpeg" });
 }

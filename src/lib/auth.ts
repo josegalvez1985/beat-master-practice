@@ -1,9 +1,12 @@
 import { useSyncExternalStore } from "react";
 import { FirebaseError } from "firebase/app";
 import {
+  browserSessionPersistence,
   createUserWithEmailAndPassword,
+  indexedDBLocalPersistence,
   onAuthStateChanged,
   sendPasswordResetEmail,
+  setPersistence,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   type User,
@@ -15,6 +18,7 @@ import {
   onSnapshot,
   serverTimestamp,
   writeBatch,
+  type Timestamp,
   type Unsubscribe,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -29,6 +33,8 @@ export type Perfil = {
   nombre: string;
   nro_documento: string;
   instrumentos: InstrumentId[];
+  // Profile photo in Storage (always usuarios/{uid}/foto.jpg); absent without photo.
+  foto?: { ruta: string; actualizadoEn: Timestamp | null };
 };
 
 export type Session =
@@ -97,11 +103,45 @@ async function emailDeDocumento(nroDocumento: string) {
   return snap.exists() ? (snap.data().email as string) : null;
 }
 
-export async function signIn(nroDocumento: string, password: string) {
+// "Recordarme": the session survives closing the browser (shared by every tab) and the document
+// number is prefilled next time. Without it, the session lasts while the tab is open and nothing
+// is kept. The app never stores the password: the browser's password manager does, if the person
+// accepts.
+const DOCUMENTO_KEY = "pulso-documento";
+
+export function documentoRecordado() {
+  try {
+    return localStorage.getItem(DOCUMENTO_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export async function signIn(nroDocumento: string, password: string, recordar = true) {
   // Saying which part failed reveals nothing new: documentos/{nro} is readable one by one.
   const email = await emailDeDocumento(nroDocumento);
   if (!email) throw new AuthError("sin-cuenta");
+  await setPersistence(auth, recordar ? indexedDBLocalPersistence : browserSessionPersistence);
   await signInWithEmailAndPassword(auth, email, password);
+  try {
+    if (recordar) localStorage.setItem(DOCUMENTO_KEY, nroDocumento);
+    else localStorage.removeItem(DOCUMENTO_KEY);
+  } catch {
+    // Blocked storage: the session works anyway, the number is just not prefilled.
+  }
+  if (recordar) ofrecerGuardarContrasena(nroDocumento, password);
+}
+
+type PasswordCredentialConstructor = new (data: { id: string; password: string }) => Credential;
+
+// Asks the browser's password manager to save the login (Chrome, Edge). A single-page app has no
+// real form submission, so without this the browser does not always offer it; elsewhere the
+// username / current-password autocomplete fields still let it offer.
+function ofrecerGuardarContrasena(nroDocumento: string, password: string) {
+  const Credential = (window as { PasswordCredential?: PasswordCredentialConstructor })
+    .PasswordCredential;
+  if (!Credential || !navigator.credentials) return;
+  navigator.credentials.store(new Credential({ id: nroDocumento, password })).catch(() => {});
 }
 
 export async function register(datos: {

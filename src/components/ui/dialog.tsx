@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   backdrop: {
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: colors.backdrop,
   },
   panel: {
     width: "100%",
@@ -75,9 +75,9 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   title: {
-    fontFamily: fonts.display,
-    fontSize: 30,
-    letterSpacing: 0.6,
+    fontFamily: fonts.headingBold,
+    fontSize: 26,
+    lineHeight: 32,
     color: colors.foreground,
   },
   close: {

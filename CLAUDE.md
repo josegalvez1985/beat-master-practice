@@ -17,8 +17,31 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
   (archivos de Storage primero, después un batch con los documentos).
 - Datos duplicados (`alumnoNombre`, `profesorNombre`…): si cambia el original, se actualizan las
   copias en el mismo batch.
+- Borrar con "Deshacer" (`avisar` en `src/components/ui/toast.tsx`): durante el plazo solo se
+  oculta; el borrado real (archivos primero) ocurre al vencer. Nunca quitar la referencia antes que
+  el archivo.
 - Al agregar una colección, documenta su fila en _Relaciones actuales_ de `docs/backend.md` y su
   modelo en `docs/arquitectura.md`.
+
+## Interfaz
+
+- Tema claro y oscuro con variables CSS: los colores salen **solo** de `colors` en
+  `src/lib/theme.ts`; un color nuevo se agrega como token en las dos paletas (`dark` y `light`).
+  Nada de hex o rgba sueltos en las pantallas, salvo los tintes ámbar translúcidos.
+- Ámbar sólido solo para la acción principal, el progreso y lo que suena; una opción seleccionada usa
+  `colors.selected` + borde `colors.primary` (ver `docs/diseno.md`).
+- Títulos con `fonts.heading` / `fonts.headingBold` en minúsculas; `fonts.display` (Bebas, solo
+  mayúsculas) únicamente para la marca y números grandes.
+- El logo (`src/components/ui/logo.tsx`) copia el dibujo de `public/favicon.svg`; al cambiarlo,
+  correr `npm run iconos`.
+
+## Plan de clase (bloques)
+
+- Modelo en `src/lib/plan.ts`, componentes en `src/components/plan/`. Tablaturas y partituras con
+  alphaTab (`@coderline/alphatab`, versión exacta, sin workers, carga diferida).
+- Los archivos de los bloques viven en `clases/{claseId}/`: subirlos guarda el plan al instante y
+  sobre el plan más reciente (`ultimo` en `PlanClase`), y `archivosDelPlan` entra en la cascada de
+  `eliminarClase`.
 
 ## Datos del proyecto
 

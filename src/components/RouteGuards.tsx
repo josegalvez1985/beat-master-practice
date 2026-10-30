@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   title: {
-    fontFamily: fonts.display,
+    fontFamily: fonts.heading,
     fontSize: 24,
     color: colors.foreground,
     textAlign: "center",

@@ -2,19 +2,18 @@ import { LinearGradient } from "@/components/ui/linear-gradient";
 import { StyleSheet } from "react-native";
 import { gradients } from "@/lib/theme";
 
-// Amber light falling from the top of the screen.
+// Soft amber light falling from the top of the screen (only the first few hundred pixels).
 export function StageGlow() {
-  return (
-    <LinearGradient
-      colors={gradients.stage}
-      locations={[0, 0.65]}
-      style={[StyleSheet.absoluteFill, styles.passthrough]}
-    />
-  );
+  return <LinearGradient colors={gradients.stage} locations={[0, 1]} style={styles.glow} />;
 }
 
 const styles = StyleSheet.create({
-  passthrough: {
+  glow: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 360,
     pointerEvents: "none",
   },
 });

@@ -45,9 +45,13 @@ const styles = StyleSheet.create({
     height: 30,
     justifyContent: "center",
     borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: "transparent",
   },
+  // Selected: amber edge + soft tint; solid amber is reserved for the main action.
   active: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.selected,
+    borderColor: colors.primary,
   },
   label: {
     fontFamily: fonts.medium,
@@ -55,6 +59,7 @@ const styles = StyleSheet.create({
     color: colors.mutedForeground,
   },
   activeLabel: {
-    color: colors.primaryForeground,
+    fontFamily: fonts.semibold,
+    color: colors.foreground,
   },
 });

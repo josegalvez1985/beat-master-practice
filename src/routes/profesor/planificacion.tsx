@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   },
   groupCount: {
     fontFamily: fonts.sans,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.mutedForeground,
   },
   addDay: {

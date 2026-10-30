@@ -10,6 +10,8 @@
       content="Profesores y alumnos de música en Paraguay: clases planificadas, materiales, prácticas en audio o video y progreso. Guitarra, arpa paraguaya, piano, batería y más."
     />
     <meta name="application-name" content="Pulso" />
+    <!-- Google Search Console: ownership of www.pypulso.online (also public/googled2cf06541ff338e8.html). -->
+    <meta name="google-site-verification" content="I_IUZfW79SWIBZyVJClXdasBzxdx_nrO3BR0MrG8P10" />
     <link rel="canonical" href="https://www.pypulso.online/" />
 
     <!-- Icons: Google search uses the 96px PNG (multiple of 48); browsers prefer the SVG. -->
@@ -58,12 +60,29 @@
         ]
       }
     </script>
+    <!-- Theme before the first paint (no flash); src/lib/theme.ts takes over after. -->
+    <script>
+      (function () {
+        var tema = null;
+        try {
+          tema = localStorage.getItem("pulso-tema");
+        } catch (e) {}
+        var claro =
+          tema === "claro" ||
+          (tema !== "oscuro" && matchMedia("(prefers-color-scheme: light)").matches);
+        document.documentElement.dataset.theme = claro ? "light" : "dark";
+      })();
+    </script>
     <style>
       html,
       body {
         height: 100%;
         margin: 0;
         background-color: #100c0a;
+      }
+      html[data-theme="light"],
+      html[data-theme="light"] body {
+        background-color: #faf7f2;
       }
       body {
         overflow: hidden;

@@ -41,14 +41,16 @@ La relación se garantiza con tres herramientas, siempre las tres:
 
 ### Relaciones actuales
 
-| Registro                 | Depende de                                       | Cómo se evita el huérfano                                                                                                                                                                                                                    |
-| ------------------------ | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cuenta de Authentication | `usuarios/{uid}`                                 | El registro borra la cuenta si falla la escritura del perfil. Si aun así queda una cuenta sin perfil, la pantalla "Tu cuenta no terminó de crearse" la borra al tocar **Salir** (tras confirmar en el servidor que no tiene perfil).         |
-| `documentos/{nro}`       | `usuarios/{uid}` (y viceversa)                   | Se crean juntos en un batch; cada regla de `create` exige con `getAfter()` que el otro exista y apunte de vuelta. Ninguno se puede borrar desde la app.                                                                                      |
-| `inscripciones`          | `usuarios` del profesor y del alumno             | La regla comprueba que ambos existan y sus roles. Los `usuarios` no se borran.                                                                                                                                                               |
-| `clases`                 | `usuarios` del profesor                          | La regla exige que quien crea sea profesor. Borrar una clase ([`eliminarClase`](../src/lib/data.ts)) borra sus materiales, sus `entregas` y los archivos de esas entregas.                                                                   |
-| `entregas`               | `clases`, `usuarios` del alumno, `inscripciones` | La regla lee la clase y la inscripción. Se borran con la clase; quitar el último archivo borra la entrega. Quitar a un alumno de la lista **no** borra sus entregas: siguen apuntando a una clase y a un alumno que existen (son historial). |
-| Archivos de Storage      | `clases.materiales` / `entregas.archivos`        | Si el archivo se sube pero no se puede anotar en Firestore, se borra ([`Materials.tsx`](../src/components/Materials.tsx)). Al quitar un archivo, primero se borra de Storage y después de Firestore.                                         |
+| Registro                     | Depende de                                           | Cómo se evita el huérfano                                                                                                                                                                                                                                                                                                                  |
+| ---------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Cuenta de Authentication     | `usuarios/{uid}`                                     | El registro borra la cuenta si falla la escritura del perfil. Si aun así queda una cuenta sin perfil, la pantalla "Tu cuenta no terminó de crearse" la borra al tocar **Salir** (tras confirmar en el servidor que no tiene perfil).                                                                                                       |
+| `documentos/{nro}`           | `usuarios/{uid}` (y viceversa)                       | Se crean juntos en un batch; cada regla de `create` exige con `getAfter()` que el otro exista y apunte de vuelta. Ninguno se puede borrar desde la app.                                                                                                                                                                                    |
+| `inscripciones`              | `usuarios` del profesor y del alumno                 | La regla comprueba que ambos existan y sus roles. Los `usuarios` no se borran.                                                                                                                                                                                                                                                             |
+| `clases`                     | `usuarios` del profesor                              | La regla exige que quien crea sea profesor. Borrar una clase ([`eliminarClase`](../src/lib/data.ts)) borra sus materiales, los archivos de los bloques de su plan, sus `entregas` y los archivos de esas entregas.                                                                                                                         |
+| `entregas`                   | `clases`, `usuarios` del alumno, `inscripciones`     | La regla lee la clase y la inscripción. Se borran con la clase; quitar el último archivo borra la entrega. Quitar a un alumno de la lista **no** borra sus entregas: siguen apuntando a una clase y a un alumno que existen (son historial).                                                                                               |
+| Foto de perfil (Storage)     | `usuarios/{uid}.foto`                                | Ruta fija `usuarios/{uid}/foto.jpg`: una foto nueva sobrescribe la anterior. Se sube y después se anota en el perfil; si la anotación falla y no había foto, se borra el archivo. Quitarla borra primero el archivo y después el campo ([`cambiarFoto` / `quitarFoto`](../src/lib/data.ts)). La regla exige esa ruta exacta.               |
+| Archivos de bloques del plan | `clases.bloques[].archivos` (en `clases/{claseId}/`) | Cada archivo subido se agrega al plan y se **guarda al instante** (no espera al guardado automático), construyendo sobre el plan más reciente: si se suben varios seguidos, ninguno pisa al anterior. Quitar un archivo o un bloque borra primero los archivos. [`archivosDelPlan`](../src/lib/plan.ts) los suma a la cascada de la clase. |
+| Archivos de Storage          | `clases.materiales` / `entregas.archivos`            | Si el archivo se sube pero no se puede anotar en Firestore, se borra ([`Materials.tsx`](../src/components/Materials.tsx)). Al quitar un archivo, primero se borra de Storage y después de Firestore.                                                                                                                                       |
 
 ```
 Authentication ──1:1── usuarios/{uid} ──1:1── documentos/{nro}
@@ -66,6 +68,15 @@ Authentication ──1:1── usuarios/{uid} ──1:1── documentos/{nro}
 > deja huérfanos sus `documentos`, `usuarios` y todo lo que cuelga de él. Hasta tener una función
 > `onDelete` que haga la cascada, **no borres usuarios solo desde la consola** (ver
 > [firebase.md, sección 5](firebase.md#5-revisar-y-limpiar-los-datos)).
+
+### Borrar con "Deshacer" sin dejar huérfanos
+
+El editor del plan y el perfil no piden confirmación: muestran un aviso con **Deshacer** durante
+6 segundos. Mientras tanto el bloque, el archivo o la foto solo se **ocultan**: siguen en el
+documento guardado y en Storage. Recién al vencer el plazo se borra (archivos primero, después el
+documento). Si la persona cierra la pestaña antes, no se borró nada y todo sigue relacionado; si
+navega a otra pantalla, los borrados pendientes se completan en ese momento. Nunca se quita la
+referencia antes que el archivo.
 
 ## Datos duplicados (desnormalización)
 

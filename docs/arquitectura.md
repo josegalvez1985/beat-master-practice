@@ -36,6 +36,8 @@ y lo buscan los profesores.
 | `/planificacion`     | profesor   | Clases por semana, mes o año                                                                               |
 | `/alumnos/:alumnoId` | profesor   | Progreso de un alumno y estado de cada clase                                                               |
 | `/clases/:claseId`   | ambos      | Detalle de la clase: materiales, entrega del alumno o entregas de todos                                    |
+| `/perfil`            | ambos      | Mi perfil: foto, datos de la cuenta y tema (claro, oscuro o sistema)                                       |
+| `/practicar`         | alumno     | Abre el modo práctica de la próxima clase pendiente (o "No tienes prácticas pendientes")                   |
 | cualquier otra       | —          | 404                                                                                                        |
 
 Los guardas están en [`RouteGuards.tsx`](../src/components/RouteGuards.tsx):
@@ -49,10 +51,22 @@ Los guardas están en [`RouteGuards.tsx`](../src/components/RouteGuards.tsx):
 
 ## Sesión
 
-Firebase Auth guarda la sesión en IndexedDB, que comparten **todas las pestañas y ventanas** del
-dominio: abrir una pestaña nueva o recargar no pide entrar otra vez, y **Salir** en una pestaña
-cierra la sesión en todas. [`src/lib/auth.ts`](../src/lib/auth.ts) combina la sesión con el perfil
-de Firestore y lo expone con `useSession()` / `usePerfil()`.
+Depende de la casilla **Recordarme** del login (tildada por defecto):
+
+| Recordarme | Dónde guarda Firebase Auth la sesión | Efecto                                                                                                                                      |
+| ---------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sí         | IndexedDB                            | La comparten **todas las pestañas y ventanas** y sobrevive a cerrar el navegador. El número de documento queda precargado (`localStorage`). |
+| No         | `sessionStorage` de la pestaña       | Dura mientras la pestaña esté abierta (recargar no la cierra); otra pestaña pide entrar. No se guarda nada. Para computadoras compartidas.  |
+
+**Salir** cierra la sesión en todas las pestañas que la comparten.
+
+**La app nunca guarda la contraseña.** La guarda, si la persona acepta, el gestor de contraseñas del
+navegador: los campos usan `autocomplete="username"` / `current-password` y, con Recordarme, la
+app se lo pide explícitamente con la API `PasswordCredential` (Chrome y Edge; en el resto el
+navegador lo ofrece por los campos).
+
+[`src/lib/auth.ts`](../src/lib/auth.ts) combina la sesión con el perfil de Firestore y lo expone con
+`useSession()` / `usePerfil()`.
 
 ### Login, registro y recuperación con número de documento
 
@@ -98,9 +112,11 @@ Hace único al número de documento. Se crea al registrarse y nunca cambia.
 | `nro_documento` | string                     | Solo dígitos. No cambia                                 |
 | `instrumentos`  | string[]                   | Ids de [`instruments.ts`](../src/lib/instruments.ts)    |
 | `terminos`      | string[]                   | Prefijos del nombre sin acentos, para buscar por nombre |
+| `foto`          | `{ ruta, actualizadoEn }`  | Opcional. `ruta` siempre es `usuarios/{uid}/foto.jpg`   |
 | `creadoEn`      | timestamp                  |                                                         |
 
-Lo leen el dueño y cualquier profesor (para buscar alumnos). No contiene el correo.
+Lo leen el dueño y cualquier profesor (para buscar alumnos). No contiene el correo. El dueño solo
+puede cambiar `nombre`, `instrumentos`, `terminos` y `foto`.
 
 ### `inscripciones/{profesorId}_{alumnoId}_{instrumento}`
 
@@ -118,18 +134,48 @@ La leen el profesor y el alumno. **Este documento es lo que habilita las clases 
 
 ### `clases/{id}`
 
-| Campo                          | Tipo                |                                      |
-| ------------------------------ | ------------------- | ------------------------------------ |
-| `profesorId`, `profesorNombre` | string              |                                      |
-| `instrumento`                  | string              |                                      |
-| `titulo`                       | string              |                                      |
-| `descripcion`                  | string              | Objetivos y tarea                    |
-| `fecha`                        | string `AAAA-MM-DD` | Día del calendario, sin zona horaria |
-| `materiales`                   | `Material[]`        | Archivos de la clase                 |
-| `creadoEn`                     | timestamp           |                                      |
+| Campo                          | Tipo                           |                                          |
+| ------------------------------ | ------------------------------ | ---------------------------------------- |
+| `profesorId`, `profesorNombre` | string                         |                                          |
+| `instrumento`                  | string                         |                                          |
+| `titulo`                       | string                         |                                          |
+| `descripcion`                  | string                         | Objetivos y tarea                        |
+| `fecha`                        | string `AAAA-MM-DD`            | Día del calendario, sin zona horaria     |
+| `materiales`                   | `Material[]`                   | Archivos de la clase                     |
+| `ficha`                        | `Ficha` (opcional)             | Nivel, estilo, afinación, capo, duración |
+| `bloques`                      | `Bloque[]` (opcional, máx. 40) | Plan de la clase, en orden               |
+| `creadoEn`                     | timestamp                      |                                          |
 
 El profesor la crea, edita y borra. La leen los alumnos inscriptos con ese profesor en ese
 instrumento.
+
+#### Plan de la clase (`ficha` + `bloques`)
+
+Tipos en [`src/lib/plan.ts`](../src/lib/plan.ts). Cada bloque tiene `id`, `etapa` (calentamiento,
+técnica, repertorio, teoría, tarea o libre), `titulo`, `minutos`, `notas` y un `tipo` con su
+contenido:
+
+| `tipo`      | Contenido                                           | Instrumentos            |
+| ----------- | --------------------------------------------------- | ----------------------- |
+| `tablatura` | `tex`: alphaTex (pentagrama + tab con sonido)       | guitarra, bajo, ukelele |
+| `acordes`   | `acordes`: nombres (`Am`, `G7`, `Lam`, `Fa#m`…)     | guitarra, ukelele       |
+| `rasgueo`   | `compas` (4/4, 3/4, 6/8), `golpes` (↓ ↑ ✕ ·), `bpm` | guitarra, ukelele       |
+| `tempo`     | `inicio`, `objetivo`, `paso` (BPM)                  | todos                   |
+| `youtube`   | `url`                                               | todos                   |
+| `archivos`  | `archivos`: `Material[]` en `clases/{claseId}/`     | todos                   |
+| `texto`     | solo `notas`                                        | todos                   |
+
+Las tablaturas y los archivos Guitar Pro / MusicXML se dibujan y suenan con
+[alphaTab](https://alphatab.net) ([`Partitura.tsx`](../src/components/plan/Partitura.tsx)), que se
+carga solo en las clases que la usan; sin workers, con la fuente y el banco de sonidos empaquetados
+por Vite. El profesor edita con guardado automático; los cambios de archivos se guardan al instante
+(ver [backend](backend.md)). El alumno ve el plan en modo práctica y marca cada bloque como _Hecho_
+(se recuerda en ese navegador).
+
+**Registro de práctica** ([`practica.ts`](../src/lib/practica.ts)): cada _Hecho_ guarda fecha, clase,
+bloque y minutos en `localStorage` del alumno (últimos 6 meses). De ahí salen la **racha** (días
+seguidos hasta hoy o ayer) y los **minutos de la semana** del inicio. Es una ayuda personal, no un
+dato evaluado: vale por dispositivo y no se guarda en Firestore.
 
 ### `entregas/{claseId}_{alumnoId}`
 
@@ -156,6 +202,14 @@ profesor (al borrar la clase).
 | ----------------------------------------- | ----------------------- | ------------------------------------ | ----------------------------------- |
 | `clases/{claseId}/{archivo}`              | el profesor de la clase | el profesor y sus alumnos inscriptos | audio, video, imagen, PDF, MusicXML |
 | `entregas/{claseId}/{alumnoId}/{archivo}` | el alumno inscripto     | el alumno y el profesor              | audio, video                        |
+| `usuarios/{uid}/foto.jpg`                 | el dueño                | el dueño y cualquier profesor        | JPEG de 512 px, máximo 2 MB         |
+
+**Fotos de perfil.** Se guardan en Storage, no en Firestore (un documento admite 1 MiB y se
+descargaría la imagen en cada lectura del perfil) ni en un servicio externo como Cloudinary (borrar
+o reemplazar exige su clave secreta, que no puede estar en el navegador, y las fotos viejas
+quedarían huérfanas). El navegador recorta y achica la imagen antes de subirla
+([`prepararFoto`](../src/lib/files.ts)); la ruta fija hace que una foto nueva reemplace a la
+anterior.
 
 Límite: **200 MB por archivo** (en `storage.rules` y `MAX_BYTES` de
 [`files.ts`](../src/lib/files.ts)). Las reglas de Storage consultan Firestore para saber de quién es

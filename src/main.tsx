@@ -6,10 +6,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { LoginRedirect, RequireAuth, RequireRole } from "@/components/RouteGuards";
 import { loadFonts } from "@/lib/fonts";
+import PracticarAhora from "@/routes/alumno/practicar";
 import ClasePage from "@/routes/clase";
 import Inicio from "@/routes/index";
 import RootLayout, { ErrorBoundary } from "@/routes/layout";
 import NotFoundScreen from "@/routes/not-found";
+import PerfilPage from "@/routes/perfil";
 import AlumnoDetalle from "@/routes/profesor/alumno";
 import Planificacion from "@/routes/profesor/planificacion";
 
@@ -28,6 +30,11 @@ const router = createBrowserRouter(
               children: [
                 { index: true, element: <Inicio /> },
                 { path: "clases/:claseId", element: <ClasePage /> },
+                { path: "perfil", element: <PerfilPage /> },
+                {
+                  element: <RequireRole rol="alumno" />,
+                  children: [{ path: "practicar", element: <PracticarAhora /> }],
+                },
                 {
                   element: <RequireRole rol="profesor" />,
                   children: [

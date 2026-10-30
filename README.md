@@ -5,7 +5,8 @@ bajo, violín, acordeón, ukelele, saxofón y flauta.
 
 - **Profesores**: se registran con su número de documento y los instrumentos que enseñan, arman sus
   listas de alumnos (buscándolos por documento o nombre), planifican clases por semana, mes o año,
-  suben materiales (audio, video, PDF, partituras) y ven el progreso de cada alumno.
+  arman cada clase por bloques (tablaturas y partituras con sonido, acordes, rasgueos, tempo con
+  metrónomo, YouTube, imágenes, PDF, audio, video y Guitar Pro) y ven el progreso de cada alumno.
 - **Alumnos**: se registran con su número de documento y sus instrumentos. Cuando un profesor los
   agrega a su lista, ven sus clases, suben sus prácticas en audio o video y siguen su barra de
   progreso.

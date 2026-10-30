@@ -24,27 +24,27 @@ export function Checkbox({
       accessibilityRole="checkbox"
       aria-checked={isChecked}
       accessibilityLabel={accessibilityLabel}
-      hitSlop={8}
+      hitSlop={12}
       onPress={() => {
         setInternal(!isChecked);
         onCheckedChange?.(!isChecked);
       }}
       style={[styles.box, isChecked && styles.checked]}
     >
-      {isChecked ? <Check size={12} strokeWidth={3} color={colors.primaryForeground} /> : null}
+      {isChecked ? <Check size={14} strokeWidth={3} color={colors.primaryForeground} /> : null}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   box: {
-    width: 16,
-    height: 16,
+    width: 20,
+    height: 20,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: colors.primary,
-    borderRadius: 4,
+    borderRadius: 6,
   },
   checked: {
     backgroundColor: colors.primary,

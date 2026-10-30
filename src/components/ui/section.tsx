@@ -47,7 +47,7 @@ export function Badge({
   );
 }
 
-const badgeColors = { primary: colors.primary, success: "#5fd38d" } as const;
+const badgeColors = { primary: colors.primary, success: colors.success } as const;
 
 const badgeTones = StyleSheet.create({
   muted: { backgroundColor: colors.secondary },
@@ -71,9 +71,9 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   title: {
-    fontFamily: fonts.display,
-    fontSize: 24,
-    letterSpacing: 0.5,
+    fontFamily: fonts.heading,
+    fontSize: 22,
+    lineHeight: 28,
     color: colors.foreground,
   },
   subtitle: {
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   },
   badgeLabel: {
     fontFamily: fonts.medium,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.secondaryForeground,
   },
 });

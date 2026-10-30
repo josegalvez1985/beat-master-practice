@@ -5,6 +5,7 @@ import { shellStyles } from "@/components/AppShell";
 import { ClaseItem } from "@/components/ClaseItem";
 import { Metronome } from "@/components/Metronome";
 import { PageMeta } from "@/components/PageMeta";
+import { ProximaPractica } from "@/components/ProximaPractica";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
@@ -13,6 +14,7 @@ import { usePerfil } from "@/lib/auth";
 import {
   progreso,
   useClasesDe,
+  useClasesDeInscripciones,
   useEntregasAlumno,
   useInscripcionesAlumno,
   type Entrega,
@@ -29,6 +31,7 @@ export default function AlumnoInicio() {
   const lg = width >= 1024;
   const inscripciones = useInscripcionesAlumno(perfil.uid);
   const entregas = useEntregasAlumno(perfil.uid);
+  const clases = useClasesDeInscripciones(inscripciones.data);
 
   return (
     <>
@@ -39,6 +42,10 @@ export default function AlumnoInicio() {
           Tu número de documento: {formatearDocumento(perfil.nro_documento)}
         </Text>
       </View>
+
+      {inscripciones.data.length && !clases.loading ? (
+        <ProximaPractica alumnoId={perfil.uid} clases={clases.data} entregas={entregas.data} />
+      ) : null}
 
       <View style={[styles.columns, lg && styles.row]}>
         <View style={[styles.column, lg && styles.mainColumn]}>

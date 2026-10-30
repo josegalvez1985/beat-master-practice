@@ -9,7 +9,8 @@ import {
 } from "react-native";
 import { CalendarDays, ChevronRight, Inbox, Plus, Search, Trash2, Users } from "lucide-react";
 import { shellStyles } from "@/components/AppShell";
-import { Avatar, ClaseItem } from "@/components/ClaseItem";
+import { ClaseItem } from "@/components/ClaseItem";
+import { Avatar } from "@/components/ui/avatar";
 import { Link } from "@/components/Link";
 import { PageMeta } from "@/components/PageMeta";
 import { Button, buttonForeground } from "@/components/ui/button";
@@ -160,7 +161,7 @@ function AgregarAlumno({
       ) : null}
       {resultados?.map((alumno) => (
         <View key={alumno.uid} style={styles.result}>
-          <Avatar nombre={alumno.nombre} />
+          <Avatar nombre={alumno.nombre} foto={alumno.foto} />
           <View style={styles.flex}>
             <Text style={styles.name}>{alumno.nombre}</Text>
             <Text style={styles.muted}>

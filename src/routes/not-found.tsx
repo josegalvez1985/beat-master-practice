@@ -38,9 +38,8 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: 16,
-    fontFamily: fonts.display,
-    fontSize: 20,
-    letterSpacing: 0.5,
+    fontFamily: fonts.heading,
+    fontSize: 22,
     color: colors.foreground,
   },
   body: {

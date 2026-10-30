@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { Music } from "lucide-react";
+import { TemaSelector } from "@/components/TemaSelector";
 import { Chip } from "@/components/ui/chip";
 import { GradientText } from "@/components/ui/gradient-text";
 import { Logo } from "@/components/ui/logo";
@@ -58,6 +59,9 @@ export function AuthLayout({
             {children}
           </View>
         </ScrollView>
+        <View style={styles.tema}>
+          <TemaSelector />
+        </View>
       </View>
     </View>
   );
@@ -78,9 +82,11 @@ export const authStyles = StyleSheet.create({
     color: colors.mutedForeground,
   },
   link: {
-    fontFamily: fonts.sans,
+    fontFamily: fonts.medium,
     fontSize: 14,
-    color: colors.primary,
+    color: colors.foreground,
+    textDecorationLine: "underline",
+    textDecorationColor: colors.primary,
   },
   error: {
     fontFamily: fonts.sans,
@@ -143,6 +149,11 @@ const styles = StyleSheet.create({
   formSide: {
     flex: 1,
   },
+  tema: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+  },
   formScroll: {
     flexGrow: 1,
     alignItems: "center",
@@ -156,9 +167,10 @@ const styles = StyleSheet.create({
   },
   heading: {
     marginTop: 24,
-    fontFamily: fonts.display,
-    fontSize: 36,
-    letterSpacing: 0.7,
+    fontFamily: fonts.headingBold,
+    fontSize: 32,
+    lineHeight: 38,
+    letterSpacing: -0.3,
     color: colors.foreground,
   },
   subtitle: {

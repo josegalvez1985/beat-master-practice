@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 4,
     fontFamily: fonts.semibold,
-    fontSize: 12,
+    fontSize: 13,
     letterSpacing: 2,
     textTransform: "uppercase",
     color: colors.primary,

@@ -4,6 +4,7 @@ import {
   arrayUnion,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -23,7 +24,8 @@ import { db } from "@/lib/firebase";
 import type { Perfil } from "@/lib/auth";
 import { normalizarDocumento, normalizarTexto } from "@/lib/documento";
 import type { InstrumentId } from "@/lib/instruments";
-import { borrarArchivo, type Material } from "@/lib/files";
+import { archivosDelPlan, type Bloque, type Ficha, type Plan } from "@/lib/plan";
+import { borrarArchivo, fotoRuta, prepararFoto, subirFoto, type Material } from "@/lib/files";
 
 // --- Types (one per Firestore collection; see docs/arquitectura.md) ---
 
@@ -46,6 +48,9 @@ export type Clase = {
   descripcion: string;
   fecha: string; // YYYY-MM-DD
   materiales: Material[];
+  // Lesson plan (see src/lib/plan.ts); absent until the profesor builds one.
+  ficha?: Ficha;
+  bloques?: Bloque[];
 };
 
 export type Entrega = {
@@ -163,6 +168,45 @@ export function useClasesDe(profesorId: string, instrumento: string) {
     ),
   );
   return { ...live, data: [...live.data].sort(byFecha) };
+}
+
+// Classes of every profesor + instrument the alumno is enrolled in, live (one listener per
+// enrollment, merged).
+export function useClasesDeInscripciones(inscripciones: Inscripcion[]) {
+  const key = inscripciones
+    .map((i) => i.id)
+    .sort()
+    .join(",");
+  const [estado, setEstado] = useState<{ key: string; data: Clase[] } | null>(null);
+
+  useEffect(() => {
+    if (!key) return;
+    const porInscripcion = new Map<string, Clase[]>();
+    const unsubs = inscripciones.map((inscripcion) =>
+      onSnapshot(
+        query(
+          collection(db, "clases"),
+          where("profesorId", "==", inscripcion.profesorId),
+          where("instrumento", "==", inscripcion.instrumento),
+        ),
+        (snap) => {
+          porInscripcion.set(
+            inscripcion.id,
+            snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Clase),
+          );
+          if (porInscripcion.size === inscripciones.length)
+            setEstado({ key, data: [...porInscripcion.values()].flat() });
+        },
+        () => porInscripcion.set(inscripcion.id, []),
+      ),
+    );
+    return () => unsubs.forEach((unsub) => unsub());
+    // `key` identifies the enrollments; the array itself is recreated every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  const actual = estado?.key === key;
+  return { data: actual ? estado.data : NONE, loading: !!key && !actual };
 }
 
 export function useClase(claseId: string) {
@@ -304,6 +348,7 @@ export async function eliminarClase(clase: Clase) {
   );
   const archivos = [
     ...clase.materiales,
+    ...archivosDelPlan(clase.bloques),
     ...entregas.docs.flatMap((d) => (d.data() as Entrega).archivos),
   ];
   await Promise.all(archivos.map((m) => borrarArchivo(m.ruta)));
@@ -311,6 +356,10 @@ export async function eliminarClase(clase: Clase) {
   entregas.docs.forEach((d) => batch.delete(d.ref));
   batch.delete(doc(db, "clases", clase.id));
   await batch.commit();
+}
+
+export function guardarPlan(claseId: string, plan: Plan) {
+  return updateDoc(doc(db, "clases", claseId), { ficha: plan.ficha, bloques: plan.bloques });
 }
 
 export function agregarMaterial(claseId: string, material: Material) {
@@ -357,4 +406,28 @@ export function guardarComentario(entrega: Entrega, comentario: string) {
 export async function perfilDe(uid: string) {
   const snap = await getDoc(doc(db, "usuarios", uid));
   return snap.exists() ? ({ uid: snap.id, ...snap.data() } as Perfil) : null;
+}
+
+// --- Profile photo ---
+
+// Uploads first, then points the profile at it. If the profile cannot be updated and there was no
+// previous photo, the file is removed so it is not left orphaned in Storage.
+export async function cambiarFoto(perfil: Perfil, file: File) {
+  const foto = await prepararFoto(file);
+  await subirFoto(perfil.uid, foto);
+  try {
+    await updateDoc(doc(db, "usuarios", perfil.uid), {
+      foto: { ruta: fotoRuta(perfil.uid), actualizadoEn: serverTimestamp() },
+    });
+  } catch (error) {
+    if (!perfil.foto) await borrarArchivo(fotoRuta(perfil.uid)).catch(() => {});
+    throw error;
+  }
+}
+
+// File first: if deleting it fails, the profile keeps pointing at it.
+export async function quitarFoto(perfil: Perfil) {
+  if (!perfil.foto) return;
+  await borrarArchivo(perfil.foto.ruta);
+  await updateDoc(doc(db, "usuarios", perfil.uid), { foto: deleteField() });
 }

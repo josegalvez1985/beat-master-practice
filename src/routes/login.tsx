@@ -8,11 +8,13 @@ import { PageMeta } from "@/components/PageMeta";
 import { PrimerosPasosDialog } from "@/components/PrimerosPasosDialog";
 import { RegisterDialog } from "@/components/RegisterDialog";
 import { Button, buttonForeground } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
-import { mensajeDeError, signIn } from "@/lib/auth";
+import { documentoRecordado, mensajeDeError, signIn } from "@/lib/auth";
 import { documentoValido, normalizarDocumento } from "@/lib/documento";
+import { colors, fonts } from "@/lib/theme";
 
 // The open modal lives in the URL (?modal=registro|recuperar|primeros-pasos),
 // so it can be opened in a new tab.
@@ -28,7 +30,8 @@ export default function LoginPage() {
   const closeModal = () => setParams({}, { replace: true });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({ documento: "", password: "" });
+  const [form, setForm] = useState(() => ({ documento: documentoRecordado(), password: "" }));
+  const [recordar, setRecordar] = useState(true);
 
   const onSubmit = async () => {
     const nroDocumento = normalizarDocumento(form.documento);
@@ -40,7 +43,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       // RequireAuth shows the home (or the page being opened) once the session is ready.
-      await signIn(nroDocumento, form.password);
+      await signIn(nroDocumento, form.password, recordar);
     } catch (e) {
       setError(mensajeDeError(e));
       setLoading(false);
@@ -80,6 +83,16 @@ export default function LoginPage() {
           </View>
 
           <View style={styles.optionsRow}>
+            <View style={styles.recordar}>
+              <Checkbox
+                checked={recordar}
+                onCheckedChange={setRecordar}
+                accessibilityLabel="Recordarme en este dispositivo"
+              />
+              <Text style={styles.recordarLabel} onPress={() => setRecordar(!recordar)}>
+                Recordarme
+              </Text>
+            </View>
             <Link href="/?modal=recuperar">
               <Text style={authStyles.link}>¿Olvidaste tu contraseña?</Text>
             </Link>
@@ -129,6 +142,20 @@ const styles = StyleSheet.create({
   },
   optionsRow: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  recordar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  recordarLabel: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.foreground,
+    cursor: "pointer",
+    userSelect: "none",
   },
 });

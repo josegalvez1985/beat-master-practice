@@ -40,5 +40,17 @@ service firebase.storage {
       // The profesor too: deleting a class deletes its deliveries.
       allow delete: if signedIn() && (alumnoId == request.auth.uid || esDelProfesor(claseId));
     }
+
+    // Profile photo: one fixed file per user (usuarios/{uid}/foto.jpg, as in usuarios.foto).
+    // Same readers as the profile in Firestore: the owner and every profesor. The app scales it
+    // to 512 px JPEG, so 2 MB is plenty.
+    match /usuarios/{uid}/foto.jpg {
+      allow read: if signedIn() && (uid == request.auth.uid
+        || firestore.get(/databases/default/documents/usuarios/$(request.auth.uid)).data.rol == 'profesor');
+      allow create, update: if signedIn() && uid == request.auth.uid
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType == 'image/jpeg';
+      allow delete: if signedIn() && uid == request.auth.uid;
+    }
   }
 }
