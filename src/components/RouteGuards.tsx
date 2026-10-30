@@ -1,7 +1,7 @@
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { Navigate, Outlet, useLocation } from "react-router";
 import { Button } from "@/components/ui/button";
-import { fueSalidaVoluntaria, signOut, useSession, type Role } from "@/lib/auth";
+import { descartarCuentaIncompleta, fueSalidaVoluntaria, useSession, type Role } from "@/lib/auth";
 import { colors, fonts } from "@/lib/theme";
 
 function Cargando() {
@@ -27,7 +27,7 @@ export function RequireAuth() {
       <View style={styles.center}>
         <Text style={styles.title}>Tu cuenta no terminó de crearse</Text>
         <Text style={styles.body}>Sal y vuelve a registrarte con tu número de documento.</Text>
-        <Button style={styles.action} onPress={() => signOut()}>
+        <Button style={styles.action} onPress={() => descartarCuentaIncompleta()}>
           Salir
         </Button>
       </View>

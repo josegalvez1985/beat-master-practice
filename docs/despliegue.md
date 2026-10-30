@@ -79,5 +79,9 @@ Las reglas no se publican con GitHub Pages. Cada vez que cambien `firestore.rule
 `storage.rules`:
 
 ```sh
-npm run deploy:reglas
+npx firebase login      # una vez por computadora
+npm run deploy:reglas   # Firestore (base `default`) y Storage
 ```
+
+Publica las reglas **antes** (o junto con) el código que las necesita: por ejemplo, borrar una
+clase con entregas requiere las reglas que permiten al profesor borrarlas.

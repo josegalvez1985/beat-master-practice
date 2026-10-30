@@ -1,7 +1,7 @@
 # Pulso
 
-Plataforma web para **enseñar y practicar instrumentos musicales**: guitarra, piano, batería, voz,
-bajo, violín, ukelele, saxofón y flauta.
+Plataforma web para **enseñar y practicar instrumentos musicales**: guitarra, **arpa paraguaya**, piano, batería, voz,
+bajo, violín, acordeón, ukelele, saxofón y flauta.
 
 - **Profesores**: se registran con su número de documento y los instrumentos que enseñan, arman sus
   listas de alumnos (buscándolos por documento o nombre), planifican clases por semana, mes o año,
@@ -30,18 +30,33 @@ npm run dev
 
 Abre http://localhost:5173. La primera pantalla es el login.
 
-> Antes de usar la app con el proyecto real hay que configurar Firebase una vez (crear Firestore,
-> activar el login con correo, Storage y publicar las reglas): ver **[docs/firebase.md](docs/firebase.md)**.
+> Antes de usar la app con el proyecto real hay que configurar Firebase una vez (crear Firestore
+> con el ID de base **`default`**, activar Authentication con correo y contraseña, Storage y
+> publicar las reglas): ver **[docs/firebase.md](docs/firebase.md)**.
 > Para probar sin tocar datos reales, usa los emuladores (misma guía, sección 3).
+
+> **Si `npm run dev` o `npm run build` fallan con `Cannot find package ... node_modules`**, la
+> instalación quedó incompleta (pasa a menudo si el proyecto está en una carpeta de OneDrive, que
+> sincroniza `node_modules` mientras se escribe). Reinstala con `npm ci`. Para evitarlo, guarda el
+> proyecto fuera de OneDrive (por ejemplo en `C:\dev\`) o pausa la sincronización al instalar.
+
+## Regla del proyecto: sin registros huérfanos
+
+Toda colección de Firestore y todo archivo de Storage tiene que estar relacionado con otro
+registro, y **no pueden quedar registros huérfanos**: lo que depende entre sí se crea en una sola
+escritura, las reglas comprueban la relación y borrar algo borra lo que cuelga de él. Al agregar
+una colección, documenta su relación en
+[docs/backend.md](docs/backend.md#regla-principal-sin-registros-huérfanos).
 
 ## Guías
 
-| Guía                                         | Contenido                                                                                      |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| [docs/firebase.md](docs/firebase.md)         | Configurar Firebase, publicar reglas, emuladores y problemas comunes                           |
-| [docs/arquitectura.md](docs/arquitectura.md) | Rutas, sesión, login por documento, modelo de datos, permisos, progreso y pagos (próximamente) |
-| [docs/diseno.md](docs/diseno.md)             | Identidad visual, componentes, diseño de cada pantalla e ideas de mejora                       |
-| [docs/despliegue.md](docs/despliegue.md)     | GitHub Actions, GitHub Pages, dominio www.pypulso.online y Firebase Hosting                    |
+| Guía                                         | Contenido                                                                                                                 |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| [docs/firebase.md](docs/firebase.md)         | Configurar Firebase, publicar reglas, emuladores, revisar y limpiar los datos, problemas comunes                          |
+| [docs/backend.md](docs/backend.md)           | **Backend NoSQL (Firestore)**: relaciones, sin registros huérfanos, datos duplicados, cómo diseñar una colección, límites |
+| [docs/arquitectura.md](docs/arquitectura.md) | Rutas, sesión, login por documento, modelo de datos, permisos, progreso y pagos (próximamente)                            |
+| [docs/diseno.md](docs/diseno.md)             | Identidad visual, componentes, diseño de cada pantalla e ideas de mejora                                                  |
+| [docs/despliegue.md](docs/despliegue.md)     | GitHub Actions, GitHub Pages, dominio www.pypulso.online y Firebase Hosting                                               |
 
 ## Scripts
 

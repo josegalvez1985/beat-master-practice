@@ -8,7 +8,7 @@ service firebase.storage {
     }
 
     function clase(claseId) {
-      return firestore.get(/databases/(default)/documents/clases/$(claseId)).data;
+      return firestore.get(/databases/default/documents/clases/$(claseId)).data;
     }
 
     function esDelProfesor(claseId) {
@@ -16,7 +16,7 @@ service firebase.storage {
     }
 
     function inscripto(claseId) {
-      return firestore.exists(/databases/(default)/documents/inscripciones/$(clase(claseId).profesorId + '_' + request.auth.uid + '_' + clase(claseId).instrumento));
+      return firestore.exists(/databases/default/documents/inscripciones/$(clase(claseId).profesorId + '_' + request.auth.uid + '_' + clase(claseId).instrumento));
     }
 
     // 200 MB per file; keep in sync with MAX_BYTES in src/lib/files.ts.
@@ -37,7 +37,8 @@ service firebase.storage {
       allow read: if signedIn() && (alumnoId == request.auth.uid || esDelProfesor(claseId));
       allow create: if signedIn() && alumnoId == request.auth.uid && inscripto(claseId) && tamanoValido()
         && request.resource.contentType.matches('audio/.*|video/.*');
-      allow delete: if signedIn() && alumnoId == request.auth.uid;
+      // The profesor too: deleting a class deletes its deliveries.
+      allow delete: if signedIn() && (alumnoId == request.auth.uid || esDelProfesor(claseId));
     }
   }
 }

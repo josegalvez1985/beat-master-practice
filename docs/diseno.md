@@ -62,6 +62,8 @@ Los íconos son de [Lucide](https://lucide.dev).
 - **Celular**: solo el formulario.
 - Campos: **Nro. de documento** (teclado numérico) y **Contraseña**.
 - Enlaces: _¿Olvidaste tu contraseña?_, _Crea tu cuenta_ y _¿Cómo empiezo? Mira los primeros pasos_.
+- Errores concretos: "No hay ninguna cuenta con ese número de documento." o "Contraseña
+  incorrecta.", para saber si hay que registrarse o recuperar la contraseña.
 - Cada modal tiene su propia URL, así se puede abrir en otra pestaña o compartir.
 
 **Modal Crear cuenta** (`?modal=registro`)
@@ -77,6 +79,10 @@ coinciden, confirma a qué correo se envió el enlace.
 **Modal Primeros pasos** (`?modal=primeros-pasos`): pestañas _Soy alumno_ / _Soy profesor_ con
 pasos numerados para registrarse y para la primera vez que se entra, y un botón **Crear mi
 cuenta**.
+
+**Cuenta incompleta**: si el registro quedó a medias (cuenta sin perfil), en lugar de la app se ve
+"Tu cuenta no terminó de crearse" con un botón **Salir** que borra esa cuenta para poder
+registrarse de nuevo con el mismo correo.
 
 ### Barra superior (con sesión)
 
@@ -114,7 +120,8 @@ la lista de clases con su estado _Entregada_ / _Pendiente_.
 - **Objetivos y tarea**.
 - **Materiales**: lista con tipo y tamaño; audio y video se reproducen ahí mismo, PDF y partituras
   se abren en otra pestaña.
-- **Profesor**: Editar, Eliminar, Subir materiales (con barra de avance por archivo) y **Entregas de
+- **Profesor**: Editar, Eliminar (pide confirmación y avisa que también se borran los materiales y
+  las entregas de los alumnos), Subir materiales (con barra de avance por archivo) y **Entregas de
   alumnos** ("1 de 3 alumnos entregaron", con sus archivos y comentarios).
 - **Alumno**: **Tu entrega**, con insignia de estado, botón **Subir audio o video**, sus archivos y un
   comentario para el profesor.

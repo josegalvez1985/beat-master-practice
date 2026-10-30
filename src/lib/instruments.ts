@@ -1,12 +1,15 @@
 import { Drum, Guitar, MicVocal, Music, Piano } from "lucide-react";
 
+// Keep the ids in sync with `instrumentosValidos` in firestore.rules.
 export const instruments = [
   { id: "guitarra", name: "Guitarra", icon: Guitar },
+  { id: "arpa", name: "Arpa paraguaya", icon: Music },
   { id: "piano", name: "Piano", icon: Piano },
   { id: "bateria", name: "Batería", icon: Drum },
   { id: "voz", name: "Voz", icon: MicVocal },
   { id: "bajo", name: "Bajo", icon: Guitar },
   { id: "violin", name: "Violín", icon: Music },
+  { id: "acordeon", name: "Acordeón", icon: Music },
   { id: "ukelele", name: "Ukelele", icon: Guitar },
   { id: "saxofon", name: "Saxofón", icon: Music },
   { id: "flauta", name: "Flauta", icon: Music },

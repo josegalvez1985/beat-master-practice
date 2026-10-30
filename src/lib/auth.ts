@@ -11,6 +11,7 @@ import {
 import {
   doc,
   getDoc,
+  getDocFromServer,
   onSnapshot,
   serverTimestamp,
   writeBatch,
@@ -97,8 +98,9 @@ async function emailDeDocumento(nroDocumento: string) {
 }
 
 export async function signIn(nroDocumento: string, password: string) {
+  // Saying which part failed reveals nothing new: documentos/{nro} is readable one by one.
   const email = await emailDeDocumento(nroDocumento);
-  if (!email) throw new AuthError("credenciales");
+  if (!email) throw new AuthError("sin-cuenta");
   await signInWithEmailAndPassword(auth, email, password);
 }
 
@@ -145,17 +147,31 @@ export function signOut() {
   return firebaseSignOut(auth);
 }
 
+// An account whose sign-up failed halfway (Auth account without profile): delete it so the
+// person can register again with the same email. Checks the server first, so a read error
+// never deletes an account that does have its profile.
+export async function descartarCuentaIncompleta() {
+  const user = auth.currentUser;
+  try {
+    if (user && !(await getDocFromServer(doc(db, "usuarios", user.uid))).exists()) {
+      await user.delete();
+    }
+  } finally {
+    await signOut();
+  }
+}
+
 class AuthError extends Error {}
 
 // User-facing message for any error thrown by the functions above.
 export function mensajeDeError(error: unknown) {
   const code = error instanceof AuthError ? error.message : (error as FirebaseError)?.code;
   switch (code) {
-    case "credenciales":
     case "auth/invalid-credential":
     case "auth/wrong-password":
+      return "Contraseña incorrecta.";
     case "auth/user-not-found":
-      return "Número de documento o contraseña incorrectos.";
+      return "La cuenta de ese número de documento ya no existe. Vuelve a registrarte.";
     case "documento-en-uso":
       return "Ya existe una cuenta con ese número de documento.";
     case "sin-cuenta":

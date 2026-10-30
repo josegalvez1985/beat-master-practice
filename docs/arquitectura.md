@@ -12,13 +12,18 @@ Pulso es una aplicación **solo web** para enseñar y practicar instrumentos mus
 Toda cuenta se identifica por su **número de documento** (`nro_documento`): con él se registra, entra
 y lo buscan los profesores.
 
-| Capa        | Tecnología                                                                                              |
-| ----------- | ------------------------------------------------------------------------------------------------------- |
-| Interfaz    | React 19 con la API de React Native (`View`, `Text`, `Pressable`…) renderizada por **react-native-web** |
-| Build       | **Vite** (`react-native` → `react-native-web` por alias en `vite.config.ts`)                            |
-| Rutas       | **React Router** (`src/main.tsx`)                                                                       |
-| Backend     | **Firebase**: Authentication, Cloud Firestore, Cloud Storage ([guía](firebase.md))                      |
-| Publicación | GitHub Pages con GitHub Actions ([guía](despliegue.md))                                                 |
+| Capa     | Tecnología                                                                                              |
+| -------- | ------------------------------------------------------------------------------------------------------- |
+| Interfaz | React 19 con la API de React Native (`View`, `Text`, `Pressable`…) renderizada por **react-native-web** |
+| Build    | **Vite** (`react-native` → `react-native-web` por alias en `vite.config.ts`)                            |
+| Rutas    | **React Router** (`src/main.tsx`)                                                                       |
+| Backend  | **Firebase**: Authentication, Cloud Firestore (base **`default`**), Cloud Storage ([guía](firebase.md)) |
+
+> **`global` en el navegador.** El `Animated` de react-native-web (lo usa el metrónomo) llama a
+> `global.cancelAnimationFrame`, que solo existe en Node. Un script en [`index.html`](../index.html)
+> define `global = globalThis` antes de cargar la app. No se resuelve con `define` en
+> `vite.config.ts`: en desarrollo, Vite no lo aplica a las dependencias preempaquetadas.
+> | Publicación | GitHub Pages con GitHub Actions ([guía](despliegue.md)) |
 
 ## Rutas
 
@@ -53,8 +58,12 @@ Firebase Auth trabaja con correo, así que el documento se traduce a correo con
 
 1. **Registro**: comprueba que el documento esté libre, crea la cuenta con correo y contraseña y, en
    una sola escritura, guarda `documentos/{nro}` y `usuarios/{uid}`. Si algo falla, borra la cuenta
-   para no dejarla a medias.
-2. **Login**: lee `documentos/{nro}` → correo → `signInWithEmailAndPassword`.
+   para no dejarla a medias. Si tampoco se pudo borrar, al entrar la sesión queda _incompleta_
+   (cuenta sin perfil): la pantalla "Tu cuenta no terminó de crearse" la borra al tocar **Salir**,
+   después de confirmar en el servidor que de verdad no tiene perfil.
+2. **Login**: lee `documentos/{nro}` → correo → `signInWithEmailAndPassword`. Los errores dicen
+   qué falló ("No hay ninguna cuenta con ese número de documento" o "Contraseña incorrecta"); no
+   revela nada nuevo, porque `documentos/{nro}` ya se puede consultar de a uno.
 3. **Recuperar contraseña**: pide **documento y correo**; solo si el correo coincide con el de esa
    cuenta, Firebase envía el enlace para crear una contraseña nueva.
 
@@ -130,7 +139,8 @@ instrumento.
 | `actualizadoEn`                        | timestamp                   |
 
 La escribe el alumno inscripto; la leen el alumno y el profesor. Si el alumno quita su último
-archivo, la entrega se borra y la clase vuelve a quedar pendiente.
+archivo, la entrega se borra y la clase vuelve a quedar pendiente. La borran el alumno o el
+profesor (al borrar la clase).
 
 ### `Material`
 
@@ -147,6 +157,12 @@ archivo, la entrega se borra y la clase vuelve a quedar pendiente.
 Límite: **200 MB por archivo** (en `storage.rules` y `MAX_BYTES` de
 [`files.ts`](../src/lib/files.ts)). Las reglas de Storage consultan Firestore para saber de quién es
 la clase y quién está inscripto.
+
+## Integridad: sin registros huérfanos
+
+Firestore es NoSQL: no tiene claves foráneas ni borrado en cascada. Cómo se relacionan las
+colecciones, cómo se evita que queden registros huérfanos, qué datos están duplicados y qué
+revisar al agregar una colección está en la **[guía de backend](backend.md)**.
 
 ## Progreso
 

@@ -23,7 +23,7 @@ import { db } from "@/lib/firebase";
 import type { Perfil } from "@/lib/auth";
 import { normalizarDocumento, normalizarTexto } from "@/lib/documento";
 import type { InstrumentId } from "@/lib/instruments";
-import type { Material } from "@/lib/files";
+import { borrarArchivo, type Material } from "@/lib/files";
 
 // --- Types (one per Firestore collection; see docs/arquitectura.md) ---
 
@@ -291,8 +291,26 @@ export function actualizarClase(
   return updateDoc(doc(db, "clases", claseId), cambios);
 }
 
-export function eliminarClase(claseId: string) {
-  return deleteDoc(doc(db, "clases", claseId));
+// Deletes the class with everything that hangs from it: its materials, the alumnos' deliveries
+// and their files. Files go first (the Storage rules read the class to allow it); if one fails,
+// nothing is deleted from Firestore and the class can be deleted again.
+export async function eliminarClase(clase: Clase) {
+  const entregas = await getDocs(
+    query(
+      collection(db, "entregas"),
+      where("profesorId", "==", clase.profesorId),
+      where("claseId", "==", clase.id),
+    ),
+  );
+  const archivos = [
+    ...clase.materiales,
+    ...entregas.docs.flatMap((d) => (d.data() as Entrega).archivos),
+  ];
+  await Promise.all(archivos.map((m) => borrarArchivo(m.ruta)));
+  const batch = writeBatch(db);
+  entregas.docs.forEach((d) => batch.delete(d.ref));
+  batch.delete(doc(db, "clases", clase.id));
+  await batch.commit();
 }
 
 export function agregarMaterial(claseId: string, material: Material) {

@@ -18,7 +18,9 @@ export const app = initializeApp({
 
 export const auth = getAuth(app);
 auth.languageCode = "es";
-export const db = getFirestore(app);
+// The project's database is named "default" (not the implicit "(default)"); keep in sync with
+// firebase.json and storage.rules.
+export const db = getFirestore(app, "default");
 export const storage = getStorage(app);
 
 if (env.VITE_USE_EMULATORS === "true") {

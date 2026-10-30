@@ -31,6 +31,10 @@
   <body>
     <noscript>Necesitas activar JavaScript para usar Pulso.</noscript>
     <div id="root"></div>
+    <!-- react-native-web's Animated calls `global.cancelAnimationFrame`; `global` only exists in Node. -->
+    <script>
+      globalThis.global = globalThis;
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

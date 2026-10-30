@@ -27,8 +27,9 @@ service cloud.firestore {
     }
 
     function instrumentosValidos(lista) {
-      return lista is list && lista.size() >= 1 && lista.size() <= 9
-        && lista.hasOnly(['guitarra', 'piano', 'bateria', 'voz', 'bajo', 'violin', 'ukelele', 'saxofon', 'flauta']);
+      // Keep in sync with src/lib/instruments.ts.
+      return lista is list && lista.size() >= 1 && lista.size() <= 11
+        && lista.hasOnly(['guitarra', 'arpa', 'piano', 'bateria', 'voz', 'bajo', 'violin', 'acordeon', 'ukelele', 'saxofon', 'flauta']);
     }
 
     function textoValido(valor, min, max) {
@@ -41,6 +42,8 @@ service cloud.firestore {
 
     // documentos/{nro_documento} -> { uid, email }: makes the document number unique and lets
     // the login turn it into the account email. Readable one by one, never listable.
+    // documentos and usuarios point at each other and are only created together, in one batch,
+    // and never deleted: neither can exist without the other.
     match /documentos/{nroDocumento} {
       allow get: if true;
       allow list: if false;
@@ -48,7 +51,8 @@ service cloud.firestore {
         && nroDocumento.matches('^[0-9]{5,10}$')
         && request.resource.data.keys().hasOnly(['uid', 'email'])
         && request.resource.data.uid == me()
-        && request.resource.data.email == request.auth.token.email;
+        && request.resource.data.email == request.auth.token.email
+        && getAfter(/databases/$(database)/documents/usuarios/$(me())).data.nro_documento == nroDocumento;
       allow update, delete: if false;
     }
 
@@ -136,7 +140,8 @@ service cloud.firestore {
       allow read: if signedIn()
         && (resource == null || resource.data.alumnoId == me() || resource.data.profesorId == me());
       allow create, update: if signedIn() && entregaValida(entregaId, request.resource.data);
-      allow delete: if signedIn() && resource.data.alumnoId == me();
+      // The profesor too: deleting a class deletes its deliveries.
+      allow delete: if signedIn() && (resource.data.alumnoId == me() || resource.data.profesorId == me());
     }
   }
 }

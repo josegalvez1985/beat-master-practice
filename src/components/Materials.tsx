@@ -17,6 +17,7 @@ import { Button, buttonForeground } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   MAX_BYTES,
+  borrarArchivo,
   elegirArchivos,
   formatearTamano,
   subirArchivo,
@@ -166,7 +167,13 @@ export function UploadButton({
         const material = await subirArchivo(carpeta, file, (porcentaje) =>
           actualizar(index, { porcentaje }),
         );
-        await onUploaded(material);
+        try {
+          await onUploaded(material);
+        } catch (error) {
+          // Not saved in Firestore: remove the file so it is not left orphaned in Storage.
+          await borrarArchivo(material.ruta).catch(() => {});
+          throw error;
+        }
         actualizar(index, { porcentaje: 100 });
       } catch {
         actualizar(index, { error: "No se pudo subir" });

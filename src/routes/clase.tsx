@@ -67,16 +67,20 @@ function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
   const esDueno = perfil.uid === clase.profesorId;
 
   const eliminar = async () => {
-    if (!window.confirm(`¿Eliminar la clase "${clase.titulo}"? También se borran sus materiales.`))
+    if (
+      !window.confirm(
+        `¿Eliminar la clase "${clase.titulo}"? También se borran sus materiales y las entregas de los alumnos.`,
+      )
+    )
       return;
-    await Promise.all(clase.materiales.map((m) => borrarArchivo(m.ruta)));
-    await eliminarClase(clase.id);
+    await eliminarClase(clase);
     navigate("/planificacion", { replace: true });
   };
 
+  // File first: if deleting it fails, the class keeps pointing at it.
   const quitar = async (material: Material) => {
-    await quitarMaterial(clase.id, material);
     await borrarArchivo(material.ruta);
+    await quitarMaterial(clase.id, material);
   };
 
   return (
@@ -180,8 +184,8 @@ function EntregaForm({
 
   const quitar = async (material: Material) => {
     if (!entrega) return;
-    await quitarArchivoEntrega(entrega, material);
     await borrarArchivo(material.ruta);
+    await quitarArchivoEntrega(entrega, material);
   };
 
   return (

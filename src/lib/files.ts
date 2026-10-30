@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { deleteObject, getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
+import {
+  deleteObject,
+  getDownloadURL,
+  ref,
+  uploadBytesResumable,
+  type StorageError,
+} from "firebase/storage";
 import { storage } from "@/lib/firebase";
 
 export type MaterialTipo = "audio" | "video" | "pdf" | "partitura" | "imagen" | "otro";
@@ -92,8 +98,14 @@ export function subirArchivo(
   });
 }
 
-export function borrarArchivo(ruta: string) {
-  return deleteObject(ref(storage, ruta)).catch(() => {});
+// Already gone counts as deleted; any other failure is thrown, so callers can keep the
+// Firestore reference instead of leaving the file orphaned in Storage.
+export async function borrarArchivo(ruta: string) {
+  try {
+    await deleteObject(ref(storage, ruta));
+  } catch (error) {
+    if ((error as StorageError)?.code !== "storage/object-not-found") throw error;
+  }
 }
 
 // Download URL of a stored file, or null until it resolves (or if it fails).
