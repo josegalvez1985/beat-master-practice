@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-n
 import { Music } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
 import { GradientText } from "@/components/ui/gradient-text";
+import { Logo } from "@/components/ui/logo";
 import { StageGlow } from "@/components/ui/stage-glow";
 import { instruments } from "@/lib/instruments";
 import { colors, fonts } from "@/lib/theme";
@@ -26,7 +27,7 @@ export function AuthLayout({
         <View style={styles.aside}>
           <StageGlow />
           <View style={styles.asideContent}>
-            <Text style={styles.brand}>PULSO</Text>
+            <Logo size={40} />
             <View>
               <View style={styles.asideTitle}>
                 <Text style={styles.asideHeading}>Cada sesión cuenta.</Text>
@@ -51,7 +52,7 @@ export function AuthLayout({
         <StageGlow />
         <ScrollView contentContainerStyle={styles.formScroll}>
           <View style={styles.formWrap}>
-            {lg ? null : <Text style={styles.brand}>PULSO</Text>}
+            {lg ? null : <Logo size={36} />}
             <Text style={styles.heading}>{title}</Text>
             <Text style={styles.subtitle}>{subtitle}</Text>
             {children}
@@ -152,12 +153,6 @@ const styles = StyleSheet.create({
   formWrap: {
     width: "100%",
     maxWidth: 384,
-  },
-  brand: {
-    fontFamily: fonts.display,
-    fontSize: 24,
-    letterSpacing: 2.4,
-    color: colors.foreground,
   },
   heading: {
     marginTop: 24,

@@ -1,11 +1,15 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Link } from "@/components/Link";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/ui/logo";
 import { colors, fonts } from "@/lib/theme";
 
 export default function NotFoundScreen() {
   return (
     <View style={styles.container}>
+      <View style={styles.logo}>
+        <Logo size={36} />
+      </View>
       <Text style={styles.code}>404</Text>
       <Text style={styles.title}>Página no encontrada</Text>
       <Text style={styles.body}>La página que buscas no existe o se ha movido.</Text>
@@ -23,6 +27,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 16,
     backgroundColor: colors.background,
+  },
+  logo: {
+    marginBottom: 32,
   },
   code: {
     fontFamily: fonts.display,

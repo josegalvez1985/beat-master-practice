@@ -16,4 +16,10 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    files: ["scripts/**"],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 ]);

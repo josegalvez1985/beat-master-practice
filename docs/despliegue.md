@@ -24,7 +24,8 @@ primer push que los incluya).
 3. Al terminar, la URL aparece en el resumen del workflow y en _Settings → Pages_.
 
 Como Pages no conoce las rutas de la app, el workflow copia `index.html` a `404.html`: así
-`/beat-master-practice/login` o recargar cualquier pantalla abre la app en la pantalla correcta.
+recargar cualquier pantalla abre la app en la pantalla correcta. La portada (`/`) es el login y
+responde con estado 200, que es lo que indexa Google.
 
 ## Usar el dominio www.pypulso.online
 

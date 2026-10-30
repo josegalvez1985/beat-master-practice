@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router";
 import { CalendarDays, Home, LogOut, type LucideIcon } from "lucide-react";
 import { Link } from "@/components/Link";
 import { Button, buttonForeground } from "@/components/ui/button";
+import { Logo } from "@/components/ui/logo";
 import { StageGlow } from "@/components/ui/stage-glow";
 import { signOut, usePerfil } from "@/lib/auth";
 import { colors, fonts, radius } from "@/lib/theme";
@@ -30,7 +31,9 @@ export function AppShell() {
       <View style={styles.bar}>
         <View style={[styles.container, styles.barInner]}>
           <Link href="/">
-            <Text style={styles.brand}>PULSO</Text>
+            <Pressable accessibilityLabel="Pulso, ir al inicio">
+              <Logo size={compact ? 28 : 32} />
+            </Pressable>
           </Link>
           {items.length > 1 ? (
             <View style={styles.nav}>
@@ -123,12 +126,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
-  },
-  brand: {
-    fontFamily: fonts.display,
-    fontSize: 24,
-    letterSpacing: 2.4,
-    color: colors.foreground,
   },
   nav: {
     flexDirection: "row",

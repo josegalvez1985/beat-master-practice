@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from "react-router";
 import { Button } from "@/components/ui/button";
 import { descartarCuentaIncompleta, fueSalidaVoluntaria, useSession, type Role } from "@/lib/auth";
 import { colors, fonts } from "@/lib/theme";
+import LoginPage from "@/routes/login";
 
 function Cargando() {
   return (
@@ -12,15 +13,17 @@ function Cargando() {
   );
 }
 
-// Private screens: without a session, go to the login and come back afterwards.
+// Private screens. Without a session the home ("/") is the login, so the site works at the bare
+// domain; any other private page sends to the home and comes back after signing in.
 export function RequireAuth() {
   const session = useSession();
   const location = useLocation();
 
   if (session.status === "loading") return <Cargando />;
   if (session.status === "guest") {
+    if (location.pathname === "/") return <LoginPage />;
     const state = fueSalidaVoluntaria() ? undefined : { from: location.pathname + location.search };
-    return <Navigate to="/login" replace state={state} />;
+    return <Navigate to="/" replace state={state} />;
   }
   if (session.status === "incomplete") {
     return (
@@ -33,6 +36,9 @@ export function RequireAuth() {
       </View>
     );
   }
+  // Just signed in from the login at "/": continue to the page that was being opened.
+  const from = (location.state as { from?: string } | null)?.from;
+  if (location.pathname === "/" && from && from !== "/") return <Navigate to={from} replace />;
   return <Outlet />;
 }
 
@@ -43,17 +49,12 @@ export function RequireRole({ rol }: { rol: Role }) {
   return <Outlet />;
 }
 
-// Login: once there is a session, continue to where the user was going.
-export function GuestOnly() {
-  const session = useSession();
+// Old /login links (and their ?modal=…): the login now lives at the home.
+export function LoginRedirect() {
   const location = useLocation();
-
-  if (session.status === "loading") return <Cargando />;
-  if (session.status === "ready") {
-    const from = (location.state as { from?: string } | null)?.from ?? "/";
-    return <Navigate to={from} replace />;
-  }
-  return <Outlet />;
+  return (
+    <Navigate to={{ pathname: "/", search: location.search }} replace state={location.state} />
+  );
 }
 
 const styles = StyleSheet.create({

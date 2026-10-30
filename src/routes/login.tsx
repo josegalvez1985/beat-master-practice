@@ -39,7 +39,7 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      // GuestOnly redirects as soon as the session is ready.
+      // RequireAuth shows the home (or the page being opened) once the session is ready.
       await signIn(nroDocumento, form.password);
     } catch (e) {
       setError(mensajeDeError(e));
@@ -50,8 +50,8 @@ export default function LoginPage() {
   return (
     <>
       <PageMeta
-        title={(modal && titles[modal]) || "Iniciar sesión — Pulso"}
-        description="Entra a Pulso con tu número de documento para ver tus clases de guitarra, piano, batería, voz y más."
+        title={(modal && titles[modal]) || "Pulso — Clases de música en Paraguay · Iniciar sesión"}
+        description="Profesores y alumnos de música en Paraguay: clases planificadas, materiales, prácticas en audio o video y progreso. Guitarra, arpa paraguaya, piano, batería y más."
       />
       <AuthLayout title="Iniciar sesión" subtitle="Entra con tu número de documento.">
         <View style={authStyles.form}>
@@ -80,7 +80,7 @@ export default function LoginPage() {
           </View>
 
           <View style={styles.optionsRow}>
-            <Link href="/login?modal=recuperar">
+            <Link href="/?modal=recuperar">
               <Text style={authStyles.link}>¿Olvidaste tu contraseña?</Text>
             </Link>
           </View>
@@ -95,12 +95,12 @@ export default function LoginPage() {
 
         <Text style={authStyles.footer}>
           ¿Primera vez aquí?{" "}
-          <Link href="/login?modal=registro">
+          <Link href="/?modal=registro">
             <Text style={authStyles.link}>Crea tu cuenta</Text>
           </Link>
         </Text>
         <Text style={styles.help}>
-          <Link href="/login?modal=primeros-pasos">
+          <Link href="/?modal=primeros-pasos">
             <Text style={authStyles.link}>¿Cómo empiezo? Mira los primeros pasos</Text>
           </Link>
         </Text>

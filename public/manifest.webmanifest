@@ -1,7 +1,8 @@
 {
-  "name": "Pulso — Práctica de instrumentos",
+  "name": "Pulso — Clases y práctica de música",
   "short_name": "Pulso",
-  "description": "Aprende y practica guitarra, piano, batería, voz y más con lecciones guiadas.",
+  "description": "Profesores y alumnos de música en Paraguay: clases, materiales, prácticas en audio o video y progreso. Guitarra, arpa paraguaya, piano, batería y más.",
+  "lang": "es-PY",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
@@ -9,16 +10,22 @@
   "theme_color": "#100c0a",
   "icons": [
     {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
       "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }

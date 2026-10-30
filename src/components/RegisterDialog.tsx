@@ -65,7 +65,7 @@ function RegisterForm({ onClose }: { onClose: () => void }) {
     setError(null);
     setLoading(true);
     try {
-      // GuestOnly redirects as soon as the new session is ready.
+      // RequireAuth shows the home as soon as the new session is ready.
       await register({
         rol: role,
         nombre: form.name.trim().replace(/\s+/g, " "),

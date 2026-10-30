@@ -4,12 +4,11 @@ import { Navigate, createBrowserRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
-import { GuestOnly, RequireAuth, RequireRole } from "@/components/RouteGuards";
+import { LoginRedirect, RequireAuth, RequireRole } from "@/components/RouteGuards";
 import { loadFonts } from "@/lib/fonts";
 import ClasePage from "@/routes/clase";
 import Inicio from "@/routes/index";
 import RootLayout, { ErrorBoundary } from "@/routes/layout";
-import LoginPage from "@/routes/login";
 import NotFoundScreen from "@/routes/not-found";
 import AlumnoDetalle from "@/routes/profesor/alumno";
 import Planificacion from "@/routes/profesor/planificacion";
@@ -40,13 +39,9 @@ const router = createBrowserRouter(
             },
           ],
         },
-        {
-          element: <GuestOnly />,
-          children: [
-            { path: "login", element: <LoginPage /> },
-            { path: "registro", element: <Navigate to="/login?modal=registro" replace /> },
-          ],
-        },
+        // The login is the home without a session (RequireAuth); these keep old links working.
+        { path: "login", element: <LoginRedirect /> },
+        { path: "registro", element: <Navigate to="/?modal=registro" replace /> },
         { path: "*", element: <NotFoundScreen /> },
       ],
     },

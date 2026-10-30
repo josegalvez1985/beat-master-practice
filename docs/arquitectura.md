@@ -27,21 +27,24 @@ y lo buscan los profesores.
 
 ## Rutas
 
-| Ruta                 | Quién      | Pantalla                                                                                               |
-| -------------------- | ---------- | ------------------------------------------------------------------------------------------------------ |
-| `/login`             | sin sesión | Login con número de documento. Modales: `?modal=registro`, `?modal=recuperar`, `?modal=primeros-pasos` |
-| `/registro`          | sin sesión | Redirige a `/login?modal=registro`                                                                     |
-| `/`                  | con sesión | Inicio según el rol (profesor o alumno)                                                                |
-| `/planificacion`     | profesor   | Clases por semana, mes o año                                                                           |
-| `/alumnos/:alumnoId` | profesor   | Progreso de un alumno y estado de cada clase                                                           |
-| `/clases/:claseId`   | ambos      | Detalle de la clase: materiales, entrega del alumno o entregas de todos                                |
-| cualquier otra       | —          | 404                                                                                                    |
+| Ruta                 | Quién      | Pantalla                                                                                                   |
+| -------------------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
+| `/`                  | sin sesión | **Login** con número de documento. Modales: `?modal=registro`, `?modal=recuperar`, `?modal=primeros-pasos` |
+| `/`                  | con sesión | Inicio según el rol (profesor o alumno)                                                                    |
+| `/login`             | —          | Redirige a `/` conservando el `?modal=` (enlaces viejos)                                                   |
+| `/registro`          | —          | Redirige a `/?modal=registro`                                                                              |
+| `/planificacion`     | profesor   | Clases por semana, mes o año                                                                               |
+| `/alumnos/:alumnoId` | profesor   | Progreso de un alumno y estado de cada clase                                                               |
+| `/clases/:claseId`   | ambos      | Detalle de la clase: materiales, entrega del alumno o entregas de todos                                    |
+| cualquier otra       | —          | 404                                                                                                        |
 
 Los guardas están en [`RouteGuards.tsx`](../src/components/RouteGuards.tsx):
 
-- `RequireAuth`: sin sesión manda a `/login` y, al entrar, vuelve a la pantalla que se quería abrir
-  (salvo que la persona haya tocado **Salir**: entonces empieza en el inicio).
-- `GuestOnly`: con sesión, el login redirige al inicio.
+- `RequireAuth`: sin sesión, en `/` muestra el login (así el sitio funciona con solo
+  `www.pypulso.online`); en cualquier otra pantalla privada manda a `/` y, al entrar, vuelve a la
+  pantalla que se quería abrir (salvo que la persona haya tocado **Salir**: entonces empieza en el
+  inicio).
+- `LoginRedirect`: `/login` → `/`, para enlaces y marcadores viejos.
 - `RequireRole`: pantallas solo de profesor.
 
 ## Sesión

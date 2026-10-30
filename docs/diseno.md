@@ -32,6 +32,22 @@ Tema **oscuro de escenario**: fondo carbón con luz ámbar de platillo. Todo sal
 para el texto (400, 500, 600 y 700). Se cargan antes del primer pintado
 ([`fonts.ts`](../src/lib/fonts.ts)).
 
+**Logo**: una línea de pulso ámbar (degradado `#ffc65c` → `primary` → `#ec7a1c`, con un
+resplandor suave) sobre fondo carbón con luz de escenario, y al lado la palabra **PULSO** en Bebas
+Neue. El dibujo original es [`public/favicon.svg`](../public/favicon.svg); en la app se usa el
+componente vectorial [`Logo` / `LogoMark`](../src/components/ui/logo.tsx) (barra superior, login,
+404). `npm run iconos` regenera desde el SVG todos los PNG:
+
+| Archivo                                  | Uso                                                               |
+| ---------------------------------------- | ----------------------------------------------------------------- |
+| `public/favicon.svg`, `favicon.png` (96) | Pestaña del navegador y resultados de Google                      |
+| `public/icons/icon-192/512.png`          | App instalada (manifest) y logo en los datos para Google          |
+| `public/icons/apple-touch-icon.png`      | Acceso directo en iPhone/iPad                                     |
+| `public/og-image.png` (1200×630)         | Vista previa al compartir el enlace (WhatsApp, Facebook, X…)      |
+| `public/brand/icon-1024.png`             | Ícono en alta resolución                                          |
+| `public/brand/logo.png`                  | Logo horizontal transparente (2800×960) para **fondos oscuros**   |
+| `public/brand/logo-fondo-claro.png`      | Igual, con texto oscuro para **fondos claros** (documentos, etc.) |
+
 **Formas**: radios de 10 a 22 px, paneles semitransparentes con borde sutil (`shared.panel`) y un
 resplandor ámbar desde arriba (`StageGlow`).
 
@@ -55,8 +71,10 @@ Los íconos son de [Lucide](https://lucide.dev).
 
 ## Pantallas
 
-### Login (`/login`)
+### Login (`/` sin sesión)
 
+- **Logo** (ícono de pulso + PULSO) arriba del formulario; en escritorio, arriba de la columna
+  izquierda.
 - **Escritorio**: dos columnas. A la izquierda, el mensaje "Cada sesión cuenta. Vuelve a tu
   instrumento." con los instrumentos; a la derecha, el formulario.
 - **Celular**: solo el formulario.
@@ -86,7 +104,7 @@ registrarse de nuevo con el mismo correo.
 
 ### Barra superior (con sesión)
 
-Marca a la izquierda; navegación del rol (profesor: _Inicio_, _Planificación_); nombre, rol y
+Logo a la izquierda (lleva al inicio); navegación del rol (profesor: _Inicio_, _Planificación_); nombre, rol y
 **Salir** a la derecha. En celular la navegación muestra solo íconos.
 
 ### Profesor · Inicio (`/`)

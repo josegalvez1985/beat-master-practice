@@ -42,8 +42,8 @@ jobs:
         env:
           BASE_PATH: ${{ format('{0}/', steps.pages.outputs.base_path) }}
 
-      # Abrir /login o recargar cualquier pantalla: GitHub Pages responde con 404.html,
-      # que es la misma app, y el router muestra la pantalla correcta.
+      # Recargar cualquier pantalla: GitHub Pages responde con 404.html, que es la misma app,
+      # y el router muestra la pantalla correcta. (La portada "/" es el login y responde 200.)
       - run: cp dist/index.html dist/404.html
 
       - uses: actions/upload-pages-artifact@v4
