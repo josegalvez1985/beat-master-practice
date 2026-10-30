@@ -43,6 +43,31 @@ Como Pages no conoce las rutas de la app, el workflow copia `index.html` a `404.
 4. **Firebase**: agrega `www.pypulso.online` a los dominios autorizados
    ([guía de Firebase](firebase.md#1-configurar-el-proyecto-una-sola-vez)).
 
+### Comprobar que el dominio funciona
+
+| Prueba                                                       | Resultado esperado                                                          |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `nslookup -type=CNAME www.pypulso.online 8.8.8.8`            | `canonical name = josegalvez1985.github.io`                                 |
+| `nslookup -type=A pypulso.online 8.8.8.8`                    | Las cuatro IP `185.199.108-111.153` (no la IP de Hostinger)                 |
+| Abrir https://www.pypulso.online                             | La app, con candado (certificado de `www.pypulso.online`, no `*.github.io`) |
+| Abrir https://pypulso.online                                 | Redirige a https://www.pypulso.online                                       |
+| Abrir https://josegalvez1985.github.io/beat-master-practice/ | Redirige a **https**://www.pypulso.online                                   |
+
+Problemas habituales:
+
+- **El candado falla en www** (el certificado es de `*.github.io`): GitHub todavía no emitió el
+  certificado del dominio. Suele tardar de minutos a 24 h. Si no aparece, en _Settings → Pages_
+  quita el dominio, guarda, vuelve a escribir `www.pypulso.online` y guarda: eso pide el
+  certificado de nuevo. Cuando esté, marca **Enforce HTTPS**.
+- **`pypulso.online` sin www muestra "Parked Domain" de Hostinger**: el registro **A** de `@`
+  apunta a Hostinger. En Hostinger → DNS, reemplázalo por las cuatro IP de GitHub y **borra el
+  registro AAAA** de `@` (si queda, los navegadores con IPv6 siguen yendo a Hostinger).
+- **En _Actions_ aparecen dos publicaciones por push** (_Publicar en GitHub Pages_ y _pages build
+  and deployment_): la fuente de Pages está en _Deploy from a branch_. Cámbiala a **GitHub
+  Actions**; si no, las dos compiten y la que termina última decide qué se ve.
+- El archivo `CNAME` de la raíz del repositorio no se usa al publicar con GitHub Actions: el
+  dominio que vale es el de _Settings → Pages → Custom domain_.
+
 ## Ruta base: cómo funciona
 
 `vite.config.ts` toma la variable de entorno `BASE_PATH` (por defecto `/`). El router usa esa misma
