@@ -4,3 +4,4 @@ import { initializeApp } from "firebase-admin/app";
 initializeApp();
 
 export { preguntarAsistente } from "./asistente.js";
+export { avisarClaseNueva, avisarEntrega, avisarMensaje, recordarPractica } from "./avisos.js";

@@ -113,6 +113,17 @@ const TECLADOS: InstrumentId[] = ["piano", "teclado", "acordeon"];
 const ARCO: InstrumentId[] = ["violin", "violonchelo", "contrabajo"];
 const VIENTO: InstrumentId[] = ["flauta", "saxofon", "trompeta"];
 export const esPercusion = (i: InstrumentId) => i === "bateria" || i === "percusion";
+
+// Instrument family: what rubrics, learning paths and templates have in common.
+export type Familia = "cuerdas" | "teclados" | "arco" | "viento" | "voz" | "percusion";
+export function familia(i: InstrumentId): Familia {
+  if (esPercusion(i)) return "percusion";
+  if (TECLADOS.includes(i)) return "teclados";
+  if (ARCO.includes(i)) return "arco";
+  if (VIENTO.includes(i)) return "viento";
+  if (i === "voz") return "voz";
+  return "cuerdas";
+}
 // Instruments read from a staff, without tab.
 export const conPartitura = (i: InstrumentId) =>
   [...TECLADOS, ...ARCO, ...VIENTO, "arpa", "voz", "bajo"].includes(i);
@@ -306,7 +317,7 @@ export function fichaInicial(instrumento: InstrumentId): Ficha {
 
 export const golpesPorCompas: Record<Compas, number> = { "4/4": 8, "3/4": 6, "6/8": 6 };
 
-const nuevoId = () => Math.random().toString(36).slice(2, 10);
+export const nuevoId = () => Math.random().toString(36).slice(2, 10);
 
 // Starting content for each block type, ready to edit.
 export function nuevoBloque<T extends TipoBloque>(
@@ -510,6 +521,10 @@ const PARTITURA: Partial<
     frase: ":4 E2 G2 A2 B2 | :2 A2 G2 | :1 E2",
   },
 };
+
+// General MIDI sound of the instrument on a staff (piano when it has none of its own).
+export const programaMidi = (instrumento: InstrumentId) =>
+  PARTITURA[instrumento]?.programa ?? SONIDO[instrumento]?.programa ?? 0;
 
 export function texPartitura(instrumento: InstrumentId) {
   const p = PARTITURA[instrumento] ?? PARTITURA.piano!;

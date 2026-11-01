@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSearchParams } from "react-router";
 import {
@@ -182,6 +182,44 @@ function ModoPractica({
   const total = plan.bloques.length;
   const bloque = plan.bloques[indice];
 
+  const siguiente = () => {
+    if (!bloque) return;
+    onMarcar(bloque, true);
+    if (indice + 1 >= total) {
+      setTerminado(true);
+      // Minutes of every block done, this one included (`hechos` updates on the next render).
+      registrar(
+        plan.bloques
+          .filter((b) => b.id === bloque.id || hechos.has(b.id))
+          .reduce((suma, b) => suma + (b.minutos || 0), 0),
+      );
+    } else setIndice(indice + 1);
+  };
+  const anterior = () => setIndice((i) => Math.max(0, i - 1));
+
+  // Hands on the instrument: a page-turner pedal (they send arrows or Page Up/Down) or the
+  // keyboard moves between blocks. Not while typing, and not on the final screen.
+  const teclas = useRef({ siguiente, anterior, activo: !terminado });
+  useEffect(() => {
+    teclas.current = { siguiente, anterior, activo: !terminado && !!bloque };
+  });
+  useEffect(() => {
+    const alPresionar = (e: KeyboardEvent) => {
+      if (!teclas.current.activo || e.altKey || e.ctrlKey || e.metaKey) return;
+      if ((e.target as HTMLElement | null)?.closest?.("input, textarea, select, [contenteditable]"))
+        return;
+      if (e.key === "ArrowRight" || e.key === "PageDown") {
+        e.preventDefault();
+        teclas.current.siguiente();
+      } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+        e.preventDefault();
+        teclas.current.anterior();
+      }
+    };
+    window.addEventListener("keydown", alPresionar);
+    return () => window.removeEventListener("keydown", alPresionar);
+  }, []);
+
   if (terminado || !bloque) {
     const listos = plan.bloques.filter((b) => hechos.has(b.id)).length;
     const minutos = plan.bloques
@@ -240,18 +278,6 @@ function ModoPractica({
   }
 
   const etapa = etapaDe(bloque.etapa);
-  const siguiente = () => {
-    onMarcar(bloque, true);
-    if (indice + 1 >= total) {
-      setTerminado(true);
-      // Minutes of every block done, this one included (`hechos` updates on the next render).
-      registrar(
-        plan.bloques
-          .filter((b) => b.id === bloque.id || hechos.has(b.id))
-          .reduce((suma, b) => suma + (b.minutos || 0), 0),
-      );
-    } else setIndice(indice + 1);
-  };
 
   return (
     <View style={[styles.modo, { borderTopColor: etapa.color }]}>
@@ -299,10 +325,11 @@ function ModoPractica({
       <ContenidoBloque bloque={bloque} clase={clase} editable={false} onChange={() => {}} />
 
       <View style={styles.modoPie}>
-        <Button variant="secondary" disabled={indice === 0} onPress={() => setIndice(indice - 1)}>
+        <Button variant="secondary" disabled={indice === 0} onPress={anterior}>
           <ArrowLeft size={16} color={buttonForeground("secondary")} />
           Anterior
         </Button>
+        <Text style={styles.pedal}>Pedal o flechas ← →</Text>
         <Button size="lg" onPress={siguiente} style={styles.siguiente}>
           <Check size={18} color={buttonForeground()} />
           {indice + 1 >= total ? "Hecho y terminar" : "Hecho y siguiente"}
@@ -483,6 +510,12 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  pedal: {
+    alignSelf: "center",
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.mutedForeground,
   },
   siguiente: {
     flexGrow: 1,

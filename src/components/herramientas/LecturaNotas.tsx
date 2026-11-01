@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Play } from "lucide-react";
 import { oidoStyles } from "@/components/herramientas/Oido";
+import { PrimeraVista } from "@/components/herramientas/PrimeraVista";
 import { Opciones } from "@/components/plan/comunes";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { tocarNota } from "@/lib/audio";
@@ -10,8 +11,8 @@ import type { InstrumentId } from "@/lib/instruments";
 import { frecuenciaDe } from "@/lib/notas";
 import { colors, fonts } from "@/lib/theme";
 
-// Note reading: a note on the staff, name it as fast as you can. Only the clefs the
-// instrument reads, natural notes only.
+// Note reading: a note on the staff, name it as fast as you can; or a whole new melody to read
+// at first sight. Only the clefs the instrument reads, natural notes only.
 
 const NOMBRES = ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"];
 const SEMITONOS = [0, 2, 4, 5, 7, 9, 11];
@@ -26,6 +27,7 @@ const midiDe = (paso: number) => (Math.floor(paso / 7) + 1) * 12 + SEMITONOS[pas
 export function LecturaNotas({ instrumento }: { instrumento: InstrumentId }) {
   const claves = clavesPara(instrumento);
   const [clave, setClave] = useState<Clave>(claves[0] ?? "sol");
+  const [modo, setModo] = useState<"notas" | "melodia">("notas");
   const [rango, setRango] = useState<keyof typeof RANGOS>("pentagrama");
   const [posicion, setPosicion] = useState<number | null>(null);
   const [elegida, setElegida] = useState<number | null>(null);
@@ -55,20 +57,44 @@ export function LecturaNotas({ instrumento }: { instrumento: InstrumentId }) {
     }));
   };
 
+  const selectorDeClave =
+    claves.length > 1 ? (
+      <Opciones
+        chico
+        opciones={claves.map((c) => ({ value: c, label: `Clave de ${c}` }))}
+        valor={clave}
+        onChange={(c) => {
+          setClave(c);
+          setPosicion(null);
+        }}
+      />
+    ) : null;
+
+  const modos = (
+    <Opciones
+      opciones={[
+        { value: "notas", label: "Notas sueltas" },
+        { value: "melodia", label: "Primera vista" },
+      ]}
+      valor={modo}
+      onChange={setModo}
+    />
+  );
+
+  if (modo === "melodia")
+    return (
+      <View style={styles.wrap}>
+        {modos}
+        {selectorDeClave}
+        <PrimeraVista key={clave} instrumento={instrumento} clave={clave} />
+      </View>
+    );
+
   return (
     <View style={styles.wrap}>
+      {modos}
       <View style={styles.fila}>
-        {claves.length > 1 ? (
-          <Opciones
-            chico
-            opciones={claves.map((c) => ({ value: c, label: `Clave de ${c}` }))}
-            valor={clave}
-            onChange={(c) => {
-              setClave(c);
-              setPosicion(null);
-            }}
-          />
-        ) : null}
+        {selectorDeClave}
         <Opciones
           chico
           opciones={[

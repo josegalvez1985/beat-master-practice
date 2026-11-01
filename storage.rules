@@ -32,11 +32,14 @@ service firebase.storage {
       allow delete: if signedIn() && esDelProfesor(claseId);
     }
 
-    // Alumno deliveries: audio and video only.
+    // Alumno deliveries: audio and video (up to 200 MB), and photos or PDFs of written work
+    // (up to 20 MB; keep in sync with MAX_BYTES_DOCUMENTO in src/lib/files.ts).
     match /entregas/{claseId}/{alumnoId}/{archivo} {
       allow read: if signedIn() && (alumnoId == request.auth.uid || esDelProfesor(claseId));
       allow create: if signedIn() && alumnoId == request.auth.uid && inscripto(claseId) && tamanoValido()
-        && request.resource.contentType.matches('audio/.*|video/.*');
+        && (request.resource.contentType.matches('audio/.*|video/.*')
+          || (request.resource.contentType.matches('image/.*|application/pdf')
+            && request.resource.size < 20 * 1024 * 1024));
       // The profesor too: deleting a class deletes its deliveries.
       allow delete: if signedIn() && (alumnoId == request.auth.uid || esDelProfesor(claseId));
     }

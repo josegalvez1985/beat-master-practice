@@ -13,6 +13,7 @@ import { DiarioPractica } from "@/components/herramientas/Diario";
 import { DiccionarioAcordes } from "@/components/herramientas/DiccionarioAcordes";
 import { LecturaNotas } from "@/components/herramientas/LecturaNotas";
 import { Oido } from "@/components/herramientas/Oido";
+import { Progresiones } from "@/components/herramientas/Progresiones";
 import { Metronome } from "@/components/Metronome";
 import { PageMeta } from "@/components/PageMeta";
 import { Opciones } from "@/components/plan/comunes";
@@ -144,7 +145,7 @@ function Contenido({
     case "grabadora":
       return (
         <View style={styles.grabadora}>
-          <Grabadora principal />
+          <Grabadora principal instrumento={instrumento} />
           <Text style={styles.ayuda}>
             Grábate y escúchate más lento o en bucle; la grabación no se sube. Para enviarla a tu
             profesor, grábala desde la clase, en Tu entrega.
@@ -157,6 +158,8 @@ function Contenido({
       return <Oido instrumento={instrumento} />;
     case "lectura":
       return <LecturaNotas instrumento={instrumento} />;
+    case "formas":
+      return <Progresiones instrumento={instrumento} />;
     case "diario":
       return (
         <DiarioPractica

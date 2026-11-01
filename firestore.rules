@@ -76,9 +76,15 @@ service cloud.firestore {
         && request.resource.data.creadoEn == request.time;
       // Role and document number never change. `foto` points at the owner's fixed Storage path,
       // so the profile and its photo file stay related one to one. `metaSemanal`: the alumno's
-      // weekly practice goal in minutes (absent = no goal).
+      // weekly practice goal in minutes (absent = no goal). `recordatorio`: hour of the daily
+      // practice reminder. `autoevaluacion`: the alumno's own level guess per instrument.
       allow update: if signedIn() && uid == me()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nombre', 'instrumentos', 'terminos', 'foto', 'metaSemanal'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nombre', 'instrumentos', 'terminos', 'foto', 'metaSemanal', 'recordatorio', 'autoevaluacion'])
+        && (!('recordatorio' in request.resource.data)
+          || (request.resource.data.recordatorio is int
+            && request.resource.data.recordatorio >= 0 && request.resource.data.recordatorio <= 23))
+        && (!('autoevaluacion' in request.resource.data)
+          || (request.resource.data.autoevaluacion is map && request.resource.data.autoevaluacion.size() <= 17))
         && (!('metaSemanal' in request.resource.data)
           || (request.resource.data.metaSemanal is int
             && request.resource.data.metaSemanal >= 1 && request.resource.data.metaSemanal <= 3000))
@@ -111,15 +117,26 @@ service cloud.firestore {
     // `ficha` and `bloques` are the lesson plan (src/lib/plan.ts). Rules cannot loop over the
     // blocks, so they only bound their size; files in blocks live under clases/{claseId}/ like the
     // other materials and are deleted with the class (eliminarClase).
+    // `hora`, `modalidad` and `enlace`: when and where; `asistencia`: alumnoId -> state, marked
+    // by the profesor; `evento`: a recital (place and program, free text).
     function claseValida(data) {
-      return data.keys().hasOnly(['profesorId', 'profesorNombre', 'instrumento', 'titulo', 'descripcion', 'fecha', 'materiales', 'creadoEn', 'ficha', 'bloques'])
+      return data.keys().hasOnly(['profesorId', 'profesorNombre', 'instrumento', 'titulo', 'descripcion', 'fecha', 'materiales', 'creadoEn', 'ficha', 'bloques', 'hora', 'modalidad', 'enlace', 'asistencia', 'evento'])
         && textoValido(data.titulo, 1, 120)
         && textoValido(data.descripcion, 0, 4000)
         && data.fecha is string && data.fecha.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
         && archivosValidos(data.materiales)
         && (!('ficha' in data) || (data.ficha is map
           && data.ficha.keys().hasOnly(['nivel', 'estilo', 'afinacion', 'capo', 'duracion', 'superficie', 'kit'])))
-        && (!('bloques' in data) || (data.bloques is list && data.bloques.size() <= 40));
+        && (!('bloques' in data) || (data.bloques is list && data.bloques.size() <= 40))
+        && (!('hora' in data) || (data.hora is string && data.hora.matches('^[0-2][0-9]:[0-5][0-9]$')))
+        && (!('modalidad' in data) || data.modalidad in ['presencial', 'virtual'])
+        && (!('enlace' in data) || (textoValido(data.enlace, 1, 500) && data.enlace.matches('^https://.*')))
+        && (!('asistencia' in data) || (data.asistencia is map && data.asistencia.size() <= 300))
+        && (!('evento' in data) || (data.evento is map
+          && data.evento.keys().hasOnly(['tipo', 'lugar', 'programa'])
+          && data.evento.tipo == 'recital'
+          && textoValido(data.evento.lugar, 0, 200)
+          && data.evento.programa is list && data.evento.programa.size() <= 60));
     }
 
     // clases/{id}: planned by a profesor; visible to the alumnos in that instrument's list.
@@ -133,7 +150,7 @@ service cloud.firestore {
         && request.resource.data.creadoEn == request.time
         && claseValida(request.resource.data);
       allow update: if signedIn() && resource.data.profesorId == me()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['titulo', 'descripcion', 'fecha', 'materiales', 'ficha', 'bloques'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['titulo', 'descripcion', 'fecha', 'materiales', 'ficha', 'bloques', 'hora', 'modalidad', 'enlace', 'asistencia', 'evento'])
         && claseValida(request.resource.data);
       allow delete: if signedIn() && resource.data.profesorId == me();
     }
@@ -143,7 +160,7 @@ service cloud.firestore {
     }
 
     function entregaValida(entregaId, data) {
-      return data.keys().hasOnly(['claseId', 'profesorId', 'alumnoId', 'alumnoNombre', 'instrumento', 'archivos', 'comentario', 'actualizadoEn', 'devoluciones'])
+      return data.keys().hasOnly(['claseId', 'profesorId', 'alumnoId', 'alumnoNombre', 'instrumento', 'archivos', 'comentario', 'actualizadoEn', 'devoluciones', 'evaluacion', 'respuestas'])
         && entregaId == data.claseId + '_' + me()
         && data.alumnoId == me()
         && data.alumnoNombre == usuario(me()).nombre
@@ -152,6 +169,7 @@ service cloud.firestore {
         && inscripto(data.profesorId, data.instrumento)
         && archivosValidos(data.archivos) && data.archivos.size() >= 1
         && (!('comentario' in data) || textoValido(data.comentario, 0, 2000))
+        && (!('respuestas' in data) || (data.respuestas is map && data.respuestas.size() <= 100))
         && data.actualizadoEn == request.time;
     }
 
@@ -208,26 +226,155 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // The profesor's rubric of a delivery: 1-5 per criterion and a short comment.
+    function evaluacionValida(e) {
+      return e is map && e.keys().hasOnly(['criterios', 'comentario', 'fecha'])
+        && e.criterios is map && e.criterios.size() <= 8
+        && textoValido(e.comentario, 0, 1000)
+        && e.fecha is int;
+    }
+
+    // `respuestas` (devolucionId -> "entendido" | "corregido") are the alumno's answers to the
+    // devoluciones; the profesor can only remove them.
     // entregas/{claseId}_{alumnoId}: what an alumno uploads for a class. `devoluciones` are the
-    // profesor's comments at a point of a file: stored inside the delivery, so they are deleted
-    // with it (and with the class). The alumno never writes them, only removes them together with
-    // the file they point at (the new list must be part of the old one).
+    // profesor's comments at a point of a file and `evaluacion` their rubric: stored inside the
+    // delivery, so they are deleted with it (and with the class). The alumno never writes them;
+    // they only remove devoluciones together with the file they point at (the new list must be
+    // part of the old one).
     match /entregas/{entregaId} {
       // `resource == null`: the alumno listens to their delivery before it exists.
       allow read: if signedIn()
         && (resource == null || resource.data.alumnoId == me() || resource.data.profesorId == me());
       allow create: if signedIn() && entregaValida(entregaId, request.resource.data)
-        && !('devoluciones' in request.resource.data);
+        && !('devoluciones' in request.resource.data) && !('evaluacion' in request.resource.data);
       allow update: if signedIn()
         && ((entregaValida(entregaId, request.resource.data)
+            && !('evaluacion' in request.resource.data.diff(resource.data).affectedKeys())
             && (!('devoluciones' in request.resource.data.diff(resource.data).affectedKeys())
               || resource.data.get('devoluciones', []).hasAll(request.resource.data.get('devoluciones', []))))
           || (resource.data.profesorId == me()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['devoluciones'])
-            && request.resource.data.devoluciones is list
-            && request.resource.data.devoluciones.size() <= 100));
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['devoluciones', 'evaluacion', 'respuestas'])
+            // The profesor only removes the alumno's answers (with the devolución they answer).
+            && request.resource.data.get('respuestas', {}).diff(resource.data.get('respuestas', {})).addedKeys().size() == 0
+            && request.resource.data.get('respuestas', {}).diff(resource.data.get('respuestas', {})).changedKeys().size() == 0
+            && request.resource.data.get('devoluciones', []) is list
+            && request.resource.data.get('devoluciones', []).size() <= 100
+            && (!('evaluacion' in request.resource.data) || evaluacionValida(request.resource.data.evaluacion))));
       // The profesor too: deleting a class deletes its deliveries.
       allow delete: if signedIn() && (resource.data.alumnoId == me() || resource.data.profesorId == me());
+    }
+
+    // biblioteca/{id}: blocks a profesor saved to reuse in their classes. It hangs from usuarios
+    // (never deleted) and never holds files (a files block belongs to one class).
+    match /biblioteca/{id} {
+      allow read: if signedIn() && resource.data.profesorId == me();
+      allow create: if esProfesor()
+        && request.resource.data.keys().hasOnly(['profesorId', 'instrumento', 'titulo', 'bloque', 'creadoEn'])
+        && request.resource.data.profesorId == me()
+        && request.resource.data.instrumento in usuario(me()).instrumentos
+        && textoValido(request.resource.data.titulo, 1, 120)
+        && request.resource.data.bloque is map
+        && request.resource.data.bloque.tipo != 'archivos'
+        && request.resource.data.creadoEn == request.time;
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.profesorId == me();
+    }
+
+    // logros/{profesorId}_{alumnoId}_{instrumento}: the alumno's learning path in that list
+    // (level and objectives reached). Same id as the enrollment, which must exist; it is deleted
+    // with it in one batch (quitarInscripcion). The profesor writes it, the alumno reads it.
+    match /logros/{id} {
+      allow read: if signedIn() && (resource.data.profesorId == me() || resource.data.alumnoId == me());
+      allow create, update: if signedIn()
+        && request.resource.data.keys().hasOnly(['profesorId', 'alumnoId', 'instrumento', 'nivel', 'cumplidos', 'actualizadoEn'])
+        && request.resource.data.profesorId == me()
+        && id == me() + '_' + request.resource.data.alumnoId + '_' + request.resource.data.instrumento
+        && exists(/databases/$(database)/documents/inscripciones/$(id))
+        && textoValido(request.resource.data.nivel, 1, 40)
+        && request.resource.data.cumplidos is list && request.resource.data.cumplidos.size() <= 200
+        && request.resource.data.actualizadoEn == request.time;
+      // `resource == null`: removing an alumno who never had a path also deletes this id.
+      allow delete: if signedIn() && (resource == null || resource.data.profesorId == me());
+    }
+
+    // mensajes/{id}: a conversation about one class between its profesor and one alumno of that
+    // list. It hangs from the class and is deleted with it (eliminarClase).
+    match /mensajes/{id} {
+      allow read: if signedIn() && (resource.data.profesorId == me() || resource.data.alumnoId == me());
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['claseId', 'profesorId', 'alumnoId', 'autorId', 'texto', 'tipo', 'creadoEn'])
+        // "ausencia": only the alumno says they cannot come.
+        && (!('tipo' in request.resource.data)
+          || (request.resource.data.tipo == 'ausencia' && me() == request.resource.data.alumnoId))
+        && request.resource.data.autorId == me()
+        && (me() == request.resource.data.profesorId || me() == request.resource.data.alumnoId)
+        && exists(/databases/$(database)/documents/clases/$(request.resource.data.claseId))
+        && clase(request.resource.data.claseId).profesorId == request.resource.data.profesorId
+        && exists(/databases/$(database)/documents/inscripciones/$(request.resource.data.profesorId + '_' + request.resource.data.alumnoId + '_' + clase(request.resource.data.claseId).instrumento))
+        && textoValido(request.resource.data.texto, 1, 1000)
+        && request.resource.data.creadoEn == request.time;
+      allow update: if false;
+      // The author deletes their own; the profesor deletes all of them with the class.
+      allow delete: if signedIn() && (resource.data.autorId == me() || resource.data.profesorId == me());
+    }
+
+    // The two people of an enrollment (`data` has profesorId, alumnoId and instrumento): the one
+    // signed in is one of them, and the enrollment exists.
+    function deLaInscripcion(data) {
+      return (me() == data.profesorId || me() == data.alumnoId)
+        && exists(/databases/$(database)/documents/inscripciones/$(data.profesorId + '_' + data.alumnoId + '_' + data.instrumento));
+    }
+
+    function fechaValida(valor) {
+      return valor is string && valor.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    // repertorio/{id}: the alumno's pieces in one profesor's list and how far each one is. It
+    // hangs from the enrollment and is deleted with it (quitarInscripcion). Both write it.
+    match /repertorio/{id} {
+      allow read: if signedIn() && (resource.data.profesorId == me() || resource.data.alumnoId == me());
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['profesorId', 'alumnoId', 'instrumento', 'obra', 'estado', 'repasadoEn', 'creadoEn'])
+        && deLaInscripcion(request.resource.data)
+        && textoValido(request.resource.data.obra, 1, 120)
+        && request.resource.data.estado in ['aprendiendo', 'entera', 'memoria', 'lista']
+        && (!('repasadoEn' in request.resource.data) || fechaValida(request.resource.data.repasadoEn))
+        && request.resource.data.creadoEn == request.time;
+      allow update: if signedIn() && (resource.data.profesorId == me() || resource.data.alumnoId == me())
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'repasadoEn'])
+        && request.resource.data.estado in ['aprendiendo', 'entera', 'memoria', 'lista']
+        && (!('repasadoEn' in request.resource.data) || fechaValida(request.resource.data.repasadoEn));
+      allow delete: if signedIn() && (resource.data.profesorId == me() || resource.data.alumnoId == me());
+    }
+
+    // metas/{id}: a goal of one week (its Monday) agreed between the profesor and the alumno. It
+    // hangs from the enrollment and is deleted with it (quitarInscripcion). Both write it.
+    match /metas/{id} {
+      allow read: if signedIn() && (resource.data.profesorId == me() || resource.data.alumnoId == me());
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['profesorId', 'alumnoId', 'instrumento', 'texto', 'semana', 'cumplida', 'creadoEn'])
+        && deLaInscripcion(request.resource.data)
+        && textoValido(request.resource.data.texto, 1, 200)
+        && fechaValida(request.resource.data.semana)
+        && request.resource.data.cumplida is bool
+        && request.resource.data.creadoEn == request.time;
+      allow update: if signedIn() && (resource.data.profesorId == me() || resource.data.alumnoId == me())
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cumplida'])
+        && request.resource.data.cumplida is bool;
+      allow delete: if signedIn() && (resource.data.profesorId == me() || resource.data.alumnoId == me());
+    }
+
+    // dispositivos/{token}: a browser that receives push notices (Firebase Cloud Messaging) for
+    // one user. It hangs from usuarios (never deleted); it is deleted on "Salir", on turning the
+    // notices off, and by the Cloud Function when the token stops working. Only the Function
+    // (Admin SDK) reads them to send.
+    match /dispositivos/{token} {
+      allow read: if signedIn() && resource.data.uid == me();
+      allow create, update: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'creadoEn'])
+        && request.resource.data.uid == me()
+        && request.resource.data.creadoEn == request.time;
+      allow delete: if signedIn() && (resource == null || resource.data.uid == me());
     }
   }
 }

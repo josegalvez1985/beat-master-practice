@@ -9,9 +9,15 @@ import { colors, fonts, radius } from "@/lib/theme";
 // Practice player: slower playback without changing the pitch, and an A-B loop to repeat a
 // passage. Used for every audio and video of the classes and deliveries. `marcas` are the
 // profesor's comments at a point of the file (tap one to go there); `onComentar` lets the
-// profesor add one at the current time.
+// profesor add one at the current time; `onResponder` lets the alumno answer each one.
 
-export type Marca = { id: string; segundo: number; texto: string };
+export type Respuesta = "entendido" | "corregido";
+export type Marca = { id: string; segundo: number; texto: string; respuesta?: Respuesta };
+
+const RESPUESTAS: { value: Respuesta; label: string }[] = [
+  { value: "entendido", label: "Entendido" },
+  { value: "corregido", label: "Ya lo corregí" },
+];
 
 export const minutosYSegundos = (segundos: number) =>
   `${Math.floor(segundos / 60)}:${String(Math.floor(segundos % 60)).padStart(2, "0")}`;
@@ -23,6 +29,7 @@ export function Reproductor({
   marcas = [],
   onComentar,
   onQuitarMarca,
+  onResponder,
 }: {
   url: string;
   tipo: "audio" | "video";
@@ -30,6 +37,7 @@ export function Reproductor({
   marcas?: Marca[];
   onComentar?: (segundo: number, texto: string) => Promise<void>;
   onQuitarMarca?: (id: string) => void;
+  onResponder?: (id: string, respuesta: Respuesta | null) => void;
 }) {
   const [nueva, setNueva] = useState<number | null>(null);
   const [texto, setTexto] = useState("");
@@ -100,30 +108,55 @@ export function Reproductor({
           {[...marcas]
             .sort((a, b) => a.segundo - b.segundo)
             .map((marca) => (
-              <View key={marca.id} style={styles.marca}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Ir a ${minutosYSegundos(marca.segundo)}: ${marca.texto}`}
-                  onPress={() => {
-                    const el = media.current;
-                    if (!el) return;
-                    el.currentTime = marca.segundo;
-                    void el.play();
-                  }}
-                  style={styles.marcaBoton}
-                >
-                  <Text style={styles.marcaTiempo}>{minutosYSegundos(marca.segundo)}</Text>
-                  <Text style={styles.marcaTexto}>{marca.texto}</Text>
-                </Pressable>
-                {onQuitarMarca ? (
+              <View key={marca.id} style={styles.marcaConRespuesta}>
+                <View style={styles.marca}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Borrar comentario"
-                    onPress={() => onQuitarMarca(marca.id)}
-                    style={styles.quitar}
+                    accessibilityLabel={`Ir a ${minutosYSegundos(marca.segundo)}: ${marca.texto}`}
+                    onPress={() => {
+                      const el = media.current;
+                      if (!el) return;
+                      el.currentTime = marca.segundo;
+                      void el.play();
+                    }}
+                    style={styles.marcaBoton}
                   >
-                    <Trash2 size={14} color={colors.mutedForeground} />
+                    <Text style={styles.marcaTiempo}>{minutosYSegundos(marca.segundo)}</Text>
+                    <Text style={styles.marcaTexto}>{marca.texto}</Text>
                   </Pressable>
+                  {onQuitarMarca ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Borrar comentario"
+                      onPress={() => onQuitarMarca(marca.id)}
+                      style={styles.quitar}
+                    >
+                      <Trash2 size={14} color={colors.mutedForeground} />
+                    </Pressable>
+                  ) : null}
+                </View>
+                {onResponder ? (
+                  <View accessibilityRole="radiogroup" style={styles.respuestas}>
+                    {RESPUESTAS.map((r) => {
+                      const elegida = marca.respuesta === r.value;
+                      return (
+                        <Pressable
+                          key={r.value}
+                          accessibilityRole="radio"
+                          aria-checked={elegida}
+                          onPress={() => onResponder(marca.id, elegida ? null : r.value)}
+                          style={[styles.respuesta, elegida && styles.respuestaElegida]}
+                        >
+                          <Text style={styles.respuestaTexto}>{r.label}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ) : marca.respuesta ? (
+                  <Text style={styles.respondida}>
+                    ✓ El alumno respondió:{" "}
+                    {marca.respuesta === "corregido" ? "ya lo corrigió" : "entendido"}
+                  </Text>
                 ) : null}
               </View>
             ))}
@@ -296,6 +329,37 @@ const styles = StyleSheet.create({
   },
   marcas: {
     gap: 6,
+  },
+  marcaConRespuesta: {
+    gap: 4,
+  },
+  respuestas: {
+    flexDirection: "row",
+    gap: 6,
+    paddingLeft: 8,
+  },
+  respuesta: {
+    height: 28,
+    paddingHorizontal: 10,
+    justifyContent: "center",
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  respuestaElegida: {
+    borderColor: colors.primary,
+    backgroundColor: colors.selected,
+  },
+  respuestaTexto: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.foreground,
+  },
+  respondida: {
+    paddingLeft: 8,
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.success,
   },
   marca: {
     flexDirection: "row",

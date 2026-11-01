@@ -51,6 +51,24 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
   sobre el plan más reciente (`ultimo` en `PlanClase`), y `archivosDelPlan` entra en la cascada de
   `eliminarClase`.
 
+## Seguimiento, mensajes y sin conexión
+
+- Colecciones nuevas: `biblioteca` (bloques del profesor, nunca de archivos), `logros` (mismo id que
+  la inscripción; `quitarInscripcion` la borra en el mismo batch) y `mensajes` (cuelgan de la clase;
+  `eliminarClase` los borra en batches antes que la clase). Hora, modalidad, enlace, asistencia y
+  recital van dentro de `clases`; la rúbrica (`evaluacion`, solo la escribe el profesor), dentro de
+  la entrega; el análisis de la grabación, dentro del `Material`.
+- Ids que se guardan y por eso solo se agregan: criterios de `src/lib/rubrica.ts` y objetivos de
+  `src/lib/ruta.ts`. Las insignias (`src/lib/insignias.ts`) se calculan, no se guardan.
+- Sin conexión: `public/sw.js` (solo GET del propio sitio, nunca Firebase) y `persistentLocalCache`
+  en `src/lib/firebase.ts`; `signOut` borra esa copia y recarga en la portada.
+- `repertorio` y `metas` cuelgan de la inscripción (`quitarInscripcion(inscripcion)` los borra
+  antes que ella); `dispositivos/{token}` (avisos FCM) se borra al salir y cuando el token muere.
+  Las respuestas a devoluciones (`entregas.respuestas`) se quitan con su devolución.
+- Avisos: `functions/src/avisos.ts` en `us-central1` (la base está en `nam5`); clave pública
+  `VITE_FIREBASE_VAPID_KEY` en `.env`.
+- Polca, guarania y galopa son formas por grados (`src/lib/progresiones.ts`): sin canciones ni letras.
+
 ## Herramientas y batería
 
 - Instrumentos (17): la lista vive en `src/lib/instruments.ts` y está copiada en `firestore.rules`

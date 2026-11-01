@@ -10,6 +10,7 @@ import {
 import {
   ArrowDown,
   ArrowUp,
+  BookmarkPlus,
   Check,
   ChevronDown,
   ChevronUp,
@@ -19,6 +20,7 @@ import {
   Plus,
   Sparkles,
   Trash2,
+  X,
 } from "lucide-react";
 import {
   ContenidoBloque,
@@ -36,8 +38,15 @@ import { Input } from "@/components/ui/input";
 import { Section } from "@/components/ui/section";
 import { Stepper } from "@/components/ui/stepper";
 import { avisar } from "@/components/ui/toast";
-import { guardarPlan, type Clase } from "@/lib/data";
+import {
+  guardarEnBiblioteca,
+  guardarPlan,
+  quitarDeBiblioteca,
+  useBiblioteca,
+  type Clase,
+} from "@/lib/data";
 import { borrarArchivo, type Material } from "@/lib/files";
+import { instrumento } from "@/lib/instruments";
 import {
   MAX_BLOQUES,
   afinacionesPara,
@@ -50,6 +59,7 @@ import {
   fichaInicial,
   niveles,
   nuevoBloque,
+  nuevoId,
   plantilla,
   superficies,
   tiposPara,
@@ -306,8 +316,12 @@ export function Editor({ clase }: { clase: Clase }) {
     if (vecino) moverA(id, vecino.id, delta > 0);
   };
 
-  const insertar = (tipo: TipoBloque, posicion: number) => {
-    const bloque = nuevoBloque(tipo, clase.instrumento, ETAPA_SUGERIDA[tipo]);
+  const insertar = (tipo: TipoBloque | Bloque, posicion: number) => {
+    // A block from the library comes in as a copy with its own id.
+    const bloque =
+      typeof tipo === "string"
+        ? nuevoBloque(tipo, clase.instrumento, ETAPA_SUGERIDA[tipo])
+        : { ...tipo, id: nuevoId() };
     const antesDe = visibles[posicion]?.id;
     cambiar((p) => {
       const bloques = [...p.bloques];
@@ -708,6 +722,21 @@ function BloqueEditor({
             onPress={() => onMover(1)}
             icon={ArrowDown}
           />
+          {bloque.tipo !== "archivos" ? (
+            <Herramienta
+              label="Guardar en tu biblioteca"
+              onPress={() =>
+                void guardarEnBiblioteca(clase.profesorId, clase.instrumento, bloque).then(
+                  () =>
+                    avisar({
+                      texto: `"${bloque.titulo || "Bloque"}" guardado en tu biblioteca: úsalo en cualquier clase de ${instrumento(clase.instrumento).name.toLowerCase()}.`,
+                    }),
+                  () => avisar({ texto: "No se pudo guardar en la biblioteca.", tipo: "error" }),
+                )
+              }
+              icon={BookmarkPlus}
+            />
+          ) : null}
           <Herramienta label="Eliminar bloque" onPress={onEliminar} icon={Trash2} />
           <Herramienta
             label={abierto ? "Plegar bloque" : "Desplegar bloque"}
@@ -776,11 +805,49 @@ function PaletaDeBloques({
   onCancelar,
 }: {
   clase: Clase;
-  onElegir: (tipo: TipoBloque) => void;
+  onElegir: (tipo: TipoBloque | Bloque) => void;
   onCancelar?: () => void;
 }) {
+  const biblioteca = useBiblioteca(clase.profesorId);
+  const guardados = biblioteca.data
+    .filter((b) => b.instrumento === clase.instrumento)
+    .sort((a, b) => a.titulo.localeCompare(b.titulo, "es"));
   return (
     <View style={styles.paleta}>
+      {guardados.length ? (
+        <>
+          <Text style={styles.paletaTitulo}>De tu biblioteca</Text>
+          <View style={styles.biblioteca}>
+            {guardados.map((g) => (
+              <View key={g.id} style={styles.guardado}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Agregar ${g.titulo}`}
+                  onPress={() => onElegir(g.bloque)}
+                  style={styles.guardadoBoton}
+                >
+                  <IconoEtapa bloque={g.bloque} size={22} />
+                  <Text style={styles.guardadoTexto} numberOfLines={1}>
+                    {g.titulo}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Quitar ${g.titulo} de la biblioteca`}
+                  onPress={() =>
+                    void quitarDeBiblioteca(g.id).catch(() =>
+                      avisar({ texto: "No se pudo quitar de la biblioteca.", tipo: "error" }),
+                    )
+                  }
+                  style={styles.guardadoQuitar}
+                >
+                  <X size={14} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        </>
+      ) : null}
       <Text style={styles.paletaTitulo}>¿Qué quieres agregar?</Text>
       <View style={styles.paletaGrid}>
         {tiposPara(clase.instrumento).map((tipo) => (
@@ -810,6 +877,38 @@ function PaletaDeBloques({
 const sticky = { position: "sticky", top: 16 } as unknown as ViewStyle;
 
 const styles = StyleSheet.create({
+  biblioteca: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 6,
+  },
+  guardado: {
+    flexDirection: "row",
+    alignItems: "center",
+    maxWidth: 260,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  guardadoBoton: {
+    flexShrink: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 6,
+    paddingLeft: 8,
+  },
+  guardadoTexto: {
+    flexShrink: 1,
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.foreground,
+  },
+  guardadoQuitar: {
+    padding: 8,
+  },
   inicio: {
     flexDirection: "row",
     flexWrap: "wrap",

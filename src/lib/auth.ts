@@ -12,11 +12,13 @@ import {
   type User,
 } from "firebase/auth";
 import {
+  clearIndexedDbPersistence,
   doc,
   getDoc,
   getDocFromServer,
   onSnapshot,
   serverTimestamp,
+  terminate,
   writeBatch,
   type Timestamp,
   type Unsubscribe,
@@ -37,6 +39,11 @@ export type Perfil = {
   foto?: { ruta: string; actualizadoEn: Timestamp | null };
   // Alumno: weekly practice goal in minutes; absent = no goal.
   metaSemanal?: number;
+  // Alumno: hour (0-23, Paraguay) of the daily practice reminder; absent = no reminder.
+  recordatorio?: number;
+  // Alumno: their own guess of their level per instrument (first-time welcome), a hint for the
+  // profesor's learning path.
+  autoevaluacion?: Partial<Record<InstrumentId, string>>;
 };
 
 export type Session =
@@ -74,9 +81,10 @@ onAuthStateChanged(auth, (user) => {
     (snap) => {
       if (snap.exists()) {
         setSession({ status: "ready", user, perfil: { uid: user.uid, ...snap.data() } as Perfil });
-      } else {
+      } else if (!snap.metadata.fromCache) {
         setSession({ status: "incomplete", user });
       }
+      // Missing only in the local copy (offline): wait for the server, it may well exist.
     },
     () => setSession({ status: "incomplete", user }),
   );
@@ -188,9 +196,22 @@ export async function resetPassword(nroDocumento: string, email: string) {
   });
 }
 
-export function signOut() {
+// The local copy of the data belongs to whoever signed in (a shared computer): it is cleared and
+// the app starts again at the home. With other tabs open it cannot be cleared; the rules still
+// decide what each account reads from the server.
+export async function signOut() {
   salidaVoluntaria = true;
-  return firebaseSignOut(auth);
+  // This browser stops receiving the notices of this account (while still signed in, so the
+  // rules let it delete its device). A separate chunk, loaded only here and in the profile.
+  await import("@/lib/avisos").then((m) => m.desactivarAvisos()).catch(() => {});
+  await firebaseSignOut(auth);
+  try {
+    await terminate(db);
+    await clearIndexedDbPersistence(db);
+  } catch {
+    // Another tab is using it.
+  }
+  window.location.replace(import.meta.env.BASE_URL);
 }
 
 // An account whose sign-up failed halfway (Auth account without profile): delete it so the

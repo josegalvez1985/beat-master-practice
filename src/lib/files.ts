@@ -19,6 +19,8 @@ export type Material = {
   ruta: string;
   tamano: number;
   contentType: string;
+  // Recordings made in the app: what the browser measured before sending (src/lib/analisis.ts).
+  analisis?: { afinacion?: number; desvioMs?: number; bpm?: number; notas?: number };
 };
 
 // Keep in sync with the size limit in storage.rules.
@@ -26,7 +28,14 @@ export const MAX_BYTES = 200 * 1024 * 1024;
 
 export const ACCEPT_MATERIAL =
   "audio/*,video/*,image/*,application/pdf,.musicxml,.mxl,.xml,.gp,.gp3,.gp4,.gp5,.gpx";
-export const ACCEPT_ENTREGA = "audio/*,video/*";
+// Deliveries: recordings, and photos or PDFs of written work (theory, a copied score).
+export const ACCEPT_ENTREGA = "audio/*,video/*,image/*,application/pdf";
+// Keep in sync with storage.rules: photos and PDFs of a delivery up to 20 MB.
+export const MAX_BYTES_DOCUMENTO = 20 * 1024 * 1024;
+export const limiteDeEntrega = (file: File) =>
+  file.type.startsWith("audio/") || file.type.startsWith("video/")
+    ? MAX_BYTES
+    : MAX_BYTES_DOCUMENTO;
 
 // Sheet music alphaTab can draw: MusicXML and Guitar Pro.
 const PARTITURA = /\.(musicxml|mxl|xml|gp|gp3|gp4|gp5|gpx)$/i;

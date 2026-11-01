@@ -4,6 +4,7 @@ import {
   Crosshair,
   Drum,
   Ear,
+  Guitar,
   Hand,
   Mic,
   Music4,
@@ -31,6 +32,7 @@ export type HerramientaId =
   | "acordes"
   | "oido"
   | "lectura"
+  | "formas"
   | "diario";
 
 // Instruments that play chords (chord dictionary, chord ear training).
@@ -150,9 +152,16 @@ export const herramientas: {
   {
     id: "lectura",
     label: "Lectura",
-    descripcion: "Lee notas en el pentagrama",
+    descripcion: "Notas sueltas y melodías a primera vista",
     icon: BookOpenText,
     para: (instrumento) => clavesPara(instrumento).length > 0,
+  },
+  {
+    id: "formas",
+    label: "Polca y guarania",
+    descripcion: "Acordes de polca, guarania y galopa con acompañamiento",
+    icon: Guitar,
+    para: (instrumento) => tocaAcordes(instrumento) || instrumento === "bajo",
   },
   {
     id: "diario",

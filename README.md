@@ -9,10 +9,18 @@ con el número de documento.
   listas de alumnos (buscándolos por documento o nombre), planifican clases por semana, mes o año,
   arman cada clase por bloques (tablaturas y partituras con sonido, acordes, rasgueos, tempo con
   metrónomo, YouTube, imágenes, PDF, audio, video y Guitar Pro) y ven el progreso y el diario de
-  práctica de cada alumno.
+  práctica de cada alumno. Guardan bloques en su **biblioteca** para reusarlos, ponen hora y
+  modalidad a la clase (presencial o virtual con enlace, con _Agregar al calendario_), marcan la
+  **asistencia**, organizan **recitales** con su programa, evalúan cada entrega con una **rúbrica**
+  por instrumento, marcan la **ruta de aprendizaje** por niveles, escriben **mensajes** por clase y
+  envían un **informe para la familia** por WhatsApp.
 - **Alumnos**: se registran con su número de documento y sus instrumentos. Cuando un profesor los
-  agrega a su lista, ven sus clases, se graban (o suben) sus prácticas en audio o video, siguen su
-  barra de progreso y llevan un diario con meta semanal.
+  agrega a su lista, ven sus clases, se graban (o suben) sus prácticas en audio o video, o fotos y PDF de tareas escritas (con click
+  en los auriculares si quieren; la app mide su **afinación y su tiempo** antes de enviar), siguen
+  su barra de progreso, su ruta, sus habilidades y sus **insignias**, y llevan un diario con meta
+  semanal. Cada día, **Tu práctica de hoy** arma la rutina según el tiempo que tienen; tienen
+  **repertorio**, **metas de la semana**, **Mi evolución** (primera grabación vs. la última),
+  responden cada devolución, avisan si no pueden ir y reciben **avisos** en el navegador.
 - **Diseño**: tema claro y oscuro, y una escena animada (arpa paraguaya, instrumentos que flotan,
   notas y la línea de pulso) en el login y en el inicio de cada persona con sus instrumentos, hecha
   con SVG y CSS para que no pese ni gaste memoria.
@@ -29,8 +37,10 @@ con el número de documento.
   configurar `VITE_WEB3FORMS_KEY` en `.env`).
 - **Herramientas** (alumnos y profesores), solo las que sirven para cada instrumento: afinador con
   el micrófono, metrónomo con subdivisiones y tempo que sube solo, grabadora, diccionario de
-  acordes, entrenamiento auditivo y lectura de notas; y en todo audio, video o YouTube de las clases,
-  velocidad más lenta y repetición de A a B.
+  acordes, entrenamiento auditivo, lectura de notas y **a primera vista** (melodías nuevas cada vez)
+  y **polca, guarania y galopa** con sus acordes y acompañamiento; y en todo audio, video o YouTube
+  de las clases, velocidad más lenta y repetición de A a B. **Funcionan sin conexión** una vez
+  abiertas (service worker y copia local de Firestore, que se borra al salir).
 - **Batería**: grooves en grilla con sonido (incluye polca paraguaya, guarania y galopa),
   rudimentos con escalera de tempo y récords, medidor de tiempo con el micrófono, lectura y oído
   rítmico, y comentarios del profesor en un segundo exacto de la entrega.

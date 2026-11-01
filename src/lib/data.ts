@@ -53,7 +53,17 @@ export type Clase = {
   // Lesson plan (see src/lib/plan.ts); absent until the profesor builds one.
   ficha?: Ficha;
   bloques?: Bloque[];
+  // Time (HH:MM, Paraguay), in person or online (with its link).
+  hora?: string;
+  modalidad?: "presencial" | "virtual";
+  enlace?: string;
+  // Attendance by alumnoId, marked by the profesor.
+  asistencia?: Record<string, Asistencia>;
+  // A recital instead of a regular class: where, and who plays what (free text).
+  evento?: { tipo: "recital"; lugar: string; programa: { interprete: string; obra: string }[] };
 };
+
+export type Asistencia = "presente" | "tarde" | "ausente";
 
 export type Entrega = {
   id: string;
@@ -68,6 +78,75 @@ export type Entrega = {
   // The profesor's comments at a point of a file ("0:42 rushes the fill"), inside the delivery
   // so they go away with it.
   devoluciones?: Devolucion[];
+  // The profesor's rubric (1-5 per criterion of the instrument, see src/lib/rubrica.ts).
+  evaluacion?: Evaluacion;
+  // The alumno's answer to each devolución (by its id): "got it" or "fixed it".
+  respuestas?: Record<string, RespuestaDevolucion>;
+};
+
+export type RespuestaDevolucion = "entendido" | "corregido";
+
+// The alumno's repertoire in one profesor's list, with how far each piece is.
+export type EstadoObra = "aprendiendo" | "entera" | "memoria" | "lista";
+export type Obra = {
+  id: string;
+  profesorId: string;
+  alumnoId: string;
+  instrumento: InstrumentId;
+  obra: string;
+  estado: EstadoObra;
+  // Last review (YYYY-MM-DD); the daily routine brings back the one reviewed longest ago.
+  repasadoEn?: string;
+  creadoEn?: Timestamp;
+};
+
+// A goal of one week (`semana` = its Monday) agreed with the profesor.
+export type Meta = {
+  id: string;
+  profesorId: string;
+  alumnoId: string;
+  instrumento: InstrumentId;
+  texto: string;
+  semana: string;
+  cumplida: boolean;
+  creadoEn?: Timestamp;
+};
+
+export type Evaluacion = { criterios: Record<string, number>; comentario: string; fecha: number };
+
+// A block the profesor saved to reuse in any class (never a files block: its files belong to
+// one class).
+export type BloqueGuardado = {
+  id: string;
+  profesorId: string;
+  instrumento: InstrumentId;
+  titulo: string;
+  bloque: Bloque;
+};
+
+// Learning path of an alumno in one instrument: level and objectives reached. Same id as the
+// enrollment ({profesorId}_{alumnoId}_{instrumento}), deleted with it.
+export type Logros = {
+  id: string;
+  profesorId: string;
+  alumnoId: string;
+  instrumento: InstrumentId;
+  nivel: string;
+  cumplidos: string[];
+  actualizadoEn?: Timestamp;
+};
+
+// A message between a profesor and one alumno about one class.
+export type MensajeClase = {
+  id: string;
+  claseId: string;
+  profesorId: string;
+  alumnoId: string;
+  autorId: string;
+  texto: string;
+  // "ausencia": the alumno lets the profesor know they cannot come (the text is the reason).
+  tipo?: "ausencia";
+  creadoEn?: Timestamp;
 };
 
 export type Devolucion = {
@@ -311,6 +390,86 @@ export function useRecordsAlumno(alumnoId: string | null) {
   );
 }
 
+export function useBiblioteca(profesorId: string) {
+  return useLiveQuery<BloqueGuardado>(`biblioteca:${profesorId}`, () =>
+    query(collection(db, "biblioteca"), where("profesorId", "==", profesorId)),
+  );
+}
+
+export function useLogrosAlumno(alumnoId: string) {
+  return useLiveQuery<Logros>(`logros-a:${alumnoId}`, () =>
+    query(collection(db, "logros"), where("alumnoId", "==", alumnoId)),
+  );
+}
+
+export function useLogrosProfesor(profesorId: string) {
+  return useLiveQuery<Logros>(`logros-p:${profesorId}`, () =>
+    query(collection(db, "logros"), where("profesorId", "==", profesorId)),
+  );
+}
+
+// Profesor: every message of a class (to show who said they cannot come).
+export function useMensajesDeClase(clase: Clase) {
+  return useLiveQuery<MensajeClase>(`mensajes-c:${clase.id}`, () =>
+    query(
+      collection(db, "mensajes"),
+      where("profesorId", "==", clase.profesorId),
+      where("claseId", "==", clase.id),
+    ),
+  );
+}
+
+export function useRepertorioAlumno(alumnoId: string) {
+  return useLiveQuery<Obra>(`rep-a:${alumnoId}`, () =>
+    query(collection(db, "repertorio"), where("alumnoId", "==", alumnoId)),
+  );
+}
+
+export function useRepertorioDe(profesorId: string, alumnoId: string) {
+  return useLiveQuery<Obra>(`rep-p:${profesorId}:${alumnoId}`, () =>
+    query(
+      collection(db, "repertorio"),
+      where("profesorId", "==", profesorId),
+      where("alumnoId", "==", alumnoId),
+    ),
+  );
+}
+
+export function useMetasAlumno(alumnoId: string) {
+  return useLiveQuery<Meta>(`metas-a:${alumnoId}`, () =>
+    query(collection(db, "metas"), where("alumnoId", "==", alumnoId)),
+  );
+}
+
+export function useMetasDe(profesorId: string, alumnoId: string) {
+  return useLiveQuery<Meta>(`metas-p:${profesorId}:${alumnoId}`, () =>
+    query(
+      collection(db, "metas"),
+      where("profesorId", "==", profesorId),
+      where("alumnoId", "==", alumnoId),
+    ),
+  );
+}
+
+// A message still on its way (no server time yet) goes last.
+const enviado = (m: MensajeClase) => m.creadoEn?.toMillis() ?? Number.MAX_SAFE_INTEGER;
+
+// One conversation: a class, its profesor and one alumno (the rules check both ids).
+export function useMensajes(clase: Clase, alumnoId: string) {
+  const live = useLiveQuery<MensajeClase>(`mensajes:${clase.id}:${alumnoId}`, () =>
+    query(
+      collection(db, "mensajes"),
+      where("claseId", "==", clase.id),
+      where("profesorId", "==", clase.profesorId),
+      where("alumnoId", "==", alumnoId),
+    ),
+  );
+  return {
+    ...live,
+    data: [...live.data].sort((a, b) => enviado(a) - enviado(b)),
+  };
+}
+
 // --- Progress ---
 
 // Share of a profesor's classes for one instrument that the alumno has delivered.
@@ -370,13 +529,36 @@ export function agregarAlumno(profesor: Perfil, alumno: Perfil, instrumento: Ins
   });
 }
 
-export function quitarInscripcion(id: string) {
-  return deleteDoc(doc(db, "inscripciones", id));
+// What hangs from that list goes with it: the learning path (same id), the repertoire and the
+// weekly goals. Those two can be many: extra batches first, the enrollment in the last one.
+export async function quitarInscripcion(inscripcion: Inscripcion) {
+  const deLaLista = (coleccion: string) =>
+    getDocs(
+      query(
+        collection(db, coleccion),
+        where("profesorId", "==", inscripcion.profesorId),
+        where("alumnoId", "==", inscripcion.alumnoId),
+        where("instrumento", "==", inscripcion.instrumento),
+      ),
+    );
+  const [obras, metas] = await Promise.all([deLaLista("repertorio"), deLaLista("metas")]);
+  const refs = [...obras.docs, ...metas.docs].map((d) => d.ref);
+  while (refs.length > 450) {
+    const parte = writeBatch(db);
+    refs.splice(0, 450).forEach((ref) => parte.delete(ref));
+    await parte.commit();
+  }
+  const batch = writeBatch(db);
+  refs.forEach((ref) => batch.delete(ref));
+  batch.delete(doc(db, "logros", inscripcion.id));
+  batch.delete(doc(db, "inscripciones", inscripcion.id));
+  return batch.commit();
 }
 
 // --- Profesor: planning ---
 
-export type ClaseNueva = Pick<Clase, "instrumento" | "titulo" | "descripcion">;
+export type ClaseNueva = Pick<Clase, "instrumento" | "titulo" | "descripcion"> &
+  Partial<Pick<Clase, "hora" | "modalidad" | "enlace" | "evento">>;
 
 // One class per date (several when the class repeats every week).
 export async function crearClases(profesor: Perfil, datos: ClaseNueva, fechas: string[]) {
@@ -386,7 +568,7 @@ export async function crearClases(profesor: Perfil, datos: ClaseNueva, fechas: s
     const ref = doc(collection(db, "clases"));
     ids.push(ref.id);
     batch.set(ref, {
-      ...datos,
+      ...soloConValor(datos),
       fecha,
       profesorId: profesor.uid,
       profesorNombre: profesor.nombre,
@@ -400,9 +582,33 @@ export async function crearClases(profesor: Perfil, datos: ClaseNueva, fechas: s
 
 export function actualizarClase(
   claseId: string,
-  cambios: Partial<Pick<Clase, "titulo" | "descripcion" | "fecha">>,
+  cambios: Partial<
+    Pick<Clase, "titulo" | "descripcion" | "fecha" | "hora" | "modalidad" | "enlace" | "evento">
+  >,
 ) {
-  return updateDoc(doc(db, "clases", claseId), cambios);
+  // An empty optional field (time, mode, link, recital) is removed, not saved as "".
+  const datos = Object.fromEntries(
+    Object.entries(cambios).map(([k, v]) =>
+      OPCIONALES.includes(k) && (v === undefined || v === "") ? [k, deleteField()] : [k, v],
+    ),
+  );
+  return updateDoc(doc(db, "clases", claseId), datos);
+}
+
+const OPCIONALES = ["hora", "modalidad", "enlace", "evento"];
+
+function soloConValor<T extends object>(datos: T) {
+  return Object.fromEntries(
+    Object.entries(datos).filter(
+      ([k, v]) => v !== undefined && !(OPCIONALES.includes(k) && v === ""),
+    ),
+  );
+}
+
+export function marcarAsistencia(claseId: string, alumnoId: string, estado: Asistencia | null) {
+  return updateDoc(doc(db, "clases", claseId), {
+    [`asistencia.${alumnoId}`]: estado ?? deleteField(),
+  });
 }
 
 // Deletes the class with everything that hangs from it: its materials, the alumnos' deliveries
@@ -422,6 +628,20 @@ export async function eliminarClase(clase: Clase) {
     ...entregas.docs.flatMap((d) => (d.data() as Entrega).archivos),
   ];
   await Promise.all(archivos.map((m) => borrarArchivo(m.ruta)));
+  const mensajes = await getDocs(
+    query(
+      collection(db, "mensajes"),
+      where("profesorId", "==", clase.profesorId),
+      where("claseId", "==", clase.id),
+    ),
+  );
+  // Messages can be many (a batch takes 500 writes): they go first, in their own batches. If the
+  // last batch fails, the class is still there and nothing points at a missing document.
+  for (let i = 0; i < mensajes.docs.length; i += 450) {
+    const parte = writeBatch(db);
+    mensajes.docs.slice(i, i + 450).forEach((d) => parte.delete(d.ref));
+    await parte.commit();
+  }
   const batch = writeBatch(db);
   entregas.docs.forEach((d) => batch.delete(d.ref));
   batch.delete(doc(db, "clases", clase.id));
@@ -441,6 +661,8 @@ export async function duplicarClase(profesor: Perfil, clase: Clase, fecha: strin
     fecha,
     materiales: [],
     ...(clase.ficha ? { ficha: clase.ficha } : {}),
+    // Same time and place; attendance and the recital belong to the original date.
+    ...soloConValor({ hora: clase.hora, modalidad: clase.modalidad, enlace: clase.enlace }),
     ...(clase.bloques
       ? {
           bloques: clase.bloques.map((b) => (b.tipo === "archivos" ? { ...b, archivos: [] } : b)),
@@ -491,6 +713,7 @@ export function quitarArchivoEntrega(entrega: Entrega, material: Material) {
   return updateDoc(ref, {
     archivos: arrayRemove(material),
     ...(suyas.length ? { devoluciones: arrayRemove(...suyas) } : {}),
+    ...sinRespuestas(entrega, suyas),
     actualizadoEn: serverTimestamp(),
   });
 }
@@ -501,8 +724,38 @@ export function agregarDevolucion(entrega: Entrega, devolucion: Devolucion) {
   return updateDoc(doc(db, "entregas", entrega.id), { devoluciones: arrayUnion(devolucion) });
 }
 
+export function guardarEvaluacion(entrega: Entrega, evaluacion: Omit<Evaluacion, "fecha">) {
+  return updateDoc(doc(db, "entregas", entrega.id), {
+    evaluacion: { ...evaluacion, fecha: Date.now() },
+  });
+}
+
 export function quitarDevolucion(entrega: Entrega, devolucion: Devolucion) {
-  return updateDoc(doc(db, "entregas", entrega.id), { devoluciones: arrayRemove(devolucion) });
+  return updateDoc(doc(db, "entregas", entrega.id), {
+    devoluciones: arrayRemove(devolucion),
+    ...sinRespuestas(entrega, [devolucion]),
+  });
+}
+
+// The alumno's answers to these devoluciones, removed in the same write as them.
+function sinRespuestas(entrega: Entrega, devoluciones: Devolucion[]) {
+  return Object.fromEntries(
+    devoluciones
+      .filter((d) => entrega.respuestas?.[d.id])
+      .map((d) => [`respuestas.${d.id}`, deleteField()]),
+  );
+}
+
+// Alumno: "Entendido" / "Ya lo corregí" on a devolución (null takes it back).
+export function responderDevolucion(
+  entrega: Entrega,
+  devolucionId: string,
+  respuesta: RespuestaDevolucion | null,
+) {
+  return updateDoc(doc(db, "entregas", entrega.id), {
+    [`respuestas.${devolucionId}`]: respuesta ?? deleteField(),
+    actualizadoEn: serverTimestamp(),
+  });
 }
 
 // Comments whose file is gone: possible if the profesor comments at the same moment the alumno
@@ -516,11 +769,125 @@ export function devolucionesSinArchivo(entrega: Entrega) {
 
 export function limpiarDevoluciones(entrega: Entrega, comoAlumno: boolean) {
   const sueltas = devolucionesSinArchivo(entrega);
-  if (!sueltas.length) return Promise.resolve();
+  // Answers whose devolución is gone (the profesor deleted it while the alumno answered).
+  const quedan = new Set(
+    (entrega.devoluciones ?? []).filter((d) => !sueltas.includes(d)).map((d) => d.id),
+  );
+  const respuestasSueltas = Object.keys(entrega.respuestas ?? {}).filter((id) => !quedan.has(id));
+  if (!sueltas.length && !respuestasSueltas.length) return Promise.resolve();
   return updateDoc(doc(db, "entregas", entrega.id), {
-    devoluciones: arrayRemove(...sueltas),
+    ...(sueltas.length ? { devoluciones: arrayRemove(...sueltas) } : {}),
+    ...Object.fromEntries(respuestasSueltas.map((id) => [`respuestas.${id}`, deleteField()])),
     ...(comoAlumno ? { actualizadoEn: serverTimestamp() } : {}),
   });
+}
+
+// --- Profesor: block library, learning path ---
+
+export function guardarEnBiblioteca(profesorId: string, instrumento: InstrumentId, bloque: Bloque) {
+  return addDoc(collection(db, "biblioteca"), {
+    profesorId,
+    instrumento,
+    titulo: (bloque.titulo || "Bloque").slice(0, 120),
+    bloque,
+    creadoEn: serverTimestamp(),
+  });
+}
+
+export function quitarDeBiblioteca(id: string) {
+  return deleteDoc(doc(db, "biblioteca", id));
+}
+
+export function guardarLogros(inscripcion: Inscripcion, nivel: string, cumplidos: string[]) {
+  return setDoc(doc(db, "logros", inscripcion.id), {
+    profesorId: inscripcion.profesorId,
+    alumnoId: inscripcion.alumnoId,
+    instrumento: inscripcion.instrumento,
+    nivel,
+    cumplidos,
+    actualizadoEn: serverTimestamp(),
+  });
+}
+
+// --- Alumno: repertoire and weekly goals (both hang from the enrollment) ---
+
+export function agregarObra(inscripcion: Inscripcion, obra: string, estado: EstadoObra) {
+  return addDoc(collection(db, "repertorio"), {
+    profesorId: inscripcion.profesorId,
+    alumnoId: inscripcion.alumnoId,
+    instrumento: inscripcion.instrumento,
+    obra: obra.trim().slice(0, 120),
+    estado,
+    creadoEn: serverTimestamp(),
+  });
+}
+
+export function cambiarObra(id: string, cambios: Partial<Pick<Obra, "estado" | "repasadoEn">>) {
+  return updateDoc(doc(db, "repertorio", id), cambios);
+}
+
+export function quitarObra(id: string) {
+  return deleteDoc(doc(db, "repertorio", id));
+}
+
+export function agregarMeta(inscripcion: Inscripcion, texto: string, semana: string) {
+  return addDoc(collection(db, "metas"), {
+    profesorId: inscripcion.profesorId,
+    alumnoId: inscripcion.alumnoId,
+    instrumento: inscripcion.instrumento,
+    texto: texto.trim().slice(0, 200),
+    semana,
+    cumplida: false,
+    creadoEn: serverTimestamp(),
+  });
+}
+
+export function marcarMeta(id: string, cumplida: boolean) {
+  return updateDoc(doc(db, "metas", id), { cumplida });
+}
+
+export function quitarMeta(id: string) {
+  return deleteDoc(doc(db, "metas", id));
+}
+
+// --- Alumno: profile extras ---
+
+export function guardarAutoevaluacion(uid: string, instrumento: InstrumentId, nivel: string) {
+  return updateDoc(doc(db, "usuarios", uid), { [`autoevaluacion.${instrumento}`]: nivel });
+}
+
+export function guardarRecordatorio(uid: string, hora: number | null) {
+  return updateDoc(doc(db, "usuarios", uid), { recordatorio: hora ?? deleteField() });
+}
+
+// --- Messages about a class ---
+
+export function enviarMensaje(clase: Clase, alumnoId: string, autorId: string, texto: string) {
+  return addDoc(collection(db, "mensajes"), {
+    claseId: clase.id,
+    profesorId: clase.profesorId,
+    alumnoId,
+    autorId,
+    texto: texto.trim().slice(0, 1000),
+    creadoEn: serverTimestamp(),
+  });
+}
+
+// "I cannot come": a message of type ausencia, so the profesor sees it next to the attendance.
+export function avisarAusencia(clase: Clase, alumnoId: string, motivo: string) {
+  return addDoc(collection(db, "mensajes"), {
+    claseId: clase.id,
+    profesorId: clase.profesorId,
+    alumnoId,
+    autorId: alumnoId,
+    texto: (motivo.trim() || "No puedo ir a esta clase.").slice(0, 1000),
+    tipo: "ausencia",
+    creadoEn: serverTimestamp(),
+  });
+}
+
+export function borrarMensaje(id: string) {
+  return deleteDoc(doc(db, "mensajes", id));
 }
 
 // --- Alumno: rudiment records ---

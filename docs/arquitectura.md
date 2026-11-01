@@ -7,7 +7,8 @@ Pulso es una aplicación **solo web** para enseñar y practicar instrumentos mus
 - **Profesor**: enseña uno o varios instrumentos, arma sus listas de alumnos, planifica clases por
   semana, mes o año, sube materiales y sigue el progreso de cada alumno.
 - **Alumno**: estudia uno o varios instrumentos. Solo ve las clases de un profesor **después** de que
-  ese profesor lo agrega a su lista. Sube sus prácticas en audio o video.
+  ese profesor lo agrega a su lista. Sube sus prácticas en audio o video, y fotos o PDF de tareas
+  escritas.
 
 Toda cuenta se identifica por su **número de documento** (`nro_documento`): con él se registra, entra
 y lo buscan los profesores.
@@ -108,16 +109,18 @@ Hace único al número de documento. Se crea al registrarse y nunca cambia.
 
 ### `usuarios/{uid}`
 
-| Campo           | Tipo                       |                                                         |
-| --------------- | -------------------------- | ------------------------------------------------------- |
-| `rol`           | `"alumno"` \| `"profesor"` | No cambia                                               |
-| `nombre`        | string                     | Nombre y apellido                                       |
-| `nro_documento` | string                     | Solo dígitos. No cambia                                 |
-| `instrumentos`  | string[]                   | Ids de [`instruments.ts`](../src/lib/instruments.ts)    |
-| `terminos`      | string[]                   | Prefijos del nombre sin acentos, para buscar por nombre |
-| `foto`          | `{ ruta, actualizadoEn }`  | Opcional. `ruta` siempre es `usuarios/{uid}/foto.jpg`   |
-| `metaSemanal`   | number                     | Opcional. Alumno: meta de minutos por semana (1–3000)   |
-| `creadoEn`      | timestamp                  |                                                         |
+| Campo            | Tipo                       |                                                                                                             |
+| ---------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `rol`            | `"alumno"` \| `"profesor"` | No cambia                                                                                                   |
+| `nombre`         | string                     | Nombre y apellido                                                                                           |
+| `nro_documento`  | string                     | Solo dígitos. No cambia                                                                                     |
+| `instrumentos`   | string[]                   | Ids de [`instruments.ts`](../src/lib/instruments.ts)                                                        |
+| `terminos`       | string[]                   | Prefijos del nombre sin acentos, para buscar por nombre                                                     |
+| `foto`           | `{ ruta, actualizadoEn }`  | Opcional. `ruta` siempre es `usuarios/{uid}/foto.jpg`                                                       |
+| `metaSemanal`    | number                     | Opcional. Alumno: meta de minutos por semana (1–3000)                                                       |
+| `recordatorio`   | number                     | Opcional. Alumno: hora (0–23, Paraguay) del recordatorio diario de práctica                                 |
+| `autoevaluacion` | mapa instrumento → nivel   | Opcional. Alumno: cómo se ve en cada instrumento (bienvenida); el profesor lo ve como sugerencia de la ruta |
+| `creadoEn`       | timestamp                  |                                                                                                             |
 
 Lo leen el dueño y cualquier profesor (para buscar alumnos). No contiene el correo. El dueño solo
 puede cambiar `nombre`, `instrumentos`, `terminos`, `foto` y `metaSemanal`.
@@ -138,20 +141,25 @@ La leen el profesor y el alumno. **Este documento es lo que habilita las clases 
 
 ### `clases/{id}`
 
-| Campo                          | Tipo                           |                                                                                                                   |
-| ------------------------------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| `profesorId`, `profesorNombre` | string                         |                                                                                                                   |
-| `instrumento`                  | string                         |                                                                                                                   |
-| `titulo`                       | string                         |                                                                                                                   |
-| `descripcion`                  | string                         | Objetivos y tarea                                                                                                 |
-| `fecha`                        | string `AAAA-MM-DD`            | Día del calendario, sin zona horaria                                                                              |
-| `materiales`                   | `Material[]`                   | Archivos de la clase                                                                                              |
-| `ficha`                        | `Ficha` (opcional)             | Nivel, estilo, afinación, capo, duración; en batería, `superficie` (pad, batería o ambas) y `kit` (4 o 5 cuerpos) |
-| `bloques`                      | `Bloque[]` (opcional, máx. 40) | Plan de la clase, en orden                                                                                        |
-| `creadoEn`                     | timestamp                      |                                                                                                                   |
+| Campo                          | Tipo                                                                      |                                                                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `profesorId`, `profesorNombre` | string                                                                    |                                                                                                                   |
+| `instrumento`                  | string                                                                    |                                                                                                                   |
+| `titulo`                       | string                                                                    |                                                                                                                   |
+| `descripcion`                  | string                                                                    | Objetivos y tarea                                                                                                 |
+| `fecha`                        | string `AAAA-MM-DD`                                                       | Día del calendario, sin zona horaria                                                                              |
+| `materiales`                   | `Material[]`                                                              | Archivos de la clase                                                                                              |
+| `ficha`                        | `Ficha` (opcional)                                                        | Nivel, estilo, afinación, capo, duración; en batería, `superficie` (pad, batería o ambas) y `kit` (4 o 5 cuerpos) |
+| `bloques`                      | `Bloque[]` (opcional, máx. 40)                                            | Plan de la clase, en orden                                                                                        |
+| `hora`                         | string `HH:MM` (opcional)                                                 | Hora de Paraguay; con hora aparecen _Google Calendar_ y el archivo `.ics` (aviso 1 h antes)                       |
+| `modalidad`                    | `presencial` \| `virtual` (opcional)                                      |                                                                                                                   |
+| `enlace`                       | string `https://…` (opcional)                                             | Videollamada de la clase virtual (Meet, Zoom, Jitsi)                                                              |
+| `asistencia`                   | mapa `alumnoId` → `presente` \| `tarde` \| `ausente` (opcional)           | La marca el profesor en la clase                                                                                  |
+| `evento`                       | `{ tipo: "recital", lugar, programa: { interprete, obra }[] }` (opcional) | La fecha es un recital o muestra, con su programa (máx. 60)                                                       |
+| `creadoEn`                     | timestamp                                                                 |                                                                                                                   |
 
 El profesor la crea, edita y borra. La leen los alumnos inscriptos con ese profesor en ese
-instrumento.
+instrumento. _Duplicar_ copia hora, modalidad y enlace, no la asistencia ni el recital.
 
 #### Plan de la clase (`ficha` + `bloques`)
 
@@ -190,16 +198,19 @@ esos minutos se anotan ahí solos (ver _Progreso_).
 
 ### `entregas/{claseId}_{alumnoId}`
 
-| Campo                                  | Tipo                                                                                                                                |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `claseId`, `profesorId`, `instrumento` | string                                                                                                                              |
-| `alumnoId`, `alumnoNombre`             | string                                                                                                                              |
-| `archivos`                             | `Material[]` (al menos uno)                                                                                                         |
-| `comentario`                           | string (opcional)                                                                                                                   |
-| `devoluciones`                         | `Devolucion[]` (opcional, máx. 100): `{ id, archivoId, segundo, texto, fecha }`, comentarios del profesor en un punto de un archivo |
-| `actualizadoEn`                        | timestamp                                                                                                                           |
+| Campo                                  | Tipo                                                                                                                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `claseId`, `profesorId`, `instrumento` | string                                                                                                                                                       |
+| `alumnoId`, `alumnoNombre`             | string                                                                                                                                                       |
+| `archivos`                             | `Material[]` (al menos uno)                                                                                                                                  |
+| `comentario`                           | string (opcional)                                                                                                                                            |
+| `devoluciones`                         | `Devolucion[]` (opcional, máx. 100): `{ id, archivoId, segundo, texto, fecha }`, comentarios del profesor en un punto de un archivo                          |
+| `evaluacion`                           | `{ criterios: { [id]: 1–5 }, comentario, fecha }` (opcional): la rúbrica del profesor ([`rubrica.ts`](../src/lib/rubrica.ts)); solo la escribe el profesor   |
+| `respuestas`                           | mapa `devolucionId` → `entendido` \| `corregido` (opcional): la respuesta del alumno a cada devolución; el profesor solo puede quitarlas (con su devolución) |
+| `actualizadoEn`                        | timestamp                                                                                                                                                    |
 
-La escribe el alumno inscripto; la leen el alumno y el profesor. Si el alumno quita su último
+La escribe el alumno inscripto; la leen el alumno y el profesor. Sus archivos son audio y video
+(hasta 200 MB) o fotos y PDF (hasta 20 MB), en `entregas/{claseId}/{alumnoId}/`. Si el alumno quita su último
 archivo, la entrega se borra y la clase vuelve a quedar pendiente. La borran el alumno o el
 profesor (al borrar la clase).
 
@@ -236,10 +247,93 @@ El mejor tempo limpio del alumno en cada rudimento de batería.
 Lo escribe y lo borra el alumno; lo leen él y sus profesores de batería (la regla comprueba la
 inscripción `{profesorId}_{alumnoId}_bateria`).
 
+### `biblioteca/{id}`
+
+Bloques que el profesor guarda para reusar en otras clases.
+
+| Campo         | Tipo      |                                               |
+| ------------- | --------- | --------------------------------------------- |
+| `profesorId`  | string    | Dueño                                         |
+| `instrumento` | string    | Se ofrece en las clases de ese instrumento    |
+| `titulo`      | string    | 1–120                                         |
+| `bloque`      | `Bloque`  | Copia del bloque; nunca un bloque de archivos |
+| `creadoEn`    | timestamp |                                               |
+
+Lo crea y lo borra el profesor (de la paleta _Agregar bloque_); solo lo lee él. Al usarlo, el
+bloque entra al plan como copia con un `id` nuevo.
+
+### `logros/{profesorId}_{alumnoId}_{instrumento}`
+
+La **ruta de aprendizaje** del alumno en esa lista: mismo id que la inscripción.
+
+| Campo                                   | Tipo      |                                                                           |
+| --------------------------------------- | --------- | ------------------------------------------------------------------------- |
+| `profesorId`, `alumnoId`, `instrumento` | string    |                                                                           |
+| `nivel`                                 | string    | `inicial`, `basico`, `intermedio` o `avanzado`                            |
+| `cumplidos`                             | string[]  | Ids de los objetivos logrados ([`ruta.ts`](../src/lib/ruta.ts), máx. 200) |
+| `actualizadoEn`                         | timestamp |                                                                           |
+
+Lo escribe el profesor (la regla exige que la inscripción exista); lo leen él y el alumno. Se
+borra con la inscripción. Los ids de objetivos solo se agregan, nunca se renombran.
+
+### `mensajes/{id}`
+
+Conversación sobre una clase entre su profesor y un alumno de esa lista.
+
+| Campo                    | Tipo                    |                                                         |
+| ------------------------ | ----------------------- | ------------------------------------------------------- |
+| `claseId`                | string                  |                                                         |
+| `profesorId`, `alumnoId` | string                  | Los dos de la charla                                    |
+| `autorId`                | string                  | Quién lo escribió                                       |
+| `texto`                  | string                  | 1–1000                                                  |
+| `tipo`                   | `"ausencia"` (opcional) | El alumno avisa que no puede ir (el texto es el motivo) |
+| `creadoEn`               | timestamp               |                                                         |
+
+Lo escriben los dos (la regla comprueba la clase y la inscripción); no se editan; cada uno borra
+los suyos y el profesor los borra todos con la clase.
+
+### `repertorio/{id}`
+
+Las obras del alumno en una lista y cómo van.
+
+| Campo                                   | Tipo                |                                                        |
+| --------------------------------------- | ------------------- | ------------------------------------------------------ |
+| `profesorId`, `alumnoId`, `instrumento` | string              | La inscripción de la que cuelga                        |
+| `obra`                                  | string              | 1–120                                                  |
+| `estado`                                | string              | `aprendiendo`, `entera`, `memoria` o `lista` (recital) |
+| `repasadoEn`                            | string `AAAA-MM-DD` | Opcional. Último repaso                                |
+| `creadoEn`                              | timestamp           |                                                        |
+
+La escriben el alumno y el profesor de esa lista (la regla exige la inscripción); solo cambian
+`estado` y `repasadoEn`. Se borra con la inscripción.
+
+### `metas/{id}`
+
+Metas concretas de una semana, pactadas entre profesor y alumno.
+
+| Campo                                   | Tipo                |                        |
+| --------------------------------------- | ------------------- | ---------------------- |
+| `profesorId`, `alumnoId`, `instrumento` | string              | La inscripción         |
+| `texto`                                 | string              | 1–200                  |
+| `semana`                                | string `AAAA-MM-DD` | El lunes de esa semana |
+| `cumplida`                              | boolean             | Solo cambia este campo |
+| `creadoEn`                              | timestamp           |                        |
+
+La escriben los dos; se borra con la inscripción.
+
+### `dispositivos/{token}`
+
+Un navegador que recibe avisos (Firebase Cloud Messaging): `{ uid, creadoEn }`, con el token de
+FCM como id. Lo crea el dueño al activar los avisos en _Mi perfil_; se borra al desactivarlos, al
+tocar **Salir** y desde la Function cuando FCM dice que el token ya no sirve. Solo la Function lo
+lee para enviar.
+
 ### `Material`
 
-`{ id, nombre, tipo, ruta, tamano, contentType }`, donde `tipo` es `audio`, `video`, `pdf`,
-`partitura` (MusicXML), `imagen` u `otro`, y `ruta` apunta al archivo en Storage.
+`{ id, nombre, tipo, ruta, tamano, contentType, analisis? }`, donde `tipo` es `audio`, `video`, `pdf`,
+`partitura` (MusicXML), `imagen` u `otro`, y `ruta` apunta al archivo en Storage. `analisis`
+(`{ afinacion, notas, desvioMs, bpm }`, todo opcional) lo agrega la grabadora de la app al enviar
+(ver _Herramientas de práctica_).
 
 ## Archivos (Cloud Storage)
 
@@ -267,20 +361,21 @@ herramienta se muestra **solo para los instrumentos donde tiene sentido**, segú
 de la persona (perfil y, en el alumno, las listas de sus profesores). La tabla está en
 [`herramientas.ts`](../src/lib/herramientas.ts):
 
-| Herramienta            | Instrumentos                                                                                                                                                            |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Afinador               | guitarra, requinto, bajo, ukelele, violín, violonchelo, contrabajo, arpa, saxofón, trompeta, flauta, voz                                                                |
-| Metrónomo              | todos                                                                                                                                                                   |
-| Grabadora              | todos                                                                                                                                                                   |
-| Diccionario de acordes | guitarra, ukelele y requinto (diagrama; el del requinto es la forma de guitarra una cuarta más grave), piano, teclado y acordeón (teclado con digitación), arpa (notas) |
-| Oído                   | todos menos batería y percusión; el ejercicio de acordes, solo los que tocan acordes                                                                                    |
-| Lectura de notas       | todos menos batería y percusión, con su clave (sol, fa o las dos)                                                                                                       |
-| Diario                 | todos (solo alumnos: el profesor lo ve en la ficha del alumno)                                                                                                          |
-| Medidor de tiempo      | batería y percusión                                                                                                                                                     |
-| Grooves (biblioteca)   | batería (kit) y percusión (cajón, congas, bongó, shaker, claves, cencerro, güiro)                                                                                       |
-| Rudimentos             | batería y percusión (récords en `records`)                                                                                                                              |
-| Lectura rítmica        | batería y percusión                                                                                                                                                     |
-| Oído rítmico           | batería y percusión                                                                                                                                                     |
+| Herramienta                             | Instrumentos                                                                                                                                                            |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Afinador                                | guitarra, requinto, bajo, ukelele, violín, violonchelo, contrabajo, arpa, saxofón, trompeta, flauta, voz                                                                |
+| Metrónomo                               | todos                                                                                                                                                                   |
+| Grabadora                               | todos                                                                                                                                                                   |
+| Diccionario de acordes                  | guitarra, ukelele y requinto (diagrama; el del requinto es la forma de guitarra una cuarta más grave), piano, teclado y acordeón (teclado con digitación), arpa (notas) |
+| Oído                                    | todos menos batería y percusión; el ejercicio de acordes, solo los que tocan acordes                                                                                    |
+| Lectura (notas sueltas y primera vista) | todos menos batería y percusión, con su clave (sol, fa o las dos)                                                                                                       |
+| Polca y guarania                        | los que tocan acordes (guitarra, requinto, ukelele, arpa, teclados) y el bajo                                                                                           |
+| Diario                                  | todos (solo alumnos: el profesor lo ve en la ficha del alumno)                                                                                                          |
+| Medidor de tiempo                       | batería y percusión                                                                                                                                                     |
+| Grooves (biblioteca)                    | batería (kit) y percusión (cajón, congas, bongó, shaker, claves, cencerro, güiro)                                                                                       |
+| Rudimentos                              | batería y percusión (récords en `records`)                                                                                                                              |
+| Lectura rítmica                         | batería y percusión                                                                                                                                                     |
+| Oído rítmico                            | batería y percusión                                                                                                                                                     |
 
 Todas funcionan en el navegador, con un solo `AudioContext` ([`audio.ts`](../src/lib/audio.ts)) y
 las notas de [`notas.ts`](../src/lib/notas.ts). El micrófono y la cámara exigen HTTPS (o
@@ -298,12 +393,25 @@ las notas de [`notas.ts`](../src/lib/notas.ts). El micrófono y la cámara exige
 - **Grabadora** ([`grabadora.ts`](../src/lib/grabadora.ts)): `MediaRecorder` en audio o video
   (hasta 30 min de audio o 10 de video, así no supera los 200 MB). En la clase, **Enviar a mi
   profesor** la sube como archivo de la entrega con `subirYAnotar` (si no se puede anotar en
-  Firestore, borra el archivo). En `/herramientas` solo se escucha o se descarga.
+  Firestore, borra el archivo). En `/herramientas` solo se escucha o se descarga. **Con click**: el
+  metrónomo suena solo mientras graba (con auriculares no queda grabado).
+- **Análisis de la grabación** ([`analisis.ts`](../src/lib/analisis.ts)): al terminar una toma de
+  hasta 5 minutos, el navegador la decodifica a 22 kHz y mide la **afinación** (YIN cada 100 ms en
+  los primeros 2 minutos; % de notas sostenidas a ±10 cents, ±15 en arco, viento y voz) y el
+  **tiempo** (ataques contra una grilla de corcheas ajustada por mínimos cuadrados: el desvío medio
+  en ms; con click, a ese tempo). El tiempo solo se mide en cuerdas pulsadas, teclados y percusión.
+  Los números viajan con el archivo (`Material.analisis`) y los ve el profesor.
 - **Velocidad y bucle A-B** ([`Reproductor.tsx`](../src/components/Reproductor.tsx)): en todo audio
   y video de clases y entregas (50 a 100 %, sin cambiar el tono) y en YouTube (con los mensajes de
   la API del reproductor, sin cargar scripts).
 - **Acordes, Oído y Lectura** ([`components/herramientas/`](../src/components/herramientas/)):
-  ejercicios sin datos guardados; el puntaje dura mientras la pantalla está abierta.
+  ejercicios sin datos guardados; el puntaje dura mientras la pantalla está abierta. **Primera
+  vista** ([`primera-vista.ts`](../src/lib/primera-vista.ts)) genera cada vez una melodía de cuatro
+  compases en Do mayor (fácil: negras y blancas por grados; media: corcheas y saltos) y la muestra
+  con alphaTab, con el sonido del instrumento.
+- **Polca y guarania** ([`progresiones.ts`](../src/lib/progresiones.ts)): polca, guarania y galopa
+  como formas armónicas por grados (sin canciones ni letras), en el tono elegido, con diagramas en
+  guitarra, ukelele y requinto y un acompañamiento de bajo y rasgueo programado en el reloj de audio.
 - **Diario** ([`Diario.tsx`](../src/components/herramientas/Diario.tsx)): colección `diario` y
   `usuarios.metaSemanal`.
 
@@ -381,6 +489,61 @@ El **profesor** ve en el diario del alumno solo los minutos de **su** instrument
 los demás) y la meta semanal como dato aparte, sin porcentaje: la meta cuenta todos los
 instrumentos del alumno y compararla con una parte daría un número falso.
 
+## Seguimiento del alumno
+
+- **Rúbrica** ([`rubrica.ts`](../src/lib/rubrica.ts)): en cada entrega el profesor pone de 1 a 5 en
+  los criterios de la familia del instrumento (afinación, tiempo, técnica, sonido, expresión…) y una
+  devolución breve. **Habilidades** promedia cada criterio en todas las entregas evaluadas, con la
+  tendencia de la última.
+- **Ruta de aprendizaje** ([`ruta.ts`](../src/lib/ruta.ts)): cuatro niveles con objetivos por
+  familia; el profesor elige el nivel y marca los objetivos (colección `logros`), el alumno los ve
+  en su inicio.
+- **Asistencia**: el profesor marca presente, tarde o ausente en la clase (`clases.asistencia`).
+- **Insignias** ([`insignias.ts`](../src/lib/insignias.ts)): se calculan en el navegador con lo que
+  ya está guardado (entregas, diario, récords, análisis, rúbricas y ruta); no se guarda nada nuevo.
+- **Informe para la familia** ([`InformeFamilia.tsx`](../src/components/InformeFamilia.tsx)): texto
+  con el progreso, la asistencia, la práctica de los últimos 30 días, el nivel y las habilidades,
+  para enviar por WhatsApp, copiar o imprimir. No se guarda ni da acceso a nadie más.
+
+## La experiencia del alumno
+
+- **Tu práctica de hoy** ([`rutina.ts`](../src/lib/rutina.ts)): el alumno elige 10, 20 o 40
+  minutos (se recuerda en el navegador) y se arma la rutina: calentamiento, la clase pendiente (al
+  modo práctica), el criterio más bajo de su rúbrica con la herramienta que lo entrena y la obra de
+  su repertorio que hace más tiempo no repasa; debajo, sus metas de la semana sin cumplir. Se
+  calcula; no se guarda.
+- **Mi evolución** ([`MiEvolucion.tsx`](../src/components/MiEvolucion.tsx)): la primera grabación
+  al lado de la última (por instrumento) y dos gráficos (notas afinadas y desvío del tiempo) con el
+  análisis de cada grabación. La fecha sale del id del archivo (empieza con el momento de la subida).
+- **Repertorio** y **metas de la semana** (colecciones `repertorio` y `metas`): las ven y editan el
+  alumno, en su inicio, y el profesor, en la ficha del alumno.
+- **Respuestas a las devoluciones**: el alumno responde _Entendido_ o _Ya lo corregí_ a cada
+  comentario (`entregas.respuestas`); el profesor lo ve debajo del comentario.
+- **No puedo ir**: en una clase de hoy o futura, el alumno avisa con un motivo (un mensaje de tipo
+  `ausencia`); el profesor lo ve junto a la asistencia.
+- **Bienvenida** ([`BienvenidaAlumno.tsx`](../src/components/BienvenidaAlumno.tsx)): la primera vez
+  en ese navegador, un recorrido de 4 pasos y una autoevaluación por instrumento
+  (`usuarios.autoevaluacion`), que el profesor ve en la ruta como _Se autoevaluó en nivel…_ con
+  _Empezar ahí_.
+- **Pedal o teclado** en el modo práctica: flechas o Page Up / Page Down (lo que envían los pedales
+  Bluetooth para pasar páginas) cambian de bloque; no mientras se escribe.
+- **Entrenador de velocidad** en las partituras ([`Partitura.tsx`](../src/components/plan/Partitura.tsx)):
+  repite en bucle el pasaje elegido (arrastrando sobre la partitura) o la obra entera, desde el 60 %
+  y sumando 5 % por vuelta hasta el 100 %.
+
+## Avisos (notificaciones)
+
+- **En el navegador** ([`avisos.ts`](../src/lib/avisos.ts)): en _Mi perfil → Avisos_, cada persona
+  los activa por dispositivo; se pide el permiso, se obtiene el token de FCM con la clave pública
+  VAPID (`VITE_FIREBASE_VAPID_KEY`) y se guarda en `dispositivos`. [`sw.js`](../public/sw.js)
+  muestra cada aviso y, al tocarlo, abre su página. En iPhone y iPad solo funcionan con Pulso
+  agregado a la pantalla de inicio.
+- **Las Functions** ([`functions/src/avisos.ts`](../functions/src/avisos.ts), en `us-central1`,
+  donde está la base `nam5`): `avisarClaseNueva` (clase de los próximos 7 días, a los alumnos de
+  la lista), `avisarEntrega` (entrega nueva y respuestas, al profesor; comentario y evaluación, al
+  alumno), `avisarMensaje` (al otro de la charla; la ausencia lo dice) y `recordarPractica` (cada
+  hora: los alumnos con `recordatorio` a esa hora que no anotaron práctica hoy, con su racha).
+
 ## Búsqueda de alumnos
 
 El profesor escribe un **número de documento** (con o sin puntos) o un **nombre**:
@@ -396,6 +559,19 @@ En ambos casos solo se muestran usuarios con rol alumno.
 Todas las pantallas escuchan Firestore en vivo (`onSnapshot`): cuando el profesor agrega a un
 alumno, crea una clase o sube un material, el alumno lo ve sin recargar, y lo mismo para las
 entregas del lado del profesor.
+
+## Uso sin conexión
+
+- **Service worker** ([`public/sw.js`](../public/sw.js), registrado en
+  [`main.tsx`](../src/main.tsx) solo en producción): guarda la app y cada archivo del sitio que ya
+  se usó (código, fuentes, el banco de sonidos de alphaTab). Las páginas van primero a la red y, sin
+  internet, abren la app guardada. Nunca intercepta Firebase ni otros sitios.
+- **Copia local de Firestore** (`persistentLocalCache` en [`firebase.ts`](../src/lib/firebase.ts)):
+  el perfil, las clases y las listas ya vistas se leen sin internet. Al tocar **Salir** se borra esa
+  copia (un equipo compartido) y la app vuelve a empezar.
+
+Afinador, metrónomo, grabadora y los ejercicios funcionan sin internet una vez abiertos; enviar una
+grabación o un mensaje necesita conexión.
 
 ## Contacto
 

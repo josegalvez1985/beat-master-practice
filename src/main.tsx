@@ -61,6 +61,12 @@ const router = createBrowserRouter(
 
 const queryClient = new QueryClient();
 
+// Offline use: public/sw.js keeps the app and the files it used in the browser cache.
+if (import.meta.env.PROD && "serviceWorker" in navigator)
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {});
+  });
+
 loadFonts().then(() => {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>

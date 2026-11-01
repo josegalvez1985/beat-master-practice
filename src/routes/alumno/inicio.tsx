@@ -6,6 +6,15 @@ import { AvanceSemana } from "@/components/AvanceSemana";
 import { Bienvenida } from "@/components/Bienvenida";
 import { ClaseItem } from "@/components/ClaseItem";
 import { ResumenDiario } from "@/components/herramientas/Diario";
+import { BienvenidaAlumno, vioBienvenida } from "@/components/BienvenidaAlumno";
+import { InformeFamilia } from "@/components/InformeFamilia";
+import { MetasSemana } from "@/components/MetasSemana";
+import { MiEvolucion } from "@/components/MiEvolucion";
+import { PracticaDeHoy } from "@/components/PracticaDeHoy";
+import { Repertorio } from "@/components/Repertorio";
+import { Insignias } from "@/components/Insignias";
+import { Habilidades } from "@/components/Rubrica";
+import { RutaAprendizaje } from "@/components/RutaAprendizaje";
 import { Link } from "@/components/Link";
 import { Metronome } from "@/components/Metronome";
 import { PageMeta } from "@/components/PageMeta";
@@ -20,14 +29,23 @@ import {
   progreso,
   useClasesDe,
   useClasesDeInscripciones,
+  useDiarioAlumno,
   useEntregasAlumno,
   useInscripcionesAlumno,
+  useLogrosAlumno,
+  useMetasAlumno,
+  useRecordsAlumno,
+  useRepertorioAlumno,
   type Entrega,
   type Inscripcion,
+  type Logros,
+  type Meta,
+  type Obra,
 } from "@/lib/data";
 import { hoy } from "@/lib/dates";
 import { formatearDocumento } from "@/lib/documento";
 import { instrumentosDe } from "@/lib/herramientas";
+import { insignias } from "@/lib/insignias";
 import { instrumento } from "@/lib/instruments";
 import { colors, fonts } from "@/lib/theme";
 
@@ -40,6 +58,19 @@ export default function AlumnoInicio() {
   const clases = useClasesDeInscripciones(inscripciones.data);
   // Only the tuner of instruments this alumno studies (profile or a profesor list).
   const afinables = instrumentosDe(perfil.instrumentos, inscripciones.data).filter(afinable);
+  const logros = useLogrosAlumno(perfil.uid);
+  const diario = useDiarioAlumno(perfil.uid);
+  const records = useRecordsAlumno(perfil.uid);
+  const obras = useRepertorioAlumno(perfil.uid);
+  const metas = useMetasAlumno(perfil.uid);
+  const [bienvenida, setBienvenida] = useState(() => !vioBienvenida(perfil.uid));
+  const misInstrumentos = instrumentosDe(perfil.instrumentos, inscripciones.data);
+  const lista = insignias({
+    entregas: entregas.data,
+    diario: diario.data,
+    records: records.data,
+    logros: logros.data,
+  });
 
   return (
     <>
@@ -60,6 +91,24 @@ export default function AlumnoInicio() {
         <ProximaPractica alumnoId={perfil.uid} clases={clases.data} entregas={entregas.data} />
       ) : null}
 
+      {inscripciones.data.length ? (
+        <PracticaDeHoy
+          instrumentos={misInstrumentos}
+          clases={clases.data}
+          entregas={entregas.data}
+          obras={obras.data}
+          metas={metas.data}
+        />
+      ) : null}
+
+      {bienvenida ? (
+        <BienvenidaAlumno
+          perfil={perfil}
+          instrumentos={misInstrumentos}
+          onClose={() => setBienvenida(false)}
+        />
+      ) : null}
+
       <View style={[styles.columns, lg && styles.row]}>
         <View style={[styles.column, lg && styles.mainColumn]}>
           {inscripciones.loading ? <ActivityIndicator color={colors.primary} /> : null}
@@ -75,11 +124,28 @@ export default function AlumnoInicio() {
               key={inscripcion.id}
               inscripcion={inscripcion}
               entregas={entregas.data}
+              logros={logros.data.find((l) => l.id === inscripcion.id)}
+              obras={obras.data}
+              metas={metas.data}
             />
           ))}
+          {entregas.data.length ? (
+            <Section
+              title="Mi evolución"
+              subtitle="Tu primera grabación al lado de la última, y cómo cambian tu afinación y tu tiempo."
+            >
+              <MiEvolucion instrumentos={misInstrumentos} entregas={entregas.data} />
+            </Section>
+          ) : null}
         </View>
         <View style={[styles.column, lg && styles.sideColumn]}>
           <ResumenDiario perfil={perfil} />
+          <Section
+            title="Tus insignias"
+            subtitle={`${lista.filter((i) => i.ganada).length} de ${lista.length} ganadas`}
+          >
+            <Insignias lista={lista} />
+          </Section>
           {afinables.length ? <Afinador instrumentos={afinables} /> : null}
           <Metronome />
           <Link href="/herramientas">
@@ -100,9 +166,15 @@ const VISIBLES = 5;
 function InscripcionCard({
   inscripcion,
   entregas,
+  logros,
+  obras,
+  metas,
 }: {
   inscripcion: Inscripcion;
   entregas: Entrega[];
+  logros: Logros | undefined;
+  obras: Obra[];
+  metas: Meta[];
 }) {
   const clases = useClasesDe(inscripcion.profesorId, inscripcion.instrumento);
   const [todas, setTodas] = useState(false);
@@ -150,6 +222,19 @@ function InscripcionCard({
           {todas ? "Ver menos" : `Ver todas (${lista.length})`}
         </Button>
       ) : null}
+      <RutaAprendizaje inscripcion={inscripcion} logros={logros} editable={false} />
+      <MetasSemana inscripcion={inscripcion} metas={metas} />
+      <Repertorio inscripcion={inscripcion} obras={obras} />
+      <Habilidades
+        instrumento={inscripcion.instrumento}
+        entregas={entregas.filter((e) => e.profesorId === inscripcion.profesorId)}
+      />
+      <InformeFamilia
+        inscripcion={inscripcion}
+        clases={clases.data}
+        entregas={entregas}
+        logros={logros}
+      />
     </Section>
   );
 }

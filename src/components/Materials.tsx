@@ -25,7 +25,8 @@ import {
   type Material,
   type MaterialTipo,
 } from "@/lib/files";
-import type { Devolucion } from "@/lib/data";
+import { resumenAnalisis } from "@/lib/analisis";
+import type { Devolucion, Entrega, RespuestaDevolucion } from "@/lib/data";
 import { colors, fonts, radius } from "@/lib/theme";
 
 const iconos: Record<MaterialTipo, LucideIcon> = {
@@ -51,6 +52,10 @@ type Comentarios = {
   devoluciones?: Devolucion[];
   onComentar?: (material: Material, segundo: number, texto: string) => Promise<void>;
   onQuitarDevolucion?: (devolucion: Devolucion) => void;
+  // The alumno's answers ("Entendido" / "Ya lo corregí"), by devolución id; with
+  // `onResponder` the alumno can answer.
+  respuestas?: Entrega["respuestas"];
+  onResponder?: (devolucion: Devolucion, respuesta: RespuestaDevolucion | null) => void;
 };
 
 // List of stored files with inline players for audio and video.
@@ -77,11 +82,14 @@ function MaterialRow({
   devoluciones = [],
   onComentar,
   onQuitarDevolucion,
+  respuestas = {},
+  onResponder,
 }: {
   material: Material;
   onRemove?: (material: Material) => void;
 } & Comentarios) {
   const suyas = devoluciones.filter((d) => d.archivoId === material.id);
+  const sinResponder = suyas.filter((d) => !respuestas[d.id]).length;
   const [abierto, setAbierto] = useState(false);
   const reproducible = material.tipo === "audio" || material.tipo === "video";
   // Players load their URL only when opened; other files need it for the "open" link.
@@ -103,7 +111,11 @@ function MaterialRow({
             {suyas.length
               ? ` · ${suyas.length} ${suyas.length === 1 ? "comentario" : "comentarios"} del profesor`
               : ""}
+            {onResponder && sinResponder ? ` · ${sinResponder} sin responder` : ""}
           </Text>
+          {material.analisis ? (
+            <Text style={styles.analisis}>Análisis: {resumenAnalisis(material.analisis)}</Text>
+          ) : null}
         </View>
         {reproducible ? (
           <Pressable
@@ -142,7 +154,14 @@ function MaterialRow({
           url={url}
           tipo={material.tipo === "video" ? "video" : "audio"}
           autoPlay={material.tipo === "audio"}
-          marcas={suyas}
+          marcas={suyas.map((d) => ({ ...d, respuesta: respuestas[d.id] }))}
+          onResponder={
+            onResponder &&
+            ((id, respuesta) => {
+              const devolucion = suyas.find((d) => d.id === id);
+              if (devolucion) onResponder(devolucion, respuesta);
+            })
+          }
           onComentar={onComentar && ((segundo, texto) => onComentar(material, segundo, texto))}
           onQuitarMarca={
             onQuitarDevolucion &&
@@ -166,12 +185,15 @@ export function UploadButton({
   accept,
   onUploaded,
   variant = "secondary",
+  limite = () => MAX_BYTES,
 }: {
   label: string;
   carpeta: string;
   accept: string;
   onUploaded: (material: Material) => Promise<void>;
   variant?: "default" | "secondary";
+  // Largest size for each file (storage.rules has the same limits).
+  limite?: (file: File) => number;
 }) {
   const [subidas, setSubidas] = useState<Subida[]>([]);
   const subiendo = subidas.some((s) => s.porcentaje < 100 && !s.error);
@@ -184,8 +206,8 @@ export function UploadButton({
     if (files.length === 0) return;
     setSubidas(files.map((file) => ({ nombre: file.name, porcentaje: 0 })));
     for (const [index, file] of files.entries()) {
-      if (file.size > MAX_BYTES) {
-        actualizar(index, { error: `Supera ${formatearTamano(MAX_BYTES)}` });
+      if (file.size > limite(file)) {
+        actualizar(index, { error: `Supera ${formatearTamano(limite(file))}` });
         continue;
       }
       try {
@@ -227,6 +249,11 @@ export function UploadButton({
 }
 
 const styles = StyleSheet.create({
+  analisis: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.foreground,
+  },
   list: {
     gap: 8,
   },

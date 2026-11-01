@@ -222,7 +222,7 @@ function MisAlumnos({
   const quitar = (inscripcion: Inscripcion) => {
     const nombre = instrumento(inscripcion.instrumento).name;
     if (window.confirm(`¿Quitar a ${inscripcion.alumnoNombre} de tu lista de ${nombre}?`)) {
-      quitarInscripcion(inscripcion.id);
+      void quitarInscripcion(inscripcion);
     }
   };
 

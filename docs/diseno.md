@@ -217,19 +217,30 @@ perfil.
 - **Semana**: los 7 días, con "+" en cada día para crear una clase ese día.
 - **Mes**: los días que tienen clases.
 - **Año**: los 12 meses con sus clases, para ver el plan completo.
-- **Nueva clase** (modal): instrumento, título, fecha, objetivos y tarea, y **Repetir cada semana
-  hasta…** (muestra cuántas clases se van a crear, máximo 60).
+- **Nueva clase** (modal): instrumento, título, fecha, **hora** (opcional, "18:30"),
+  **modalidad** (presencial o virtual con el **enlace** de la videollamada), objetivos y tarea,
+  **Es un recital o muestra** (lugar y programa: quién toca qué) y **Repetir cada semana hasta…**
+  (muestra cuántas clases se van a crear, máximo 60).
 
 ### Profesor · Alumno (`/alumnos/:id`)
 
 Encabezado con nombre y documento; una tarjeta por instrumento con el porcentaje grande, la barra,
-la lista de clases con su estado _Entregada_ / _Pendiente_ y su **diario de práctica** de ese
-instrumento (minutos de la semana en ese instrumento, su meta semanal total como dato aparte y las
-últimas anotaciones).
+la lista de clases con su estado _Entregada_ / _Pendiente_, cuántas veces asistió, su **ruta de
+aprendizaje** (nivel inicial, básico, intermedio o avanzado con sus objetivos: el profesor elige el
+nivel y marca cada objetivo de un toque), sus **habilidades** (el promedio de cada criterio de la
+rúbrica, con flecha si subió), **Informe para la familia** (texto para enviar por WhatsApp, copiar
+o imprimir) y su **diario de práctica** de ese instrumento (minutos de la semana en ese
+instrumento, su meta semanal total como dato aparte y las últimas anotaciones).
 
 ### Clase (`/clases/:id`)
 
-- Fecha, título, instrumento y profesor.
+- Fecha, título, instrumento, profesor y, si los tiene, hora, modalidad y _Recital_. Con hora:
+  **Google Calendar** y **Otro calendario (.ics)**, con aviso una hora antes; si es virtual,
+  **Entrar a la videollamada**.
+- **Recital**: lugar y programa numerado (obra e intérprete).
+- **Alumno**: en una clase de hoy o futura, **No puedo ir** (motivo opcional); después, _Avisaste
+  que no vas_. En sus devoluciones, _Entendido_ / _Ya lo corregí_ debajo de cada comentario, y "2
+  sin responder" en el archivo.
 - **Objetivos y tarea**.
 - **Plan de la clase** (bloques):
   - **Sin plan**: _Usar plantilla de 60 min_ (calentamiento con tempo, técnica con tablatura,
@@ -245,7 +256,9 @@ instrumento (minutos de la semana en ese instrumento, su meta semanal total como
     ("Repertorio · G · C · D · Em", "4/4 · 80 BPM · ↓ · ↓ ↑…"). Cada tarjeta tiene borde del color
     de su etapa, minutos, subir, bajar, eliminar y plegar.
   - **"+" entre bloques** para insertar justo ahí; al final, _Agregar bloque_. Ambos abren la paleta
-    con los tipos del instrumento.
+    con los tipos del instrumento y, arriba, **De tu biblioteca**: los bloques guardados de ese
+    instrumento (la ✕ los quita de la biblioteca). En cada bloque, el ícono de marcador lo
+    **guarda en tu biblioteca** (menos los de archivos).
   - **Eliminar con _Deshacer_** (6 s) en lugar de confirmaciones del navegador; los archivos se
     borran recién cuando vence el plazo.
   - **Tablatura**: atajos (Nota, Acorde, Silencio, Compás, duraciones), editor de texto, ayuda
@@ -273,18 +286,24 @@ instrumento (minutos de la semana en ese instrumento, su meta semanal total como
   - **Alumno**: resumen del plan con _Hecho_ en cada bloque, la barra "x de y bloques practicados"
     y **Empezar / Continuar práctica**, que abre el **modo práctica**: un bloque por pantalla con
     "Bloque 2 de 5" y puntos de avance, cronómetro con los minutos sugeridos (sigue contando en
-    ámbar al pasarse), el contenido en grande, _Anterior_ y **Hecho y siguiente**, y al final
+    ámbar al pasarse), el contenido en grande, _Anterior_ y **Hecho y siguiente** (también con un pedal Bluetooth o las flechas ← →), y al final
     _¡Práctica terminada!_ con la invitación a subir la entrega (es lo que cuenta en el avance de las clases) y el aviso
     "Anotamos N min en tu diario: tu avance de la semana ya se actualizó" (se anota solo). `?practicar=1` lo abre directo.
 - **Materiales** (u **Otros materiales** si hay plan): lista con tipo y tamaño; audio y video se
   reproducen ahí mismo con **velocidad** (50, 75, 90, 100 %, sin cambiar el tono) y **repetir de A
   a B** para un pasaje, PDF y partituras se abren en otra pestaña.
 - **Profesor**: Editar, Eliminar (pide confirmación y avisa que también se borran los materiales y
-  las entregas de los alumnos), Subir materiales (con barra de avance por archivo) y **Entregas de
-  alumnos** ("1 de 3 alumnos entregaron", con sus archivos y comentarios).
-- **Alumno**: **Tu entrega**, con insignia de estado, **Grabar audio / video** ahí mismo (se escucha,
-  se puede repetir o descargar, y **Enviar a mi profesor**), _Subir un archivo_ como alternativa, sus
-  archivos y un comentario para el profesor.
+  las entregas de los alumnos), Subir materiales (con barra de avance por archivo) y **Alumnos de la
+  clase** ("1 de 3 entregaron · 2 asistieron"): por alumno, **asistencia** (Presente, Llegó tarde,
+  Ausente; tocar la marcada la borra), sus archivos con el **análisis** de la grabación (notas
+  afinadas, estabilidad del tiempo, BPM), comentarios, **Evaluar con rúbrica** (1 a 5 por criterio
+  del instrumento y una devolución breve) y **Mensajes**.
+- **Alumno**: **Tu entrega**, con insignia de estado, la **evaluación de tu profesor** (barras por
+  criterio y su devolución), **Grabar audio / video** ahí mismo (_Sin click_ / _Con click_ con el
+  tempo, y el aviso de usar auriculares; al terminar, **Analizando afinación y tiempo…** y el
+  resultado, que se envía con la grabación; se escucha, se puede repetir o descargar, y **Enviar a
+  mi profesor**), _Subir audio, video, foto o PDF_ como alternativa (fotos y PDF hasta 20 MB: una tarea escrita, una partitura copiada), sus archivos, un comentario para el profesor
+  y **Mensajes con tu profesor** (una charla por clase; cada uno borra los suyos).
 
 ### Alumno · Inicio (`/`)
 
@@ -296,11 +315,21 @@ instrumento (minutos de la semana en ese instrumento, su meta semanal total como
 - **Tu próxima práctica** (borde ámbar): la clase pendiente más cercana (hoy, mañana o atrasada),
   sus bloques y minutos y **Practicar ahora**; al lado la **racha** (días seguidos) y los **minutos
   de esta semana**. Si no hay pendientes: "¡Estás al día!".
+- **Tu práctica de hoy**: 10, 20 o 40 min y los pasos numerados con sus minutos (calentamiento, la
+  clase, _Refuerza: tiempo_…, _Repasa: obra_ con **Hecho**); cada paso lleva a donde se hace; abajo,
+  las metas de la semana sin cumplir.
+- **Primera vez**: _Bienvenido a Pulso_, cuatro pasos con ícono y _Siguiente_ / _Saltar_, y _¿Cómo
+  tocas hoy?_ con los cuatro niveles descritos por instrumento.
 - Sin profesor todavía: aviso explicando que el profesor debe agregarlo.
-- Con profesores: una tarjeta por profesor e instrumento con el porcentaje, la barra y las clases,
-  ordenadas primero las atrasadas sin entregar, luego las próximas y al final las entregadas.
+- Con profesores: una tarjeta por profesor e instrumento con el porcentaje, la barra y las clases
+  (con su hora, _Recital_ o _Virtual_), ordenadas primero las atrasadas sin entregar, luego las
+  próximas y al final las entregadas; debajo, su **ruta de aprendizaje** (nivel y objetivos que
+  marcó el profesor), **Metas de la semana** (casillas, agregar y "Semanas anteriores: 5 de 7
+  cumplidas"), **Repertorio** (cada obra con su estado y _Repasé hoy_), sus **habilidades** e
+  **Informe para la familia**. Después, **Mi evolución**: la primera grabación al lado de la
+  última y los gráficos de notas afinadas y desvío del tiempo (tocar un punto muestra fecha y valor).
 - En la columna lateral: **Diario de práctica** (minutos de la semana contra la meta, _Anotar
-  práctica_), el **afinador** (solo si estudia un instrumento que lo usa), el metrónomo y **Más
+  práctica_), **Tus insignias** (las ganadas primero; las otras, con lo que falta: "3 de 7 días"), el **afinador** (solo si estudia un instrumento que lo usa), el metrónomo y **Más
   herramientas para practicar**.
 
 ### Herramientas (`/herramientas`)
@@ -312,13 +341,20 @@ instrumento (minutos de la semana en ese instrumento, su meta semanal total como
 - **Metrónomo**: BPM grande, pulsos del compás, _Iniciar práctica_; compás, subdivisión, _Marcar el
   tempo_ y _Subir el tempo solo_ (+N BPM cada N compases hasta un tope). En el inicio esas opciones
   están plegadas en _Más opciones_.
-- **Grabadora**: Audio / Video y **Grabar**; mientras graba, punto rojo y tiempo (y la cámara en
-  espejo); después, la toma con velocidad y bucle, _Grabar de nuevo_ y _Descargar_.
+- **Grabadora**: Audio / Video, _Sin click_ / _Con click_ (tempo con −/+ y aviso de auriculares) y
+  **Grabar**; mientras graba, punto rojo y tiempo, los cuatro pulsos del click (el que suena en
+  ámbar) y la cámara en espejo; después, la toma con velocidad y bucle, su **análisis** (notas
+  afinadas, estabilidad del tiempo y BPM), _Grabar de nuevo_ y _Descargar_.
 - **Acordes**: buscador (inglés o Do-Re-Mi) y sugerencias; el acorde con su nombre ("Sol mayor"),
   diagrama o teclado, sus notas y _Escuchar_ / _Nota por nota_.
 - **Oído** y **Lectura**: marcador de aciertos (y racha desde 3), _Empezar_ / _Siguiente_, respuestas
   que se marcan en verde (correcta) o rojo (la elegida, si falló). La lectura dibuja el pentagrama
-  sobre papel en los dos temas.
+  sobre papel en los dos temas. **Lectura → Primera vista**: Fácil (negras y blancas) o Media
+  (corcheas y saltos), tempo, la melodía nueva en la partitura con sonido y _Otra melodía_.
+- **Polca y guarania**: Polca paraguaya, Guarania o Galopa con su descripción y un consejo; el tono
+  (Sol, Re, La… o sus menores), los 16 compases con su acorde (el que suena, con borde ámbar), los
+  diagramas en guitarra, ukelele y requinto, el tempo y **Acompañamiento** (bajo y rasgueo en
+  bucle).
 - **Diario** (solo alumnos): meta semanal con −/+, anotar (instrumento, hoy o ayer, minutos,
   comentario) y las últimas prácticas, que se borran con _Deshacer_.
 
@@ -394,7 +430,6 @@ instrumento (minutos de la semana en ese instrumento, su meta semanal total como
 | ------------- | ------------------------------------------------------------------------------------------------------------- |
 | Planificación | Cuadrícula de calendario en la vista Mes y arrastrar clases para cambiarlas de día                            |
 | Clase         | Marcar cada entrega como _Revisada_ y dejar devoluciones en audio, además de las escritas con marca de tiempo |
-| Clase         | Copiar un bloque de otra clase (hoy se puede duplicar la clase entera)                                        |
 | Batería       | Medidor de tiempo sobre un groove completo (bombo y caja por separado) y exportar el groove a partitura       |
 | Herramientas  | Guardar el puntaje de oído y lectura para ver el avance semana a semana                                       |
 | General       | Notificaciones (nueva clase, nueva entrega, nueva devolución) y esqueletos de carga                           |

@@ -5,6 +5,11 @@ import { shellStyles } from "@/components/AppShell";
 import { ClaseItem } from "@/components/ClaseItem";
 import { DiarioDelAlumno } from "@/components/herramientas/Diario";
 import { RecordsDelAlumno } from "@/components/bateria/RecordsDelAlumno";
+import { InformeFamilia } from "@/components/InformeFamilia";
+import { MetasSemana } from "@/components/MetasSemana";
+import { Repertorio } from "@/components/Repertorio";
+import { Habilidades } from "@/components/Rubrica";
+import { RutaAprendizaje } from "@/components/RutaAprendizaje";
 import { Avatar } from "@/components/ui/avatar";
 import { Link } from "@/components/Link";
 import { PageMeta } from "@/components/PageMeta";
@@ -17,6 +22,9 @@ import {
   useClasesProfesor,
   useEntregasProfesor,
   useInscripcionesProfesor,
+  useLogrosProfesor,
+  useMetasDe,
+  useRepertorioDe,
   useUsuario,
 } from "@/lib/data";
 import { formatearDocumento } from "@/lib/documento";
@@ -31,6 +39,9 @@ export default function AlumnoDetalle() {
   const clases = useClasesProfesor(perfil.uid);
   const entregas = useEntregasProfesor(perfil.uid);
   const alumno = useUsuario(alumnoId);
+  const logros = useLogrosProfesor(perfil.uid);
+  const obras = useRepertorioDe(perfil.uid, alumnoId);
+  const metas = useMetasDe(perfil.uid, alumnoId);
 
   const propias = inscripciones.data.filter((i) => i.alumnoId === alumnoId);
   const [primera] = propias;
@@ -73,14 +84,32 @@ export default function AlumnoDetalle() {
           {propias.map((inscripcion) => {
             const p = progreso(clases.data, entregas.data, alumnoId, inscripcion.instrumento);
             const lista = clases.data.filter((c) => c.instrumento === inscripcion.instrumento);
+            const marcadas = lista.filter((c) => c.asistencia?.[alumnoId]);
+            const presentes = marcadas.filter((c) => c.asistencia![alumnoId] !== "ausente");
+            const suyas = entregas.data.filter((e) => e.alumnoId === alumnoId);
             return (
               <Section
                 key={inscripcion.id}
                 title={instrumento(inscripcion.instrumento).name}
-                subtitle={`${p.hechas} de ${p.total} clases entregadas`}
+                subtitle={`${p.hechas} de ${p.total} clases entregadas${marcadas.length ? ` · asistió a ${presentes.length} de ${marcadas.length}` : ""}`}
                 actions={<Text style={styles.percent}>{p.porcentaje}%</Text>}
               >
                 <Progress value={p.porcentaje} />
+                <RutaAprendizaje
+                  inscripcion={inscripcion}
+                  logros={logros.data.find((l) => l.id === inscripcion.id)}
+                  editable
+                  sugerido={alumno.data?.autoevaluacion?.[inscripcion.instrumento]}
+                />
+                <MetasSemana inscripcion={inscripcion} metas={metas.data} />
+                <Repertorio inscripcion={inscripcion} obras={obras.data} />
+                <Habilidades instrumento={inscripcion.instrumento} entregas={suyas} />
+                <InformeFamilia
+                  inscripcion={inscripcion}
+                  clases={clases.data}
+                  entregas={entregas.data}
+                  logros={logros.data.find((l) => l.id === inscripcion.id)}
+                />
                 {lista.length === 0 ? (
                   <Text style={styles.muted}>
                     Todavía no planificaste clases de este instrumento.

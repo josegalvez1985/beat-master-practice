@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
-import { Gauge, Pause, Play, Square } from "lucide-react";
+import { Gauge, Pause, Play, Square, TrendingUp } from "lucide-react";
 import fuenteWoff from "@coderline/alphatab/font/Bravura.woff?url";
 import fuenteWoff2 from "@coderline/alphatab/font/Bravura.woff2?url";
 import sonidos from "@coderline/alphatab/soundfont/sonivox.sf3?url";
@@ -17,6 +17,10 @@ export function Partitura({ tex, url }: { tex?: string; url?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [reproductor, setReproductor] = useState<"cargando" | "listo" | "sonando">("cargando");
   const [velocidad, setVelocidad] = useState(1);
+  // Speed trainer: loops the passage (or the whole score) and adds 5 % after every pass, from
+  // 60 % up to 100 %. Read by the player events, so it lives in a ref too.
+  const [entrenando, setEntrenando] = useState(false);
+  const entrenador = useRef(false);
 
   // Create the renderer once.
   useEffect(() => {
@@ -54,7 +58,21 @@ export function Partitura({ tex, url }: { tex?: string; url?: string }) {
         setError(e instanceof Error ? e.message : String(e));
       });
       instancia.playerReady.on(() => setReproductor("listo"));
-      instancia.playerStateChanged.on((e) => setReproductor(e.state === 1 ? "sonando" : "listo"));
+      let sonando = false;
+      instancia.playerStateChanged.on((e) => {
+        sonando = e.state === 1;
+        setReproductor(sonando ? "sonando" : "listo");
+      });
+      // A pass ends when the position jumps back while playing (the loop starting again).
+      let posicion = 0;
+      instancia.playerPositionChanged.on((e) => {
+        const vuelta = sonando && e.currentTime < posicion - 1000;
+        posicion = e.currentTime;
+        if (!vuelta || !entrenador.current) return;
+        const nueva = Math.min(1, Math.round((instancia.playbackSpeed + 0.05) * 100) / 100);
+        instancia.playbackSpeed = nueva;
+        setVelocidad(nueva);
+      });
       api.current = instancia;
       cargar(instancia, tex, url);
     });
@@ -77,6 +95,18 @@ export function Partitura({ tex, url }: { tex?: string; url?: string }) {
     const siguiente = opciones[(opciones.indexOf(velocidad) + 1) % opciones.length] ?? 1;
     setVelocidad(siguiente);
     if (api.current) api.current.playbackSpeed = siguiente;
+  };
+
+  const alternarEntrenador = () => {
+    const activo = !entrenando;
+    entrenador.current = activo;
+    setEntrenando(activo);
+    const inicio = activo ? 0.6 : 1;
+    setVelocidad(inicio);
+    if (api.current) {
+      api.current.isLooping = activo;
+      api.current.playbackSpeed = inicio;
+    }
   };
 
   return (
@@ -115,10 +145,24 @@ export function Partitura({ tex, url }: { tex?: string; url?: string }) {
           <Gauge size={14} color={colors.foreground} />
           <Text style={styles.toolText}>{Math.round(velocidad * 100)} %</Text>
         </Pressable>
+        <Pressable
+          accessibilityRole="switch"
+          aria-checked={entrenando}
+          accessibilityLabel="Entrenador de velocidad"
+          onPress={alternarEntrenador}
+          style={[styles.tool, entrenando && styles.toolActivo]}
+        >
+          <TrendingUp size={14} color={colors.foreground} />
+          <Text style={styles.toolText}>Entrenador</Text>
+        </Pressable>
         <Text style={styles.hint}>
           {reproductor === "cargando"
             ? "Cargando sonidos…"
-            : "Toca una nota para empezar desde ahí"}
+            : entrenando
+              ? velocidad >= 1
+                ? "¡Llegaste al tempo! Sigue en bucle a 100 %."
+                : "Arrastra sobre la partitura para elegir el pasaje: se repite y sube 5 % por vuelta."
+              : "Toca una nota para empezar desde ahí"}
         </Text>
       </View>
       <View style={styles.paper}>
@@ -185,6 +229,11 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: radius.md,
     backgroundColor: colors.secondary,
+  },
+  toolActivo: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: colors.selected,
   },
   toolText: {
     fontFamily: fonts.medium,

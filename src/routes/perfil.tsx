@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { Camera, Mail, Plus, Trash2 } from "lucide-react";
 import { shellStyles } from "@/components/AppShell";
+import { AvisosConfig } from "@/components/AvisosConfig";
 import { ContactoDialog } from "@/components/ContactoDialog";
 import { PageMeta } from "@/components/PageMeta";
 import { TemaSelector } from "@/components/TemaSelector";
@@ -186,6 +187,10 @@ export default function PerfilPage() {
             </View>
           </>
         ) : null}
+      </Section>
+
+      <Section title="Avisos">
+        <AvisosConfig perfil={perfil} />
       </Section>
 
       <Section title="Apariencia" subtitle="Sistema usa el modo claro u oscuro de tu dispositivo.">

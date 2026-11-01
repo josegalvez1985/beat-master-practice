@@ -1,7 +1,12 @@
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { initializeApp } from "firebase/app";
 import { connectAuthEmulator, getAuth } from "firebase/auth";
-import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
+import {
+  connectFirestoreEmulator,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
 import { connectStorageEmulator, getStorage } from "firebase/storage";
 
@@ -20,8 +25,13 @@ export const app = initializeApp({
 export const auth = getAuth(app);
 auth.languageCode = "es";
 // The project's database is named "default" (not the implicit "(default)"); keep in sync with
-// firebase.json and storage.rules.
-export const db = getFirestore(app, "default");
+// firebase.json and storage.rules. The local copy (IndexedDB, shared by the tabs) lets the
+// profile, classes and tools open without internet; signOut clears it.
+export const db = initializeFirestore(
+  app,
+  { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) },
+  "default",
+);
 export const storage = getStorage(app);
 // Cloud Functions (the AI assistant), in the same region as the database.
 export const functions = getFunctions(app, "southamerica-east1");

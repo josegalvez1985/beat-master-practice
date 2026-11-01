@@ -103,6 +103,8 @@ Además de la configuración de Firebase, `.env` tiene `VITE_WEB3FORMS_KEY`: la 
 correo que recibe los mensajes (jose.jgalvez@gmail.com) y se pega ahí; sin ella el formulario
 avisa que no está configurado.
 
+Y `VITE_FIREBASE_VAPID_KEY`: la clave pública de los avisos push (sección 9).
+
 ## 5. Revisar y limpiar los datos
 
 Cada cuenta son **tres registros** que tienen que estar siempre juntos (ver
@@ -227,3 +229,32 @@ con `claude-haiku-5-5` (US$ 0,10 / 0,50), unas 40 veces menos. Se cambia en `MOD
 
 **Emuladores**: crea `functions/.secret.local` con `ANTHROPIC_API_KEY=...` (no se versiona) y corre
 `npm run emulators`.
+
+## 9. Avisos (notificaciones push)
+
+Clases nuevas, entregas, comentarios, evaluaciones, mensajes y el recordatorio de práctica llegan
+como avisos del navegador. Necesitan las Functions (plan **Blaze**). Una sola vez:
+
+1. **La clave pública (VAPID)**: en la consola de Firebase → ⚙ _Configuración del proyecto_ →
+   _Cloud Messaging_ → _Configuración web_ → _Certificados push web_ → **Generar par de claves**.
+   Copia la clave (empieza con `B…`) en `.env`:
+
+   ```sh
+   VITE_FIREBASE_VAPID_KEY=B...
+   ```
+
+   Es pública por diseño (va en el sitio), por eso puede estar en `.env`. Haz commit y push para
+   que GitHub Pages la tome.
+
+2. **Publicar las Functions** (`npm run deploy:funciones`): además del asistente publica
+   `avisarClaseNueva`, `avisarEntrega`, `avisarMensaje` y `recordarPractica` en `us-central1`
+   (donde está la base). La última es una tarea programada cada hora: la primera vez Firebase activa
+   Cloud Scheduler y Eventarc.
+
+3. **Publicar las reglas** (`npm run deploy:reglas`): incluyen `dispositivos`.
+
+Después, cada persona los activa en _Mi perfil → Avisos_. En iPhone y iPad solo funcionan con Pulso
+agregado a la pantalla de inicio (Safari → Compartir → _Agregar a inicio_).
+
+**Costo**: Cloud Messaging es gratis; las Functions de avisos entran en la cuota gratis de
+invocaciones y Cloud Scheduler da 3 tareas gratis por cuenta de facturación.

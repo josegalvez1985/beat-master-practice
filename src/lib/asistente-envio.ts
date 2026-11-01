@@ -24,6 +24,10 @@ const GUIA = [
   seccion(diseno, "## Pantallas"),
   seccion(arquitectura, "## Progreso"),
   seccion(arquitectura, "## Herramientas de práctica"),
+  seccion(arquitectura, "## Seguimiento del alumno"),
+  seccion(arquitectura, "## La experiencia del alumno"),
+  seccion(arquitectura, "## Avisos (notificaciones)"),
+  seccion(arquitectura, "## Uso sin conexión"),
 ]
   .join("\n\n")
   .replace(/\]\([^)]*\)/g, "]");

@@ -21,7 +21,10 @@ export function ClaseItem({ clase, estado }: { clase: Clase; estado?: "entregada
             {clase.titulo}
           </Text>
           <Text numberOfLines={1} style={styles.meta}>
-            {formatoDia(clase.fecha)} · {instrumento(clase.instrumento).name}
+            {formatoDia(clase.fecha)}
+            {clase.hora ? ` · ${clase.hora} h` : ""} · {instrumento(clase.instrumento).name}
+            {clase.evento ? " · Recital" : ""}
+            {clase.modalidad === "virtual" ? " · Virtual" : ""}
             {clase.materiales.length
               ? ` · ${clase.materiales.length} ${clase.materiales.length === 1 ? "material" : "materiales"}`
               : ""}
