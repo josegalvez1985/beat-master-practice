@@ -1,6 +1,7 @@
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { Navigate, Outlet, useLocation } from "react-router";
 import { Button } from "@/components/ui/button";
+import { esAdmin } from "@/lib/admin";
 import { descartarCuentaIncompleta, fueSalidaVoluntaria, useSession, type Role } from "@/lib/auth";
 import { colors, fonts } from "@/lib/theme";
 import LoginPage from "@/routes/login";
@@ -46,6 +47,13 @@ export function RequireAuth() {
 export function RequireRole({ rol }: { rol: Role }) {
   const session = useSession();
   if (session.status !== "ready" || session.perfil.rol !== rol) return <Navigate to="/" replace />;
+  return <Outlet />;
+}
+
+// The admin panel: only the admin's account (src/lib/admin.ts); the function checks it again.
+export function RequireAdmin() {
+  const session = useSession();
+  if (session.status !== "ready" || !esAdmin(session.perfil)) return <Navigate to="/" replace />;
   return <Outlet />;
 }
 

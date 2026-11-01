@@ -154,3 +154,17 @@ escrituras.
 
 Sin terminal, se pueden pegar en la consola de Firebase (base **`default`** → _Reglas_ →
 _Publicar_); el paso a paso está en [firebase.md](firebase.md#1-configurar-el-proyecto-una-sola-vez).
+
+## Cloud Functions
+
+Las Functions tampoco salen con GitHub Pages. Cada vez que cambie algo en `functions/src/`
+(asistente, avisos o administración):
+
+```sh
+npm run deploy:funciones   # preguntarAsistente y verBackend en southamerica-east1; avisos en us-central1
+```
+
+Si el sitio nuevo llama a una función nueva (por ejemplo, la página `/admin` llama a
+`verBackend`), publica las Functions **antes** o junto con el sitio: si no, esa pantalla muestra un
+error. La clave del asistente se cambia aparte (Secret Manager): ver
+[firebase.md](firebase.md#8-asistente-con-ia-cloud-functions).

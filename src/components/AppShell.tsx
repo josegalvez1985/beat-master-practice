@@ -1,6 +1,15 @@
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { Outlet, useLocation } from "react-router";
-import { CalendarDays, Home, LogOut, Play, UserRound, Wrench, type LucideIcon } from "lucide-react";
+import {
+  CalendarDays,
+  Database,
+  Home,
+  LogOut,
+  Play,
+  UserRound,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import { Asistente } from "@/components/Asistente";
 import { Link } from "@/components/Link";
 import { TemaSelector } from "@/components/TemaSelector";
@@ -8,6 +17,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { StageGlow } from "@/components/ui/stage-glow";
+import { esAdmin } from "@/lib/admin";
 import { signOut, usePerfil } from "@/lib/auth";
 import { colors, fonts, radius } from "@/lib/theme";
 
@@ -32,7 +42,9 @@ export function AppShell() {
   const { pathname } = useLocation();
   const { width } = useWindowDimensions();
   const compact = width < 640;
-  const items = nav[perfil.rol];
+  const items = esAdmin(perfil)
+    ? [...nav[perfil.rol], { href: "/admin", label: "Admin", icon: Database }]
+    : nav[perfil.rol];
 
   return (
     <View style={styles.screen}>

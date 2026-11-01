@@ -30,9 +30,13 @@ con el número de documento.
   por familia.
 - **Cuenta**: cualquiera puede sumar instrumentos (para enseñar o para aprender) desde su perfil, y
   recuperar la contraseña con su documento y su correo.
-- **Asistente con IA** (botón ✦, alumnos y profesores): explica cómo se usa cada pantalla y
-  consulta las clases, el avance y los alumnos de quien pregunta, solo lectura. Corre en una Cloud
-  Function de Firebase con la API de Claude ([docs/firebase.md](docs/firebase.md), sección 8).
+- **Asistente con IA** (botón ✦ flotante, que se arrastra a cualquier parte de la pantalla; alumnos
+  y profesores): explica cómo se usa cada pantalla y consulta las clases, el avance y los alumnos
+  de quien pregunta, solo lectura. Corre en una Cloud Function de Firebase con la API de Claude
+  ([docs/firebase.md](docs/firebase.md), sección 8).
+- **Administración** (`/admin`, solo la cuenta del administrador): todo el backend en solo
+  lectura: cada colección de Firestore con sus documentos, las cuentas de Authentication y los
+  archivos de Storage ([docs/arquitectura.md](docs/arquitectura.md#administración)).
 - **Contacto**: formulario en el login y en el perfil que envía la consulta por correo (Web3Forms;
   configurar `VITE_WEB3FORMS_KEY` en `.env`).
 - **Herramientas** (alumnos y profesores), solo las que sirven para cada instrumento: afinador con
@@ -85,13 +89,13 @@ una colección, documenta su relación en
 
 ## Guías
 
-| Guía                                         | Contenido                                                                                                                                  |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| [docs/firebase.md](docs/firebase.md)         | Configurar Firebase, publicar reglas (terminal o consola), emuladores, revisar y limpiar los datos, problemas comunes, plan Blaze y costos |
-| [docs/backend.md](docs/backend.md)           | **Backend NoSQL (Firestore)**: relaciones, sin registros huérfanos, datos duplicados, cómo diseñar una colección, límites                  |
-| [docs/arquitectura.md](docs/arquitectura.md) | Rutas, sesión, login por documento, modelo de datos, permisos, progreso, herramientas por instrumento, batería y pagos (próximamente)      |
-| [docs/diseno.md](docs/diseno.md)             | Identidad visual, componentes, diseño de cada pantalla (herramientas y batería incluidas) e ideas de mejora                                |
-| [docs/despliegue.md](docs/despliegue.md)     | GitHub Actions, GitHub Pages, dominio www.pypulso.online, Google Search Console, Firebase Hosting y publicar las reglas                    |
+| Guía                                         | Contenido                                                                                                                                                                        |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [docs/firebase.md](docs/firebase.md)         | Configurar Firebase, publicar reglas (terminal o consola), emuladores, revisar y limpiar los datos, problemas comunes, plan Blaze y costos, asistente (clave de la API) y avisos |
+| [docs/backend.md](docs/backend.md)           | **Backend NoSQL (Firestore)**: relaciones, sin registros huérfanos, datos duplicados, cómo diseñar una colección, límites                                                        |
+| [docs/arquitectura.md](docs/arquitectura.md) | Rutas, sesión, login por documento, modelo de datos, permisos, progreso, herramientas por instrumento, batería, administración y pagos (próximamente)                            |
+| [docs/diseno.md](docs/diseno.md)             | Identidad visual, componentes, diseño de cada pantalla (herramientas, batería, asistente y administración incluidos) e ideas de mejora                                           |
+| [docs/despliegue.md](docs/despliegue.md)     | GitHub Actions, GitHub Pages, dominio www.pypulso.online, Google Search Console, Firebase Hosting y publicar las reglas y las Cloud Functions                                    |
 
 ## Scripts
 
@@ -103,7 +107,7 @@ una colección, documenta su relación en
 | `npm run build`            | Compila el sitio en `dist/`                                                             |
 | `npm run preview`          | Sirve localmente el build                                                               |
 | `npm run deploy:reglas`    | Publica `firestore.rules` y `storage.rules` en Firebase                                 |
-| `npm run deploy:funciones` | Publica las Cloud Functions (el asistente con IA) en Firebase                           |
+| `npm run deploy:funciones` | Publica las Cloud Functions (asistente, avisos y administración) en Firebase            |
 | `npm run typecheck`        | Comprueba tipos con TypeScript                                                          |
 | `npm run lint`             | ESLint                                                                                  |
 | `npm run format`           | Formatea con Prettier                                                                   |
@@ -115,7 +119,7 @@ una colección, documenta su relación en
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `index.html`                                       | Documento HTML de entrada                                                                                                      |
 | `src/main.tsx`                                     | Arranque: fuentes, rutas y guardas de sesión                                                                                   |
-| `src/routes/`                                      | Pantallas: login, inicio, `profesor/` (inicio, planificación, alumno), `alumno/` (inicio), clase, herramientas, 404            |
+| `src/routes/`                                      | Pantallas: login, inicio, `profesor/` (inicio, planificación, alumno), `alumno/` (inicio), clase, herramientas, admin, 404     |
 | `src/components/`                                  | Componentes de la app: barra superior, modales del login, materiales, reproductor de práctica, grabadora, afinador, metrónomo… |
 | `src/components/plan/`                             | Plan de clase por bloques: editor, modo práctica y cada tipo de bloque                                                         |
 | `src/components/herramientas/`                     | Diario de práctica, diccionario de acordes, oído, lectura de notas y teclado                                                   |
@@ -131,7 +135,7 @@ una colección, documenta su relación en
 | `src/lib/bateria.ts`                               | Kit sintetizado, grooves por estilo, rudimentos y ritmos                                                                       |
 | `src/lib/files.ts`                                 | Subida y descarga de archivos en Storage                                                                                       |
 | `src/lib/theme.ts`                                 | Colores, fuentes y estilos compartidos                                                                                         |
-| `functions/`                                       | Cloud Functions de Firebase: el asistente con IA (`asistente.ts`, `herramientas.ts`)                                           |
+| `functions/`                                       | Cloud Functions de Firebase: asistente con IA (`asistente.ts`, `herramientas.ts`), avisos y administración (`admin.ts`)        |
 | `firestore.rules`, `storage.rules`                 | Reglas de seguridad                                                                                                            |
 | `firebase.json`                                    | Emuladores, reglas y Firebase Hosting                                                                                          |
 | `.github/workflows/`                               | CI y publicación en GitHub Pages                                                                                               |

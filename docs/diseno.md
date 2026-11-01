@@ -186,7 +186,8 @@ Logo a la izquierda (lleva al inicio); navegación del rol (profesor: _Inicio_, 
 _Practicar_, _Herramientas_); a la
 derecha el selector de tema, el nombre, el rol y la foto (llevan a **Mi perfil**) y **Salir**. En
 celular la navegación muestra solo íconos, la cuenta solo la foto y el tema se cambia desde el
-perfil.
+perfil. La cuenta del administrador ve además _Admin_ (ícono de base de datos), en la barra superior
+y en la inferior.
 
 ### Mi perfil (`/perfil`)
 
@@ -405,15 +406,32 @@ instrumento, su meta semanal total como dato aparte y las últimas anotaciones).
 
 ### Asistente (botón ✦)
 
-- Botón redondo ámbar abajo a la derecha (sobre la barra inferior en el celular) en todas las
-  pantallas con sesión.
+- Botón redondo ámbar flotante en todas las pantallas con sesión: empieza abajo a la derecha
+  (sobre la barra inferior en el celular) y se arrastra con el mouse o el dedo a cualquier parte
+  de la pantalla. Un toque lo abre; recuerda el lugar en ese navegador (`localStorage`) y se
+  mantiene dentro de la ventana al cambiar su tamaño.
 - Se abre como tarjeta en escritorio (400 px) y a pantalla completa en el celular: cabecera con
   _Asistente_, _Nueva conversación_ y cerrar; el saludo con sugerencias según el rol y
   "¿Cómo se usa _esta pantalla_?"; burbujas (la persona a la derecha con el tinte `selected`, el
   asistente a la izquierda con Markdown simple); "Pensando…" mientras responde; un error se
   muestra con _Reintentar_.
-- Pie: "Hoy: N de 30 · Puede equivocarse: revisa lo importante. Solo ve tus datos y no cambia
+- Pie: "Hoy: N de 50 · Puede equivocarse: revisa lo importante. Solo ve tus datos y no cambia
   nada." Enter envía; Shift+Enter, nueva línea.
+
+### Administración (`/admin`, solo el administrador)
+
+- Título _Administración_ y "Todo el backend de Pulso: Firestore, cuentas y archivos. Solo
+  lectura.", con **Recargar** a la derecha. Debajo, dos `Stat`: _Colecciones_ y _Documentos_.
+- `Segmented` con _Colecciones_ | _Cuentas_ | _Archivos_:
+  - **Colecciones**: una tarjeta con las colecciones como opciones chicas (`nombre (cantidad)`),
+    el buscador "Buscar en lo cargado" y una fila por documento (id en negrita, una pista como el
+    `nombre` o el `titulo`, y la fecha del último cambio). Al tocar la fila se despliegan los datos
+    en JSON con letra monoespaciada y se pueden seleccionar para copiarlos.
+  - **Cuentas**: una fila por cuenta (correo, uid, alta y último ingreso) con la etiqueta _Con
+    perfil_ (verde) o **Sin perfil** (`colors.destructive`).
+  - **Archivos**: una fila por archivo (ruta, tamaño, tipo y fecha), con el peso total arriba.
+- Las listas se cargan de a 50 (100 en cuentas y archivos) con **Cargar más**. Un error de la
+  función se muestra en rojo en lugar de la lista.
 
 ## Adaptable y accesible
 

@@ -21,7 +21,7 @@ const CLAVE = defineSecret("ANTHROPIC_API_KEY");
 // The model and its effort: one line each to change.
 const MODELO = "claude-opus-5-5";
 const ESFUERZO = "low";
-const LIMITE_DIARIO = 30;
+const LIMITE_DIARIO = 50;
 
 // Per question: round trips with the API, searches, answer tokens (thinking included), previous
 // messages sent, and lengths accepted from the browser.

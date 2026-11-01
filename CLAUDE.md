@@ -67,6 +67,10 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
   Las respuestas a devoluciones (`entregas.respuestas`) se quitan con su devolución.
 - Avisos: `functions/src/avisos.ts` en `us-central1` (la base está en `nam5`); clave pública
   `VITE_FIREBASE_VAPID_KEY` en `.env`.
+- Administración (`/admin`, `src/routes/admin.tsx`): solo lectura de todo el backend con la Cloud
+  Function `verBackend` (`functions/src/admin.ts`), que comprueba en cada llamada que el uid sea el
+  de `documentos/{ADMIN_DOCUMENTO}`. Es la única función que no filtra por el uid de quien pregunta;
+  nunca escribe ni borra. El número está copiado en `src/lib/admin.ts`.
 - Polca, guarania y galopa son formas por grados (`src/lib/progresiones.ts`): sin canciones ni letras.
 
 ## Herramientas y batería

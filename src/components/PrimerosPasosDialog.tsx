@@ -57,7 +57,7 @@ const despues: Record<Role, Paso[]> = {
     {
       titulo: "Pregúntale al asistente",
       detalle:
-        "El botón ✦ abajo a la derecha responde cómo se usa cada pantalla y consulta tus datos. Solo lee: no cambia nada.",
+        "El botón ✦ (abajo a la derecha; arrástralo para moverlo donde quieras) responde cómo se usa cada pantalla y consulta tus datos. Solo lee: no cambia nada.",
     },
     {
       titulo: "¿Dudas?",
@@ -99,7 +99,7 @@ const despues: Record<Role, Paso[]> = {
     {
       titulo: "Pregúntale al asistente",
       detalle:
-        "El botón ✦ abajo a la derecha responde cómo se usa cada pantalla y consulta tus datos. Solo lee: no cambia nada.",
+        "El botón ✦ (abajo a la derecha; arrástralo para moverlo donde quieras) responde cómo se usa cada pantalla y consulta tus datos. Solo lee: no cambia nada.",
     },
     {
       titulo: "¿Dudas?",

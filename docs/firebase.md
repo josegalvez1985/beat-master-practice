@@ -125,6 +125,12 @@ Cada cuenta son **tres registros** que tienen que estar siempre juntos (ver
 3. Cada UID de Authentication tiene su documento en `usuarios`.
 4. Cada anotación de `diario` y cada `records` tiene un `alumnoId` que existe en `usuarios`.
 
+La forma más rápida de revisarlo es la página **`/admin`** del sitio, solo para el administrador
+([arquitectura.md](arquitectura.md#administración)). Muestra la cantidad de documentos de cada
+colección, sus datos, los archivos de Storage y, en _Cuentas_, marca **Sin perfil** las cuentas de
+Authentication sin `usuarios/{UID}`. Es solo lectura: lo que haya que borrar se borra desde la
+consola, como se explica abajo.
+
 **Si algo no coincide:**
 
 - **Cuenta de Authentication sin `usuarios`**: si la persona entra, ve "Tu cuenta no terminó de
@@ -159,6 +165,7 @@ siguen en Authentication y al registrarse de nuevo aparece "Ese correo ya está 
 | Subir un archivo da **error de CORS** (`preflight … does not have HTTP ok status`) | No es CORS: **el bucket de Storage no existe** (Google responde 404). Activa Storage (paso 3) y publica las reglas (paso 5). Se comprueba con `curl https://firebasestorage.googleapis.com/v0/b/beat-master-practice.firebasestorage.app/o`: 404 = no existe, 403 = existe. |
 | "Sin conexión" al entrar o registrarse                                             | Sin internet, o Firestore todavía no existe (paso 1).                                                                                                                                                                                                                       |
 | Recuperar contraseña: `auth/unauthorized-continue-uri`                             | El sitio desde donde se pidió el reseteo no está en los dominios autorizados: paso 4.                                                                                                                                                                                       |
+| Asistente: "no está bien configurado (la clave de la API)" (400)                   | La clave de Claude en Secret Manager no es válida (por ejemplo, se guardó el id `apikey_01…` en vez de la clave `sk-ant-api03-…`): sección 8.                                                                                                                               |
 
 ## 7. Plan Blaze y costos
 
@@ -204,7 +211,11 @@ El asistente corre en una Cloud Function ([`functions/`](../functions/)); necesi
    npx firebase functions:secrets:set ANTHROPIC_API_KEY
    ```
 
-   El comando pide la clave sin mostrarla.
+   El comando pide la clave sin mostrarla. La clave empieza con **`sk-ant-api03-`** y la Console
+   la muestra **una sola vez**, al crearla: si no se copió, se crea otra. El `apikey_01…` que
+   aparece en la lista de claves es solo su **identificador** y no sirve como clave (la API
+   responde 401). Si Firebase avisa que la Function usa una versión vieja del secreto, responde
+   **Y** para volver a publicarla con la nueva.
 
 2. **Instalar y publicar** la Function:
 
@@ -226,6 +237,22 @@ está en la consola de Claude. Con `claude-opus-5-5` (US$ 4 / 20 por millón de 
 salida; lo cacheado, la guía, se lee a US$ 0,20) una pregunta típica cuesta unos pocos centavos;
 con `claude-haiku-5-5` (US$ 0,10 / 0,50), unas 40 veces menos. Se cambia en `MODELO`
 (`functions/src/asistente.ts`) y se vuelve a publicar.
+
+**Si el asistente responde "no está bien configurado (la clave de la API)"** (400 en
+`preguntarAsistente`): la API de Claude rechazó la clave. Mira la causa en los logs:
+
+```sh
+npx firebase functions:log --only preguntarAsistente
+```
+
+`401 authentication_error: Invalid bearer token` significa que la clave guardada no es válida:
+puede ser el identificador `apikey_01…` en lugar de `sk-ant-api03-…`, una clave revocada o un
+token de una suscripción de Claude, que no es una clave de API. Repite el paso 1 y vuelve a
+publicar. `403` significa que la clave es de un workspace sin permiso para el modelo de `MODELO`.
+
+**Administración** (`/admin`): `npm run deploy:funciones` también publica `verBackend` en
+`southamerica-east1`, la función de solo lectura que alimenta esa página
+([arquitectura.md](arquitectura.md#administración)). No usa secretos ni reglas nuevas.
 
 **Emuladores**: crea `functions/.secret.local` con `ANTHROPIC_API_KEY=...` (no se versiona) y corre
 `npm run emulators`.

@@ -27,6 +27,37 @@ import { colors, fonts, radius, shared } from "@/lib/theme";
 
 const fijo = (estilo: object) => ({ position: "fixed", ...estilo }) as unknown as ViewStyle;
 
+// The button can be dragged anywhere; it remembers the spot on this browser.
+const BOTON = 56;
+const MARGEN = 8;
+const UMBRAL = 6;
+const CLAVE_POSICION = "pulso-asistente-posicion";
+
+type Posicion = { right: number; bottom: number };
+
+function leerPosicion(): Posicion | null {
+  try {
+    const p = JSON.parse(localStorage.getItem(CLAVE_POSICION) ?? "null") as Posicion | null;
+    return p && Number.isFinite(p.right) && Number.isFinite(p.bottom) ? p : null;
+  } catch {
+    return null;
+  }
+}
+
+function guardarPosicion(p: Posicion) {
+  try {
+    localStorage.setItem(CLAVE_POSICION, JSON.stringify(p));
+  } catch {
+    // Private mode: it just goes back to the corner next time.
+  }
+}
+
+// Distance from the right and bottom edges, kept inside the window (also after a resize).
+const dentro = (p: Posicion, ancho: number, alto: number): Posicion => ({
+  right: Math.min(Math.max(p.right, MARGEN), Math.max(ancho - BOTON - MARGEN, MARGEN)),
+  bottom: Math.min(Math.max(p.bottom, MARGEN), Math.max(alto - BOTON - MARGEN, MARGEN)),
+});
+
 // The screen the person is on, in words (the assistant adapts "how do I use this?").
 function usePantalla() {
   const { pathname } = useLocation();
@@ -60,12 +91,20 @@ const SUGERENCIAS = {
 // screens, the whole screen on phones).
 export function Asistente() {
   const perfil = usePerfil();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const compacto = width < 640;
   const pantalla = usePantalla();
   const { abierto, mensajes, cargando, usadasHoy, limite } = useAsistente();
   const [texto, setTexto] = useState("");
   const scroll = useRef<ScrollView>(null);
+  const [posicion, setPosicion] = useState(leerPosicion);
+  const arrastre = useRef<{ x: number; y: number; desde: Posicion; hasta?: Posicion } | null>(null);
+  const movido = useRef(false);
+  const lugar = dentro(
+    posicion ?? (compacto ? { right: 16, bottom: 84 } : { right: 24, bottom: 24 }),
+    width,
+    height,
+  );
 
   useEffect(() => usarCuenta(perfil.uid), [perfil.uid]);
 
@@ -75,16 +114,45 @@ export function Asistente() {
     setTexto("");
   };
 
+  // A small movement is still a tap; past the threshold it drags and the tap is dropped.
+  const soltar = () => {
+    const hasta = arrastre.current?.hasta;
+    arrastre.current = null;
+    if (hasta) guardarPosicion(hasta);
+  };
+
   if (!abierto)
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Abrir el asistente"
-        onPress={() => abrirAsistente(true)}
-        style={[
-          styles.boton,
-          fijo(compacto ? { right: 16, bottom: 84 } : { right: 24, bottom: 24 }),
-        ]}
+        accessibilityLabel="Abrir el asistente (arrástralo para moverlo)"
+        onPress={() => {
+          if (movido.current) movido.current = false;
+          else abrirAsistente(true);
+        }}
+        onPointerDown={(e) => {
+          const { clientX, clientY, pointerId } = e.nativeEvent;
+          arrastre.current = { x: clientX, y: clientY, desde: lugar };
+          movido.current = false;
+          (e.currentTarget as unknown as HTMLElement).setPointerCapture?.(pointerId);
+        }}
+        onPointerMove={(e) => {
+          const a = arrastre.current;
+          if (!a) return;
+          const dx = e.nativeEvent.clientX - a.x;
+          const dy = e.nativeEvent.clientY - a.y;
+          if (!movido.current && Math.hypot(dx, dy) < UMBRAL) return;
+          movido.current = true;
+          a.hasta = dentro(
+            { right: a.desde.right - dx, bottom: a.desde.bottom - dy },
+            width,
+            height,
+          );
+          setPosicion(a.hasta);
+        }}
+        onPointerUp={soltar}
+        onPointerCancel={soltar}
+        style={[styles.boton, fijo({ ...lugar, cursor: "grab", touchAction: "none" })]}
       >
         <Sparkles size={24} color={colors.primaryForeground} />
       </Pressable>
@@ -236,6 +304,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     boxShadow: colors.shadow,
     zIndex: 40,
+    userSelect: "none",
   },
   panel: {
     zIndex: 40,

@@ -4,8 +4,9 @@ import { Navigate, createBrowserRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
-import { LoginRedirect, RequireAuth, RequireRole } from "@/components/RouteGuards";
+import { LoginRedirect, RequireAdmin, RequireAuth, RequireRole } from "@/components/RouteGuards";
 import { loadFonts } from "@/lib/fonts";
+import Admin from "@/routes/admin";
 import PracticarAhora from "@/routes/alumno/practicar";
 import ClasePage from "@/routes/clase";
 import Herramientas from "@/routes/herramientas";
@@ -36,6 +37,10 @@ const router = createBrowserRouter(
                 {
                   element: <RequireRole rol="alumno" />,
                   children: [{ path: "practicar", element: <PracticarAhora /> }],
+                },
+                {
+                  element: <RequireAdmin />,
+                  children: [{ path: "admin", element: <Admin /> }],
                 },
                 {
                   element: <RequireRole rol="profesor" />,

@@ -40,6 +40,7 @@ y lo buscan los profesores.
 | `/perfil`            | ambos      | Mi perfil: foto, datos de la cuenta, instrumentos (agregar más) y tema (claro, oscuro o sistema)           |
 | `/practicar`         | alumno     | Abre el modo práctica de la próxima clase pendiente (o "No tienes prácticas pendientes")                   |
 | `/herramientas`      | ambos      | Herramientas de práctica según el instrumento (`?instrumento=…&h=…`)                                       |
+| `/admin`             | admin      | **Administración**: todo el backend en solo lectura (colecciones, cuentas y archivos)                      |
 | cualquier otra       | —          | 404                                                                                                        |
 
 Los guardas están en [`RouteGuards.tsx`](../src/components/RouteGuards.tsx):
@@ -50,6 +51,7 @@ Los guardas están en [`RouteGuards.tsx`](../src/components/RouteGuards.tsx):
   inicio).
 - `LoginRedirect`: `/login` → `/`, para enlaces y marcadores viejos.
 - `RequireRole`: pantallas solo de profesor.
+- `RequireAdmin`: `/admin`, solo la cuenta del administrador (ver _Administración_).
 
 ## Sesión
 
@@ -591,7 +593,8 @@ documento, rol, motivo, la página y la consulta.
 
 ## Asistente con IA
 
-Botón ✦ abajo a la derecha en todas las pantallas con sesión (alumnos y profesores): un chat que
+Botón ✦ flotante (abajo a la derecha; se arrastra a cualquier parte) en todas las pantallas con
+sesión (alumnos y profesores): un chat que
 explica cómo se usa Pulso y consulta los datos de quien pregunta.
 
 ```
@@ -623,11 +626,31 @@ preguntarAsistente ────────────────► valida la
   [diseño](diseno.md#pantallas), y _Progreso_ y _Herramientas de práctica_ de esta guía
   ([`asistente-envio.ts`](../src/lib/asistente-envio.ts)). Queda al día con cada publicación del
   sitio, sin volver a publicar la Function.
-- **Límites**: 30 preguntas por persona y por día (las que fallan no cuentan), 5 vueltas, 8
+- **Límites**: 50 preguntas por persona y por día (las que fallan no cuentan), 5 vueltas, 8
   búsquedas y 8000 tokens por pregunta, 10 mensajes de historial.
 - **Uso y costo**: `asistenteUso/{uid}` (uno por persona) guarda las preguntas del día y los tokens
   del mes. **No se guardan las preguntas ni las respuestas**; la conversación vive solo en memoria
   del navegador y se pierde al cerrar.
+
+## Administración
+
+`/admin` muestra **todo el backend en solo lectura** a una sola persona: la dueña del número de
+documento `4169298` (`ADMIN_DOCUMENTO`, en [`src/lib/admin.ts`](../src/lib/admin.ts) y en
+[`functions/src/admin.ts`](../functions/src/admin.ts)). Solo esa cuenta ve _Admin_ en la barra.
+
+- **Colecciones**: cada colección de Firestore con su cantidad de documentos; cada documento con
+  su id, una pista (`nombre`, `titulo`…) y, al tocarlo, todos sus datos en JSON y sus fechas de
+  creación y cambio. De a 50, con _Cargar más_ y búsqueda dentro de lo cargado.
+- **Cuentas**: las cuentas de Authentication (correo, uid, alta y último ingreso). Marca **Sin
+  perfil** a la que no tiene `usuarios/{uid}`, que es un registro que no terminó (sección 5 de
+  [firebase.md](firebase.md)).
+- **Archivos**: los archivos de Storage con su ruta, tamaño, tipo y fecha.
+
+Los datos los trae la Cloud Function `verBackend` (`southamerica-east1`). Como el Admin SDK no pasa
+por las reglas, la función comprueba en cada llamada que quien pide es el uid de
+`documentos/4169298`; ese documento se crea con la cuenta y las reglas no dejan cambiarlo. Las
+reglas de Firestore y Storage no cambian, y la función nunca escribe ni borra. Para cambiar de
+administrador: el número en los dos archivos y publicar el sitio y las Functions.
 
 ## Próximamente: pagos
 
