@@ -3,6 +3,8 @@ import { useParams } from "react-router";
 import { ChevronLeft, UserX } from "lucide-react";
 import { shellStyles } from "@/components/AppShell";
 import { ClaseItem } from "@/components/ClaseItem";
+import { DiarioDelAlumno } from "@/components/herramientas/Diario";
+import { RecordsDelAlumno } from "@/components/bateria/RecordsDelAlumno";
 import { Avatar } from "@/components/ui/avatar";
 import { Link } from "@/components/Link";
 import { PageMeta } from "@/components/PageMeta";
@@ -15,6 +17,7 @@ import {
   useClasesProfesor,
   useEntregasProfesor,
   useInscripcionesProfesor,
+  useUsuario,
 } from "@/lib/data";
 import { formatearDocumento } from "@/lib/documento";
 import { instrumento } from "@/lib/instruments";
@@ -27,6 +30,7 @@ export default function AlumnoDetalle() {
   const inscripciones = useInscripcionesProfesor(perfil.uid);
   const clases = useClasesProfesor(perfil.uid);
   const entregas = useEntregasProfesor(perfil.uid);
+  const alumno = useUsuario(alumnoId);
 
   const propias = inscripciones.data.filter((i) => i.alumnoId === alumnoId);
   const [primera] = propias;
@@ -89,6 +93,14 @@ export default function AlumnoDetalle() {
                     estado={entregadas.has(clase.id) ? "entregada" : "pendiente"}
                   />
                 ))}
+                <DiarioDelAlumno
+                  alumnoId={alumnoId}
+                  instrumento={inscripcion.instrumento}
+                  metaSemanal={alumno.data?.metaSemanal}
+                />
+                {inscripcion.instrumento === "bateria" ? (
+                  <RecordsDelAlumno alumnoId={alumnoId} />
+                ) : null}
               </Section>
             );
           })}

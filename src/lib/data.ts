@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  addDoc,
   arrayRemove,
   arrayUnion,
   collection,
@@ -22,6 +23,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Perfil } from "@/lib/auth";
+import { hoy } from "@/lib/dates";
 import { normalizarDocumento, normalizarTexto } from "@/lib/documento";
 import type { InstrumentId } from "@/lib/instruments";
 import { archivosDelPlan, type Bloque, type Ficha, type Plan } from "@/lib/plan";
@@ -63,12 +65,46 @@ export type Entrega = {
   archivos: Material[];
   comentario: string;
   actualizadoEn?: Timestamp;
+  // The profesor's comments at a point of a file ("0:42 rushes the fill"), inside the delivery
+  // so they go away with it.
+  devoluciones?: Devolucion[];
+};
+
+export type Devolucion = {
+  id: string;
+  archivoId: string; // Material.id of a file in this delivery
+  segundo: number;
+  texto: string;
+  fecha: number; // ms (server timestamps are not allowed inside arrays)
+};
+
+// Best clean tempo of an alumno for a rudiment: one document per alumno and rudiment.
+export type RecordRudimento = {
+  id: string;
+  alumnoId: string;
+  rudimento: string;
+  bpm: number;
+  fecha: string; // YYYY-MM-DD
+  actualizadoEn?: Timestamp;
+};
+
+// Practice diary: what the alumno practiced, by day and instrument. Their profesores of that
+// instrument can read it.
+export type EntradaDiario = {
+  id: string;
+  alumnoId: string;
+  instrumento: InstrumentId;
+  fecha: string; // YYYY-MM-DD
+  minutos: number;
+  comentario: string;
+  creadoEn?: Timestamp;
 };
 
 // Deterministic ids let the security rules check a link with a single exists().
 export const inscripcionId = (profesorId: string, alumnoId: string, instrumento: string) =>
   `${profesorId}_${alumnoId}_${instrumento}`;
 export const entregaId = (claseId: string, alumnoId: string) => `${claseId}_${alumnoId}`;
+export const recordId = (alumnoId: string, rudimento: string) => `${alumnoId}_${rudimento}`;
 
 // --- Live reads ---
 
@@ -241,6 +277,40 @@ export function useEntrega(claseId: string, alumnoId: string) {
   );
 }
 
+export function useUsuario(uid: string) {
+  return useLiveDoc<Perfil>(`usuario:${uid}`, () => doc(db, "usuarios", uid));
+}
+
+const recientesPrimero = (a: EntradaDiario, b: EntradaDiario) =>
+  b.fecha.localeCompare(a.fecha) || (b.creadoEn?.toMillis() ?? 0) - (a.creadoEn?.toMillis() ?? 0);
+
+export function useDiarioAlumno(alumnoId: string) {
+  const live = useLiveQuery<EntradaDiario>(`diario-a:${alumnoId}`, () =>
+    query(collection(db, "diario"), where("alumnoId", "==", alumnoId)),
+  );
+  return { ...live, data: [...live.data].sort(recientesPrimero) };
+}
+
+// Profesor: one alumno, one instrument (the rules check that the profesor teaches it to them).
+export function useDiarioDe(alumnoId: string, instrumento: string) {
+  const live = useLiveQuery<EntradaDiario>(`diario:${alumnoId}:${instrumento}`, () =>
+    query(
+      collection(db, "diario"),
+      where("alumnoId", "==", alumnoId),
+      where("instrumento", "==", instrumento),
+    ),
+  );
+  return { ...live, data: [...live.data].sort(recientesPrimero) };
+}
+
+// Records of one alumno (the alumno, or a profesor who teaches them drums: see the rules).
+// null = do not listen (e.g. a profesor previewing a class).
+export function useRecordsAlumno(alumnoId: string | null) {
+  return useLiveQuery<RecordRudimento>(alumnoId && `records:${alumnoId}`, () =>
+    query(collection(db, "records"), where("alumnoId", "==", alumnoId)),
+  );
+}
+
 // --- Progress ---
 
 // Share of a profesor's classes for one instrument that the alumno has delivered.
@@ -358,6 +428,29 @@ export async function eliminarClase(clase: Clase) {
   await batch.commit();
 }
 
+// A copy of the class on another date, with its plan. Files are not copied: they belong to the
+// original class folder and are deleted with it, so the copy would point at missing files.
+export async function duplicarClase(profesor: Perfil, clase: Clase, fecha: string) {
+  const ref = doc(collection(db, "clases"));
+  await setDoc(ref, {
+    profesorId: profesor.uid,
+    profesorNombre: profesor.nombre,
+    instrumento: clase.instrumento,
+    titulo: clase.titulo,
+    descripcion: clase.descripcion,
+    fecha,
+    materiales: [],
+    ...(clase.ficha ? { ficha: clase.ficha } : {}),
+    ...(clase.bloques
+      ? {
+          bloques: clase.bloques.map((b) => (b.tipo === "archivos" ? { ...b, archivos: [] } : b)),
+        }
+      : {}),
+    creadoEn: serverTimestamp(),
+  });
+  return ref.id;
+}
+
 export function guardarPlan(claseId: string, plan: Plan) {
   return updateDoc(doc(db, "clases", claseId), { ficha: plan.ficha, bloques: plan.bloques });
 }
@@ -390,16 +483,96 @@ export function agregarArchivoEntrega(alumno: Perfil, clase: Clase, material: Ma
 }
 
 // Removing the last file removes the delivery (the class counts as pending again).
+// The profesor's comments on that file go in the same write, so none points at a missing file.
 export function quitarArchivoEntrega(entrega: Entrega, material: Material) {
   const ref = doc(db, "entregas", entrega.id);
   if (entrega.archivos.length <= 1) return deleteDoc(ref);
-  return updateDoc(ref, { archivos: arrayRemove(material), actualizadoEn: serverTimestamp() });
+  const suyas = (entrega.devoluciones ?? []).filter((d) => d.archivoId === material.id);
+  return updateDoc(ref, {
+    archivos: arrayRemove(material),
+    ...(suyas.length ? { devoluciones: arrayRemove(...suyas) } : {}),
+    actualizadoEn: serverTimestamp(),
+  });
+}
+
+// --- Profesor: comments at a point of a delivered file ---
+
+export function agregarDevolucion(entrega: Entrega, devolucion: Devolucion) {
+  return updateDoc(doc(db, "entregas", entrega.id), { devoluciones: arrayUnion(devolucion) });
+}
+
+export function quitarDevolucion(entrega: Entrega, devolucion: Devolucion) {
+  return updateDoc(doc(db, "entregas", entrega.id), { devoluciones: arrayRemove(devolucion) });
+}
+
+// Comments whose file is gone: possible if the profesor comments at the same moment the alumno
+// removes that file. Whoever opens the delivery next removes them, so none keeps pointing at a
+// missing file. The alumno's write is a delivery update (the rules want \`actualizadoEn\`); the
+// profesor may only touch \`devoluciones\`.
+export function devolucionesSinArchivo(entrega: Entrega) {
+  const archivos = new Set(entrega.archivos.map((m) => m.id));
+  return (entrega.devoluciones ?? []).filter((d) => !archivos.has(d.archivoId));
+}
+
+export function limpiarDevoluciones(entrega: Entrega, comoAlumno: boolean) {
+  const sueltas = devolucionesSinArchivo(entrega);
+  if (!sueltas.length) return Promise.resolve();
+  return updateDoc(doc(db, "entregas", entrega.id), {
+    devoluciones: arrayRemove(...sueltas),
+    ...(comoAlumno ? { actualizadoEn: serverTimestamp() } : {}),
+  });
+}
+
+// --- Alumno: rudiment records ---
+
+export function guardarRecord(alumnoId: string, rudimento: string, bpm: number) {
+  return setDoc(doc(db, "records", recordId(alumnoId, rudimento)), {
+    alumnoId,
+    rudimento,
+    bpm,
+    fecha: hoy(),
+    actualizadoEn: serverTimestamp(),
+  });
+}
+
+export function borrarRecord(alumnoId: string, rudimento: string) {
+  return deleteDoc(doc(db, "records", recordId(alumnoId, rudimento)));
 }
 
 export function guardarComentario(entrega: Entrega, comentario: string) {
   return updateDoc(doc(db, "entregas", entrega.id), {
     comentario,
     actualizadoEn: serverTimestamp(),
+  });
+}
+
+// --- Alumno: practice diary and weekly goal ---
+
+export function anotarPractica(
+  alumnoId: string,
+  entrada: Pick<EntradaDiario, "instrumento" | "fecha" | "minutos" | "comentario">,
+) {
+  return addDoc(collection(db, "diario"), {
+    ...entrada,
+    alumnoId,
+    creadoEn: serverTimestamp(),
+  });
+}
+
+export function borrarDelDiario(id: string) {
+  return deleteDoc(doc(db, "diario", id));
+}
+
+// Adds an instrument to teach or to learn. Instruments are only added from the app: removing one
+// would leave classes, lists and diaries of it without their instrument in the profile.
+export function agregarInstrumento(uid: string, instrumento: InstrumentId) {
+  return updateDoc(doc(db, "usuarios", uid), { instrumentos: arrayUnion(instrumento) });
+}
+
+// 0 = no goal.
+export function guardarMetaSemanal(uid: string, minutos: number) {
+  return updateDoc(doc(db, "usuarios", uid), {
+    metaSemanal: minutos > 0 ? minutos : deleteField(),
   });
 }
 

@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { Outlet, useLocation } from "react-router";
-import { CalendarDays, Home, LogOut, Play, UserRound, type LucideIcon } from "lucide-react";
+import { CalendarDays, Home, LogOut, Play, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import { Link } from "@/components/Link";
 import { TemaSelector } from "@/components/TemaSelector";
 import { Avatar } from "@/components/ui/avatar";
@@ -16,10 +16,12 @@ const nav: Record<"profesor" | "alumno", NavItem[]> = {
   profesor: [
     { href: "/", label: "Inicio", icon: Home },
     { href: "/planificacion", label: "Planificación", icon: CalendarDays },
+    { href: "/herramientas", label: "Herramientas", icon: Wrench },
   ],
   alumno: [
     { href: "/", label: "Inicio", icon: Home },
     { href: "/practicar", label: "Practicar", icon: Play },
+    { href: "/herramientas", label: "Herramientas", icon: Wrench },
   ],
 };
 

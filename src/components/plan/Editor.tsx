@@ -43,13 +43,14 @@ import {
   afinacionesPara,
   conAcordes,
   conCuerdas,
-  estilos,
+  estilosPara,
   etapa as etapaDe,
   etapas,
   fichaInicial,
   niveles,
   nuevoBloque,
   plantilla,
+  superficies,
   tiposPara,
   type Bloque,
   type Etapa,
@@ -69,6 +70,8 @@ const ETAPA_SUGERIDA: Record<TipoBloque, Etapa> = {
   youtube: "repertorio",
   archivos: "repertorio",
   texto: "teoria",
+  rudimento: "tecnica",
+  groove: "repertorio",
 };
 
 // Seconds a deleted block or file can be restored before it is really deleted.
@@ -108,7 +111,16 @@ export function Editor({ clase }: { clase: Clase }) {
         setEstado((actual) => (pendiente.current ? actual : "guardado"));
       } catch (error) {
         setEstado("error");
-        avisar({ texto: "No se pudo guardar el plan. Revisa tu conexión.", tipo: "error" });
+        // Rejected by the rules (e.g. a new field before `npm run deploy:reglas`) is not a
+        // connection problem: say so, or the profesor keeps editing a plan nobody else sees.
+        avisar({
+          texto:
+            (error as { code?: string })?.code === "permission-denied"
+              ? "Firebase rechazó el plan: no se guardó y tus alumnos no lo ven. Hay que publicar las reglas (npm run deploy:reglas)."
+              : "No se pudo guardar el plan. Revisa tu conexión.",
+          tipo: "error",
+          duracion: 10000,
+        });
         throw error;
       }
     },
@@ -236,9 +248,11 @@ export function Editor({ clase }: { clase: Clase }) {
           </Button>
         </View>
         <Text style={styles.ayuda}>
-          {conCuerdas(clase.instrumento)
-            ? "Incluye tablaturas con sonido, acordes, rasgueos, tempo con metrónomo, videos y archivos."
-            : "Incluye tempo con metrónomo, videos de YouTube, archivos y textos."}
+          {clase.instrumento === "bateria"
+            ? "Incluye rudimentos con escalera de tempo, grooves con sonido (coordinación, estilo y fill), video para tocar encima y la tarea."
+            : conCuerdas(clase.instrumento)
+              ? "Incluye tablaturas con sonido, acordes, rasgueos, tempo con metrónomo, videos y archivos."
+              : "Incluye tempo con metrónomo, videos de YouTube, archivos y textos."}
         </Text>
       </Section>
     );
@@ -544,11 +558,32 @@ function FichaEditor({
       </Fila>
       <Fila label="Estilo">
         <Opciones
-          opciones={estilos.map((e) => ({ value: e, label: e }))}
+          opciones={estilosPara(instrumento).map((e) => ({ value: e, label: e }))}
           valor={ficha.estilo}
           onChange={(estilo) => onChange({ ...ficha, estilo })}
         />
       </Fila>
+      {instrumento === "bateria" ? (
+        <View style={styles.filaDoble}>
+          <Fila label="Superficie">
+            <Opciones
+              opciones={superficies}
+              valor={ficha.superficie ?? "ambas"}
+              onChange={(superficie) => onChange({ ...ficha, superficie })}
+            />
+          </Fila>
+          <Fila label="Kit">
+            <Opciones
+              opciones={[
+                { value: "4", label: "4 cuerpos" },
+                { value: "5", label: "5 cuerpos" },
+              ]}
+              valor={String(ficha.kit ?? 5)}
+              onChange={(kit) => onChange({ ...ficha, kit: Number(kit) })}
+            />
+          </Fila>
+        </View>
+      ) : null}
       {conCuerdas(instrumento) ? (
         <Fila label="Afinación">
           <Opciones

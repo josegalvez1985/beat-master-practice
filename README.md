@@ -6,10 +6,18 @@ bajo, violín, acordeón, ukelele, saxofón y flauta.
 - **Profesores**: se registran con su número de documento y los instrumentos que enseñan, arman sus
   listas de alumnos (buscándolos por documento o nombre), planifican clases por semana, mes o año,
   arman cada clase por bloques (tablaturas y partituras con sonido, acordes, rasgueos, tempo con
-  metrónomo, YouTube, imágenes, PDF, audio, video y Guitar Pro) y ven el progreso de cada alumno.
+  metrónomo, YouTube, imágenes, PDF, audio, video y Guitar Pro) y ven el progreso y el diario de
+  práctica de cada alumno.
 - **Alumnos**: se registran con su número de documento y sus instrumentos. Cuando un profesor los
-  agrega a su lista, ven sus clases, suben sus prácticas en audio o video y siguen su barra de
-  progreso.
+  agrega a su lista, ven sus clases, se graban (o suben) sus prácticas en audio o video, siguen su
+  barra de progreso y llevan un diario con meta semanal.
+- **Herramientas** (alumnos y profesores), solo las que sirven para cada instrumento: afinador con
+  el micrófono, metrónomo con subdivisiones y tempo que sube solo, grabadora, diccionario de
+  acordes, entrenamiento auditivo y lectura de notas; y en todo audio, video o YouTube de las clases,
+  velocidad más lenta y repetición de A a B.
+- **Batería**: grooves en grilla con sonido (incluye polca paraguaya, guarania y galopa),
+  rudimentos con escalera de tempo y récords, medidor de tiempo con el micrófono, lectura y oído
+  rítmico, y comentarios del profesor en un segundo exacto de la entrega.
 
 Sitio: **https://www.pypulso.online** · GitHub Pages:
 **https://josegalvez1985.github.io/beat-master-practice/** · Repositorio:
@@ -51,13 +59,13 @@ una colección, documenta su relación en
 
 ## Guías
 
-| Guía                                         | Contenido                                                                                                                 |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| [docs/firebase.md](docs/firebase.md)         | Configurar Firebase, publicar reglas, emuladores, revisar y limpiar los datos, problemas comunes                          |
-| [docs/backend.md](docs/backend.md)           | **Backend NoSQL (Firestore)**: relaciones, sin registros huérfanos, datos duplicados, cómo diseñar una colección, límites |
-| [docs/arquitectura.md](docs/arquitectura.md) | Rutas, sesión, login por documento, modelo de datos, permisos, progreso y pagos (próximamente)                            |
-| [docs/diseno.md](docs/diseno.md)             | Identidad visual, componentes, diseño de cada pantalla e ideas de mejora                                                  |
-| [docs/despliegue.md](docs/despliegue.md)     | GitHub Actions, GitHub Pages, dominio www.pypulso.online y Firebase Hosting                                               |
+| Guía                                         | Contenido                                                                                                                             |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| [docs/firebase.md](docs/firebase.md)         | Configurar Firebase, publicar reglas, emuladores, revisar y limpiar los datos, problemas comunes                                      |
+| [docs/backend.md](docs/backend.md)           | **Backend NoSQL (Firestore)**: relaciones, sin registros huérfanos, datos duplicados, cómo diseñar una colección, límites             |
+| [docs/arquitectura.md](docs/arquitectura.md) | Rutas, sesión, login por documento, modelo de datos, permisos, progreso, herramientas por instrumento, batería y pagos (próximamente) |
+| [docs/diseno.md](docs/diseno.md)             | Identidad visual, componentes, diseño de cada pantalla (herramientas y batería incluidas) e ideas de mejora                           |
+| [docs/despliegue.md](docs/despliegue.md)     | GitHub Actions, GitHub Pages, dominio www.pypulso.online, Google Search Console, Firebase Hosting y publicar las reglas               |
 
 ## Scripts
 
@@ -75,25 +83,36 @@ una colección, documenta su relación en
 
 ## Estructura
 
-| Ruta                               | Contenido                                                                                             |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `index.html`                       | Documento HTML de entrada                                                                             |
-| `src/main.tsx`                     | Arranque: fuentes, rutas y guardas de sesión                                                          |
-| `src/routes/`                      | Pantallas: login, inicio, `profesor/` (inicio, planificación, alumno), `alumno/` (inicio), clase, 404 |
-| `src/components/`                  | Componentes de la app: barra superior, modales del login, materiales, formulario de clase…            |
-| `src/components/ui/`               | Componentes base: `Button`, `Input`, `Dialog`, `Chip`, `Segmented`, `Progress`…                       |
-| `src/lib/firebase.ts`              | Conexión a Firebase (o a los emuladores)                                                              |
-| `src/lib/auth.ts`                  | Sesión compartida entre pestañas, registro, login y recuperación por documento                        |
-| `src/lib/data.ts`                  | Lecturas en vivo y escrituras de Firestore; cálculo del progreso                                      |
-| `src/lib/files.ts`                 | Subida y descarga de archivos en Storage                                                              |
-| `src/lib/theme.ts`                 | Colores, fuentes y estilos compartidos                                                                |
-| `firestore.rules`, `storage.rules` | Reglas de seguridad                                                                                   |
-| `firebase.json`                    | Emuladores, reglas y Firebase Hosting                                                                 |
-| `.github/workflows/`               | CI y publicación en GitHub Pages                                                                      |
-| `docs/`                            | Guías                                                                                                 |
+| Ruta                                               | Contenido                                                                                                                      |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `index.html`                                       | Documento HTML de entrada                                                                                                      |
+| `src/main.tsx`                                     | Arranque: fuentes, rutas y guardas de sesión                                                                                   |
+| `src/routes/`                                      | Pantallas: login, inicio, `profesor/` (inicio, planificación, alumno), `alumno/` (inicio), clase, herramientas, 404            |
+| `src/components/`                                  | Componentes de la app: barra superior, modales del login, materiales, reproductor de práctica, grabadora, afinador, metrónomo… |
+| `src/components/plan/`                             | Plan de clase por bloques: editor, modo práctica y cada tipo de bloque                                                         |
+| `src/components/herramientas/`                     | Diario de práctica, diccionario de acordes, oído, lectura de notas y teclado                                                   |
+| `src/components/bateria/`                          | Grilla de grooves, rudimentos, medidor de tiempo, lectura y oído rítmico, notación rítmica                                     |
+| `src/components/ui/`                               | Componentes base: `Button`, `Input`, `Dialog`, `Chip`, `Segmented`, `Progress`…                                                |
+| `src/lib/firebase.ts`                              | Conexión a Firebase (o a los emuladores)                                                                                       |
+| `src/lib/auth.ts`                                  | Sesión compartida entre pestañas, registro, login y recuperación por documento                                                 |
+| `src/lib/data.ts`                                  | Lecturas en vivo y escrituras de Firestore (con sus cascadas); cálculo del progreso                                            |
+| `src/lib/plan.ts`                                  | Modelo del plan de clase: bloques, ficha, plantillas por instrumento                                                           |
+| `src/lib/herramientas.ts`                          | Qué herramienta ve cada instrumento                                                                                            |
+| `src/lib/audio.ts`, `notas.ts`                     | Sonido compartido (Web Audio) y notas (Do-Re-Mi, frecuencias)                                                                  |
+| `src/lib/afinador.ts`, `tiempo.ts`, `grabadora.ts` | Micrófono: afinador (YIN), detector de golpes (AudioWorklet) y grabación                                                       |
+| `src/lib/bateria.ts`                               | Kit sintetizado, grooves por estilo, rudimentos y ritmos                                                                       |
+| `src/lib/files.ts`                                 | Subida y descarga de archivos en Storage                                                                                       |
+| `src/lib/theme.ts`                                 | Colores, fuentes y estilos compartidos                                                                                         |
+| `firestore.rules`, `storage.rules`                 | Reglas de seguridad                                                                                                            |
+| `firebase.json`                                    | Emuladores, reglas y Firebase Hosting                                                                                          |
+| `.github/workflows/`                               | CI y publicación en GitHub Pages                                                                                               |
+| `docs/`                                            | Guías                                                                                                                          |
 
 ## Próximamente
 
 - **Pagos**: cada profesor y alumno pagará una suscripción para usar el sitio. La propuesta está en
   [docs/arquitectura.md](docs/arquitectura.md#próximamente-pagos).
+- **Cloud Functions** (requieren el plan Blaze): borrar en cascada todo lo de un usuario borrado
+  desde la consola de Authentication y barrer los archivos de Storage que nada referencia. Ver
+  [docs/backend.md](docs/backend.md).
 - Ideas de diseño para las siguientes versiones en [docs/diseno.md](docs/diseno.md#ideas-para-las-próximas-versiones).

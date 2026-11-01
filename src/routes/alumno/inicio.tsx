@@ -1,15 +1,19 @@
 import { useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import { CalendarDays, UserPlus } from "lucide-react";
+import { CalendarDays, UserPlus, Wrench } from "lucide-react";
+import { Afinador } from "@/components/Afinador";
 import { shellStyles } from "@/components/AppShell";
 import { ClaseItem } from "@/components/ClaseItem";
+import { ResumenDiario } from "@/components/herramientas/Diario";
+import { Link } from "@/components/Link";
 import { Metronome } from "@/components/Metronome";
 import { PageMeta } from "@/components/PageMeta";
 import { ProximaPractica } from "@/components/ProximaPractica";
-import { Button } from "@/components/ui/button";
+import { Button, buttonForeground } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
 import { Section } from "@/components/ui/section";
+import { afinable } from "@/lib/afinador";
 import { usePerfil } from "@/lib/auth";
 import {
   progreso,
@@ -22,6 +26,7 @@ import {
 } from "@/lib/data";
 import { hoy } from "@/lib/dates";
 import { formatearDocumento } from "@/lib/documento";
+import { instrumentosDe } from "@/lib/herramientas";
 import { instrumento } from "@/lib/instruments";
 import { colors, fonts } from "@/lib/theme";
 
@@ -32,6 +37,8 @@ export default function AlumnoInicio() {
   const inscripciones = useInscripcionesAlumno(perfil.uid);
   const entregas = useEntregasAlumno(perfil.uid);
   const clases = useClasesDeInscripciones(inscripciones.data);
+  // Only the tuner of instruments this alumno studies (profile or a profesor list).
+  const afinables = instrumentosDe(perfil.instrumentos, inscripciones.data).filter(afinable);
 
   return (
     <>
@@ -66,7 +73,15 @@ export default function AlumnoInicio() {
           ))}
         </View>
         <View style={[styles.column, lg && styles.sideColumn]}>
+          <ResumenDiario perfil={perfil} />
+          {afinables.length ? <Afinador instrumentos={afinables} /> : null}
           <Metronome />
+          <Link href="/herramientas">
+            <Button variant="secondary">
+              <Wrench size={16} color={buttonForeground("secondary")} />
+              Más herramientas para practicar
+            </Button>
+          </Link>
         </View>
       </View>
     </>

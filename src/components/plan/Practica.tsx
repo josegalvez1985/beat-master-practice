@@ -1,7 +1,18 @@
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSearchParams } from "react-router";
-import { ArrowLeft, ArrowRight, Check, Pause, Play, RotateCcw, Trophy, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  NotebookPen,
+  Pause,
+  Play,
+  RotateCcw,
+  Trophy,
+  X,
+} from "lucide-react";
+import { BotonAfinador } from "@/components/Afinador";
 import {
   ContenidoBloque,
   DatosFicha,
@@ -13,7 +24,9 @@ import { Button, buttonForeground } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Section } from "@/components/ui/section";
-import type { Clase } from "@/lib/data";
+import { avisar } from "@/components/ui/toast";
+import { anotarPractica, type Clase } from "@/lib/data";
+import { hoy } from "@/lib/dates";
 import { etapa as etapaDe, type Bloque, type Plan } from "@/lib/plan";
 import { hechosDeClase, marcarHecho, usePractica } from "@/lib/practica";
 import { colors, fonts, radius } from "@/lib/theme";
@@ -56,6 +69,7 @@ export function Practica({
         plan={plan}
         inicio={listos === total ? 0 : primeroPendiente}
         hechos={hechos}
+        alumnoId={alumnoId}
         onMarcar={marcar}
         onSalir={salir}
       />
@@ -67,16 +81,19 @@ export function Practica({
       title="Plan de la clase"
       subtitle={alumnoId ? `${listos} de ${total} bloques practicados` : "Así la ve tu alumno."}
       actions={
-        total ? (
-          <Button onPress={() => setEnModo(true)}>
-            <Play size={16} color={buttonForeground()} />
-            {listos === 0
-              ? "Empezar práctica"
-              : listos === total
-                ? "Repasar"
-                : "Continuar práctica"}
-          </Button>
-        ) : null
+        <View style={styles.acciones}>
+          <BotonAfinador instrumento={clase.instrumento} afinacion={plan.ficha.afinacion} />
+          {total ? (
+            <Button onPress={() => setEnModo(true)}>
+              <Play size={16} color={buttonForeground()} />
+              {listos === 0
+                ? "Empezar práctica"
+                : listos === total
+                  ? "Repasar"
+                  : "Continuar práctica"}
+            </Button>
+          ) : null}
+        </View>
       }
     >
       {alumnoId ? <Progress value={total ? (listos / total) * 100 : 0} /> : null}
@@ -136,6 +153,7 @@ function ModoPractica({
   plan,
   inicio,
   hechos,
+  alumnoId,
   onMarcar,
   onSalir,
 }: {
@@ -143,16 +161,36 @@ function ModoPractica({
   plan: Plan;
   inicio: number;
   hechos: Set<string>;
+  alumnoId: string | null;
   onMarcar: (bloque: Bloque, hecho: boolean) => void;
   onSalir: () => void;
 }) {
   const [indice, setIndice] = useState(inicio);
   const [terminado, setTerminado] = useState(false);
+  const [anotado, setAnotado] = useState(false);
   const total = plan.bloques.length;
   const bloque = plan.bloques[indice];
 
   if (terminado || !bloque) {
     const listos = plan.bloques.filter((b) => hechos.has(b.id)).length;
+    const minutos = plan.bloques
+      .filter((b) => hechos.has(b.id))
+      .reduce((total, b) => total + (b.minutos || 0), 0);
+    const anotar = async () => {
+      if (!alumnoId) return;
+      try {
+        await anotarPractica(alumnoId, {
+          instrumento: clase.instrumento,
+          fecha: hoy(),
+          minutos: Math.min(600, Math.max(1, minutos)),
+          comentario: `Plan de la clase: ${clase.titulo}`.slice(0, 500),
+        });
+        setAnotado(true);
+        avisar({ texto: `Anotaste ${minutos} min en tu diario.` });
+      } catch {
+        avisar({ texto: "No se pudo anotar en el diario.", tipo: "error" });
+      }
+    };
     return (
       <Section title="Plan de la clase">
         <View style={styles.final}>
@@ -174,6 +212,12 @@ function ModoPractica({
               <RotateCcw size={16} color={buttonForeground("secondary")} />
               Repasar desde el inicio
             </Button>
+            {alumnoId && minutos > 0 ? (
+              <Button variant="secondary" disabled={anotado} onPress={anotar}>
+                <NotebookPen size={16} color={buttonForeground("secondary")} />
+                {anotado ? "Anotado en tu diario" : `Anotar ${minutos} min en mi diario`}
+              </Button>
+            ) : null}
             <Button onPress={onSalir}>Volver a la clase</Button>
           </View>
         </View>
@@ -209,6 +253,7 @@ function ModoPractica({
             />
           ))}
         </View>
+        <BotonAfinador instrumento={clase.instrumento} afinacion={plan.ficha.afinacion} />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Salir del modo práctica"
@@ -293,6 +338,12 @@ function Cronometro({ minutos }: { minutos: number }) {
 }
 
 const styles = StyleSheet.create({
+  acciones: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
+  },
   lista: {
     gap: 14,
   },

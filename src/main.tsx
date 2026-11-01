@@ -8,6 +8,7 @@ import { LoginRedirect, RequireAuth, RequireRole } from "@/components/RouteGuard
 import { loadFonts } from "@/lib/fonts";
 import PracticarAhora from "@/routes/alumno/practicar";
 import ClasePage from "@/routes/clase";
+import Herramientas from "@/routes/herramientas";
 import Inicio from "@/routes/index";
 import RootLayout, { ErrorBoundary } from "@/routes/layout";
 import NotFoundScreen from "@/routes/not-found";
@@ -31,6 +32,7 @@ const router = createBrowserRouter(
                 { index: true, element: <Inicio /> },
                 { path: "clases/:claseId", element: <ClasePage /> },
                 { path: "perfil", element: <PerfilPage /> },
+                { path: "herramientas", element: <Herramientas /> },
                 {
                   element: <RequireRole rol="alumno" />,
                   children: [{ path: "practicar", element: <PracticarAhora /> }],

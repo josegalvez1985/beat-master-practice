@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { Camera, Trash2 } from "lucide-react";
+import { Camera, Plus, Trash2 } from "lucide-react";
 import { shellStyles } from "@/components/AppShell";
 import { PageMeta } from "@/components/PageMeta";
 import { TemaSelector } from "@/components/TemaSelector";
@@ -10,10 +10,10 @@ import { Chip } from "@/components/ui/chip";
 import { Section } from "@/components/ui/section";
 import { avisar } from "@/components/ui/toast";
 import { usePerfil, useSession } from "@/lib/auth";
-import { cambiarFoto, quitarFoto } from "@/lib/data";
+import { agregarInstrumento, cambiarFoto, quitarFoto } from "@/lib/data";
 import { formatearDocumento } from "@/lib/documento";
 import { ACCEPT_FOTO, elegirArchivos } from "@/lib/files";
-import { instrumento } from "@/lib/instruments";
+import { instrumento, instruments, type InstrumentId } from "@/lib/instruments";
 import { colors, fonts } from "@/lib/theme";
 
 // Photos up to 15 MB are accepted: they are scaled down to 512 px before uploading.
@@ -71,6 +71,30 @@ export default function PerfilPage() {
     });
   };
   const foto = quitada ? undefined : perfil.foto;
+  const profesor = perfil.rol === "profesor";
+  const [agregando, setAgregando] = useState<InstrumentId | null>(null);
+  const faltan = instruments.filter((i) => !perfil.instrumentos.includes(i.id));
+
+  const onAgregar = async (id: InstrumentId) => {
+    const nombre = instrumento(id).name;
+    if (
+      !window.confirm(
+        profesor
+          ? `¿Agregar ${nombre} a los instrumentos que enseñas? Podrás armar listas y clases de ${nombre}.`
+          : `¿Agregar ${nombre} a los instrumentos que estudias? Verás sus herramientas de práctica.`,
+      )
+    )
+      return;
+    setAgregando(id);
+    try {
+      await agregarInstrumento(perfil.uid, id);
+      avisar({ texto: `Agregaste ${nombre}.` });
+    } catch {
+      avisar({ texto: "No se pudo agregar el instrumento. Vuelve a probar.", tipo: "error" });
+    } finally {
+      setAgregando(null);
+    }
+  };
 
   return (
     <>
@@ -121,18 +145,45 @@ export default function PerfilPage() {
         <Dato label="Nombre" value={perfil.nombre} />
         <Dato label="Nro. de documento" value={formatearDocumento(perfil.nro_documento)} />
         {email ? <Dato label="Correo" value={email} /> : null}
-        <Dato label="Rol" value={perfil.rol === "profesor" ? "Profesor" : "Alumno"} />
-        <View style={styles.dato}>
-          <Text style={styles.datoLabel}>
-            {perfil.rol === "profesor" ? "Instrumentos que enseñas" : "Instrumentos que estudias"}
-          </Text>
-          <View style={styles.chips}>
-            {perfil.instrumentos.map((id) => {
-              const item = instrumento(id);
-              return <Chip key={id} label={item.name} icon={item.icon} />;
-            })}
-          </View>
+        <Dato label="Rol" value={profesor ? "Profesor" : "Alumno"} />
+      </Section>
+
+      <Section
+        title={profesor ? "Instrumentos que enseñas" : "Instrumentos que estudias"}
+        subtitle={
+          profesor
+            ? "Con cada instrumento puedes armar listas de alumnos y clases."
+            : "Cada instrumento suma sus herramientas de práctica. Tu profesor te agrega a su lista por instrumento."
+        }
+      >
+        <View style={styles.chips}>
+          {perfil.instrumentos.map((id) => {
+            const item = instrumento(id);
+            return <Chip key={id} label={item.name} icon={item.icon} />;
+          })}
         </View>
+        {faltan.length ? (
+          <>
+            <Text style={styles.datoLabel}>
+              {profesor ? "Enseñar también:" : "Aprender también:"}
+            </Text>
+            <View style={styles.chips}>
+              {faltan.map((item) => (
+                <Button
+                  key={item.id}
+                  variant="secondary"
+                  size="sm"
+                  disabled={agregando !== null}
+                  accessibilityLabel={`Agregar ${item.name}`}
+                  onPress={() => onAgregar(item.id)}
+                >
+                  <Plus size={14} color={buttonForeground("secondary")} />
+                  {agregando === item.id ? "Agregando…" : item.name}
+                </Button>
+              ))}
+            </View>
+          </>
+        ) : null}
       </Section>
 
       <Section title="Apariencia" subtitle="Sistema usa el modo claro u oscuro de tu dispositivo.">

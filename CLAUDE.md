@@ -43,6 +43,16 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
   sobre el plan más reciente (`ultimo` en `PlanClase`), y `archivosDelPlan` entra en la cascada de
   `eliminarClase`.
 
+## Herramientas y batería
+
+- Cada herramienta se habilita **por instrumento** en `src/lib/herramientas.ts` (`para`); nunca para
+  todos. `/herramientas` es para alumnos y profesores (el diario, solo alumnos).
+- Los grooves se guardan como un texto por pieza del kit (Firestore no admite listas de listas).
+- Los ids de `RUDIMENTOS` (`src/lib/bateria.ts`) solo se agregan, nunca se quitan ni se renombran:
+  los `records` los nombran y la lista está copiada en `firestore.rules`.
+- Afinador, grabadora y medidor de tiempo usan el micrófono: exigen HTTPS (o `localhost`). Todo el
+  sonido sale de un solo `AudioContext` (`src/lib/audio.ts`).
+
 ## Datos del proyecto
 
 - La base de Firestore se llama **`default`** (sin paréntesis): `getFirestore(app, "default")`,

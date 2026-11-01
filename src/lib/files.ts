@@ -101,6 +101,24 @@ export function subirArchivo(
   });
 }
 
+// Uploads and then saves the reference in Firestore (`anotar`). If saving fails, the file is
+// deleted so it is not left orphaned in Storage.
+export async function subirYAnotar(
+  carpeta: string,
+  file: File,
+  onProgress: (porcentaje: number) => void,
+  anotar: (material: Material) => Promise<void>,
+) {
+  const material = await subirArchivo(carpeta, file, onProgress);
+  try {
+    await anotar(material);
+  } catch (error) {
+    await borrarArchivo(material.ruta).catch(() => {});
+    throw error;
+  }
+  return material;
+}
+
 // Already gone counts as deleted; any other failure is thrown, so callers can keep the
 // Firestore reference instead of leaving the file orphaned in Storage.
 export async function borrarArchivo(ruta: string) {

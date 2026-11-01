@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { documentoRecordado, mensajeDeError, signIn } from "@/lib/auth";
 import { documentoValido, normalizarDocumento } from "@/lib/documento";
+import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site";
 import { colors, fonts } from "@/lib/theme";
 
 // The open modal lives in the URL (?modal=registro|recuperar|primeros-pasos),
@@ -52,10 +53,7 @@ export default function LoginPage() {
 
   return (
     <>
-      <PageMeta
-        title={(modal && titles[modal]) || "Pulso — Clases de música en Paraguay · Iniciar sesión"}
-        description="Profesores y alumnos de música en Paraguay: clases planificadas, materiales, prácticas en audio o video y progreso. Guitarra, arpa paraguaya, piano, batería y más."
-      />
+      <PageMeta title={(modal && titles[modal]) || SITE_TITLE} description={SITE_DESCRIPTION} />
       <AuthLayout title="Iniciar sesión" subtitle="Entra con tu número de documento.">
         <View style={authStyles.form}>
           <View style={authStyles.field}>

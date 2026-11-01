@@ -204,3 +204,77 @@ export const ACORDES_COMUNES = {
   ],
   ukelele: ["C", "G", "Am", "F", "D", "Em", "A", "Dm", "G7", "E7", "A7", "Bm"],
 };
+
+// --- Notes of a chord (dictionary and ear training) ---
+
+// Semitones above the root for each quality the generator understands.
+export const INTERVALOS: Record<string, number[]> = {
+  "": [0, 4, 7],
+  m: [0, 3, 7],
+  "7": [0, 4, 7, 10],
+  m7: [0, 3, 7, 10],
+  maj7: [0, 4, 7, 11],
+  sus2: [0, 2, 7],
+  sus4: [0, 5, 7],
+  dim: [0, 3, 6],
+  add9: [0, 4, 7, 14],
+  "5": [0, 7],
+  "6": [0, 4, 7, 9],
+  m6: [0, 3, 7, 9],
+  "9": [0, 4, 7, 10, 14],
+};
+
+export const NOMBRE_CALIDAD: Record<string, string> = {
+  "": "mayor",
+  m: "menor",
+  "7": "séptima",
+  m7: "menor séptima",
+  maj7: "séptima mayor",
+  sus2: "con segunda suspendida",
+  sus4: "con cuarta suspendida",
+  dim: "disminuido",
+  add9: "con novena agregada",
+  "5": "quinta (power chord)",
+  "6": "sexta",
+  m6: "menor sexta",
+  "9": "novena",
+};
+
+const SOLFEO_DE: Record<string, string> = {
+  C: "Do",
+  "C#": "Do#",
+  D: "Re",
+  "D#": "Re#",
+  E: "Mi",
+  F: "Fa",
+  "F#": "Fa#",
+  G: "Sol",
+  "G#": "Sol#",
+  A: "La",
+  "A#": "La#",
+  B: "Si",
+};
+
+// MIDI notes of the chord in close position, root between C4 and B4.
+export function notasDelAcorde(nombre: string) {
+  const acorde = analizar(nombre);
+  if (!acorde) return null;
+  const raiz = 60 + NOTAS.indexOf(acorde.raiz);
+  return {
+    ...acorde,
+    nombre: `${SOLFEO_DE[acorde.raiz]} ${NOMBRE_CALIDAD[acorde.calidad]}`,
+    midis: (INTERVALOS[acorde.calidad] ?? [0]).map((i) => raiz + i),
+  };
+}
+
+// Open strings (MIDI), lowest to highest, as in the fingerings.
+const AL_AIRE = { guitarra: [40, 45, 50, 55, 59, 64], ukelele: [67, 60, 64, 69] };
+
+// What the fingering sounds like, string by string (for a strum).
+export function notasDeDigitacion(nombre: string, instrumento: "guitarra" | "ukelele") {
+  const forma = digitacion(nombre, instrumento);
+  if (!forma) return null;
+  return forma.trastes.flatMap((traste, i) =>
+    traste < 0 ? [] : [AL_AIRE[instrumento][i]! + traste],
+  );
+}

@@ -35,6 +35,8 @@ export type Perfil = {
   instrumentos: InstrumentId[];
   // Profile photo in Storage (always usuarios/{uid}/foto.jpg); absent without photo.
   foto?: { ruta: string; actualizadoEn: Timestamp | null };
+  // Alumno: weekly practice goal in minutes; absent = no goal.
+  metaSemanal?: number;
 };
 
 export type Session =

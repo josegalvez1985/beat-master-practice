@@ -53,7 +53,16 @@ export function AuthLayout({
         <StageGlow />
         <ScrollView contentContainerStyle={styles.formScroll}>
           <View style={styles.formWrap}>
-            {lg ? null : <Logo size={36} />}
+            {lg ? null : (
+              <>
+                <Logo size={36} />
+                {/* Google indexes the phone layout: what Pulso is has to be visible here too. */}
+                <Text style={styles.lead}>
+                  Clases y práctica de música en Paraguay: guitarra, arpa paraguaya, piano, batería
+                  y más.
+                </Text>
+              </>
+            )}
             <Text style={styles.heading}>{title}</Text>
             <Text style={styles.subtitle}>{subtitle}</Text>
             {children}
@@ -164,6 +173,13 @@ const styles = StyleSheet.create({
   formWrap: {
     width: "100%",
     maxWidth: 384,
+  },
+  lead: {
+    marginTop: 16,
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.mutedForeground,
   },
   heading: {
     marginTop: 24,

@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
+  Drum,
   Dumbbell,
   Flame,
   Guitar,
@@ -9,9 +10,11 @@ import {
   Music2,
   Paperclip,
   PlaySquare,
+  Repeat,
   Timer,
   Type,
 } from "lucide-react";
+import { ESTILOS, type Groove, type Voz } from "@/lib/bateria";
 import type { Material } from "@/lib/files";
 import type { InstrumentId } from "@/lib/instruments";
 import { colors } from "@/lib/theme";
@@ -41,6 +44,16 @@ export type Bloque = BloqueBase &
     | { tipo: "tempo"; inicio: number; objetivo: number; paso: number }
     | { tipo: "youtube"; url: string }
     | { tipo: "archivos"; archivos: Material[] }
+    // Drum kit (see src/lib/bateria.ts).
+    | ({ tipo: "groove" } & Groove)
+    | {
+        tipo: "rudimento";
+        rudimento: string;
+        inicio: number;
+        objetivo: number;
+        paso: number;
+        empiezaCon: "R" | "L";
+      }
   );
 
 export type TipoBloque = Bloque["tipo"];
@@ -51,6 +64,9 @@ export type Ficha = {
   afinacion: string;
   capo: number;
   duracion: number;
+  // Drum kit only: practice pad, drum kit or both, and how many drums.
+  superficie?: "pad" | "bateria" | "ambas";
+  kit?: number;
 };
 
 export type Plan = { ficha: Ficha; bloques: Bloque[] };
@@ -76,10 +92,25 @@ export const tiposDeBloque: {
   label: string;
   descripcion: string;
   icon: LucideIcon;
-  // Only for string instruments with frets (guitarra, bajo, ukelele) / with chords.
+  // Only for string instruments with frets (guitarra, bajo, ukelele) / with chords / drums.
   soloCuerdas?: boolean;
   soloAcordes?: boolean;
+  soloBateria?: boolean;
 }[] = [
+  {
+    value: "groove",
+    label: "Groove",
+    descripcion: "Ritmo de batería con sonido",
+    icon: Drum,
+    soloBateria: true,
+  },
+  {
+    value: "rudimento",
+    label: "Rudimento",
+    descripcion: "Digitación R/L y escalera de tempo",
+    icon: Repeat,
+    soloBateria: true,
+  },
   {
     value: "tablatura",
     label: "Tablatura",
@@ -120,7 +151,9 @@ export const conAcordes = (instrumento: InstrumentId) =>
 export const tiposPara = (instrumento: InstrumentId) =>
   tiposDeBloque.filter(
     (t) =>
-      (!t.soloCuerdas || conCuerdas(instrumento)) && (!t.soloAcordes || conAcordes(instrumento)),
+      (!t.soloCuerdas || conCuerdas(instrumento)) &&
+      (!t.soloAcordes || conAcordes(instrumento)) &&
+      (!t.soloBateria || instrumento === "bateria"),
   );
 
 export const niveles: { value: Ficha["nivel"]; label: string }[] = [
@@ -159,6 +192,29 @@ export const afinaciones: Record<
   ukelele: [{ label: "Estándar (GCEA)", tex: "A4 E4 C4 G4" }],
 };
 
+export const estilosBateria = [
+  "Rock",
+  "Pop",
+  "Funk",
+  "Shuffle / blues",
+  "Jazz",
+  "Bossa nova",
+  "Cumbia",
+  "Polca paraguaya",
+  "Guarania",
+  "Galopa",
+  "Worship",
+];
+
+export const estilosPara = (instrumento: InstrumentId) =>
+  instrumento === "bateria" ? estilosBateria : estilos;
+
+export const superficies = [
+  { value: "pad", label: "Pad de práctica" },
+  { value: "bateria", label: "Batería" },
+  { value: "ambas", label: "Pad y batería" },
+] as const;
+
 export function afinacionesPara(instrumento: InstrumentId) {
   return instrumento === "bajo" || instrumento === "ukelele"
     ? afinaciones[instrumento]
@@ -166,6 +222,16 @@ export function afinacionesPara(instrumento: InstrumentId) {
 }
 
 export function fichaInicial(instrumento: InstrumentId): Ficha {
+  if (instrumento === "bateria")
+    return {
+      nivel: "principiante",
+      estilo: "Rock",
+      afinacion: "",
+      capo: 0,
+      duracion: 60,
+      superficie: "ambas",
+      kit: 5,
+    };
   return {
     nivel: "principiante",
     estilo: "Popular",
@@ -217,7 +283,96 @@ function crearBloque(tipo: TipoBloque, instrumento: InstrumentId, etapaInicial: 
       return { ...base, tipo, titulo: "Material", archivos: [] };
     case "texto":
       return { ...base, tipo, titulo: "Indicaciones" };
+    case "groove":
+      return { ...base, tipo, titulo: "Groove", ...ESTILOS[0]!.groove };
+    case "rudimento":
+      return {
+        ...base,
+        tipo,
+        titulo: "Rudimento",
+        rudimento: "simples",
+        inicio: 60,
+        objetivo: 90,
+        paso: 5,
+        empiezaCon: "R",
+      };
   }
+}
+
+const estilo = (id: string) => (ESTILOS.find((e) => e.id === id) ?? ESTILOS[0]!).groove;
+
+// A typical 60-minute drum lesson: hands, coordination, groove, fill, music and homework.
+function plantillaBateria(): Bloque[] {
+  const ostinato: Groove = {
+    compas: "4/4",
+    subdivision: 2,
+    compases: 1,
+    bpm: 70,
+    pistas: { hihatPie: "..x...x.", caja: "x.x..xx.", bombo: "x...x..." } satisfies Partial<
+      Record<Voz, string>
+    >,
+  };
+  const fill: Groove = {
+    ...estilo("rock"),
+    compases: 4,
+    pistas: {
+      crash: "x...............................",
+      hihat: "xxxxxxxxxxxxxxxxxxxxxxxx........",
+      caja: "..>...>...>...>...>...>.xx......",
+      tom1: "..........................xx....",
+      tom2: "............................xx..",
+      tomPiso: "..............................xx",
+      bombo: "x...xx..x...xx..x...xx..........",
+    },
+  };
+  return [
+    {
+      ...nuevoBloque("rudimento", "bateria", "calentamiento"),
+      titulo: "Golpes simples en el pad",
+      minutos: 10,
+      rudimento: "simples",
+      inicio: 60,
+      objetivo: 90,
+    },
+    {
+      ...nuevoBloque("rudimento", "bateria", "tecnica"),
+      titulo: "Rudimento del día",
+      minutos: 10,
+      rudimento: "paradiddle",
+      inicio: 60,
+      objetivo: 85,
+    },
+    {
+      ...nuevoBloque("groove", "bateria", "tecnica"),
+      ...ostinato,
+      titulo: "Coordinación: ostinato de pies y caja",
+      minutos: 10,
+    },
+    {
+      ...nuevoBloque("groove", "bateria", "repertorio"),
+      ...estilo("rock"),
+      titulo: "Groove del estilo",
+      minutos: 15,
+    },
+    {
+      ...nuevoBloque("groove", "bateria", "repertorio"),
+      ...fill,
+      titulo: "3 compases de groove + 1 de fill",
+      minutos: 5,
+    },
+    {
+      ...nuevoBloque("youtube", "bateria", "repertorio"),
+      titulo: "Toca encima de la canción",
+      minutos: 5,
+    },
+    {
+      ...nuevoBloque("texto", "bateria", "tarea"),
+      titulo: "Para practicar en casa",
+      minutos: 5,
+      notas:
+        "20 minutos por día: 5 de rudimentos en el pad, 10 del groove con metrónomo y 5 sin click. Graba el groove al tempo objetivo y súbelo como entrega.",
+    },
+  ];
 }
 
 // alphaTex: one bar of chromatic "spider" exercise for the instrument, with its sound (General
@@ -248,6 +403,7 @@ export function texInicial(instrumento: InstrumentId) {
 
 // A typical 60-minute class to start from, in the right order.
 export function plantilla(instrumento: InstrumentId): Bloque[] {
+  if (instrumento === "bateria") return plantillaBateria();
   const bloques: Bloque[] = [
     {
       ...nuevoBloque("tempo", instrumento, "calentamiento"),

@@ -1,22 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useNavigate, useParams } from "react-router";
-import { ChevronLeft, FolderOpen, Lock, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, Copy, FolderOpen, Lock, Pencil, Trash2 } from "lucide-react";
 import { shellStyles } from "@/components/AppShell";
 import { Avatar } from "@/components/ui/avatar";
 import { ClaseFormDialog } from "@/components/ClaseFormDialog";
+import { Grabadora } from "@/components/Grabadora";
 import { Link } from "@/components/Link";
 import { MaterialList, UploadButton } from "@/components/Materials";
 import { PageMeta } from "@/components/PageMeta";
 import { PlanClase } from "@/components/plan/PlanClase";
 import { Button, buttonForeground } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
+import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Badge, Section } from "@/components/ui/section";
+import { avisar } from "@/components/ui/toast";
 import { usePerfil, type Perfil } from "@/lib/auth";
 import {
+  agregarDevolucion,
   agregarMaterial,
+  duplicarClase,
   eliminarClase,
+  limpiarDevoluciones,
+  quitarDevolucion,
   agregarArchivoEntrega,
   guardarComentario,
   quitarArchivoEntrega,
@@ -28,7 +36,7 @@ import {
   type Clase,
   type Entrega,
 } from "@/lib/data";
-import { formatoLargo } from "@/lib/dates";
+import { formatoLargo, sumarDias } from "@/lib/dates";
 import { ACCEPT_ENTREGA, ACCEPT_MATERIAL, borrarArchivo, type Material } from "@/lib/files";
 import { instrumento } from "@/lib/instruments";
 import { colors, fonts, radius } from "@/lib/theme";
@@ -65,6 +73,7 @@ export default function ClasePage() {
 function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
   const navigate = useNavigate();
   const [editando, setEditando] = useState(false);
+  const [duplicando, setDuplicando] = useState(false);
   const esDueno = perfil.uid === clase.profesorId;
 
   const eliminar = async () => {
@@ -101,6 +110,10 @@ function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
             <Button variant="secondary" onPress={() => setEditando(true)}>
               <Pencil size={14} color={buttonForeground("secondary")} />
               Editar
+            </Button>
+            <Button variant="secondary" onPress={() => setDuplicando(true)}>
+              <Copy size={14} color={buttonForeground("secondary")} />
+              Duplicar
             </Button>
             <Button variant="outline" accessibilityLabel="Eliminar clase" onPress={eliminar}>
               <Trash2 size={14} color={buttonForeground("outline")} />
@@ -151,6 +164,10 @@ function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
         <MiEntrega clase={clase} perfil={perfil} />
       )}
 
+      {esDueno && duplicando ? (
+        <DuplicarDialog clase={clase} perfil={perfil} onClose={() => setDuplicando(false)} />
+      ) : null}
+
       {esDueno ? (
         <ClaseFormDialog
           visible={editando}
@@ -161,6 +178,60 @@ function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
         />
       ) : null}
     </>
+  );
+}
+
+// The same class on another date, with its plan; files are not copied (see duplicarClase).
+function DuplicarDialog({
+  clase,
+  perfil,
+  onClose,
+}: {
+  clase: Clase;
+  perfil: Perfil;
+  onClose: () => void;
+}) {
+  const navigate = useNavigate();
+  const [fecha, setFecha] = useState(sumarDias(clase.fecha, 7));
+  const [guardando, setGuardando] = useState(false);
+  const conArchivos =
+    clase.materiales.length > 0 ||
+    (clase.bloques ?? []).some((b) => b.tipo === "archivos" && b.archivos.length > 0);
+
+  const duplicar = async () => {
+    setGuardando(true);
+    try {
+      const id = await duplicarClase(perfil, clase, fecha);
+      avisar({ texto: "Clase duplicada." });
+      onClose();
+      navigate(`/clases/${id}`);
+    } catch {
+      avisar({ texto: "No se pudo duplicar la clase.", tipo: "error" });
+      setGuardando(false);
+    }
+  };
+
+  return (
+    <Dialog
+      visible
+      onClose={onClose}
+      title="Duplicar clase"
+      description="Se crea una clase igual (título, objetivos, ficha y plan) en la fecha que elijas."
+    >
+      <View style={styles.duplicar}>
+        <DateInput label="Fecha de la copia" value={fecha} onChange={setFecha} />
+        {conArchivos ? (
+          <Text style={styles.muted}>
+            Los archivos (materiales y bloques de archivos) no se copian: súbelos de nuevo en la
+            copia. Así cada clase es dueña de sus archivos y borrar una no deja a la otra sin ellos.
+          </Text>
+        ) : null}
+        <Button disabled={!fecha || guardando} onPress={duplicar}>
+          <Copy size={16} color={buttonForeground()} />
+          {guardando ? "Duplicando…" : "Duplicar"}
+        </Button>
+      </View>
+    </Dialog>
   );
 }
 
@@ -184,6 +255,11 @@ function EntregaForm({
   const [guardado, setGuardado] = useState(false);
   const archivos = entrega?.archivos ?? [];
 
+  // Comments left on a file that is no longer here (see limpiarDevoluciones).
+  useEffect(() => {
+    if (entrega) limpiarDevoluciones(entrega, true).catch(() => {});
+  }, [entrega]);
+
   const onGuardarComentario = async () => {
     if (!entrega) return;
     await guardarComentario(entrega, comentario.trim());
@@ -199,15 +275,27 @@ function EntregaForm({
   return (
     <Section
       title="Tu entrega"
-      subtitle="Graba tu práctica y súbela en audio o video. Tu profesor la verá al instante."
+      subtitle="Grábate aquí mismo (o sube un archivo) en audio o video. Tu profesor lo verá al instante."
       actions={
         archivos.length ? <Badge label="Entregada" tone="success" /> : <Badge label="Pendiente" />
       }
     >
-      {archivos.length ? <MaterialList materiales={archivos} onRemove={quitar} /> : null}
+      {archivos.length ? (
+        <MaterialList
+          materiales={archivos}
+          onRemove={quitar}
+          devoluciones={entrega?.devoluciones}
+        />
+      ) : null}
+      <Grabadora
+        principal={!archivos.length}
+        envio={{
+          carpeta: `entregas/${clase.id}/${perfil.uid}`,
+          anotar: (material) => agregarArchivoEntrega(perfil, clase, material),
+        }}
+      />
       <UploadButton
-        label={archivos.length ? "Agregar otro archivo" : "Subir audio o video"}
-        variant={archivos.length ? "secondary" : "default"}
+        label={archivos.length ? "Agregar otro archivo" : "Subir un archivo de audio o video"}
         carpeta={`entregas/${clase.id}/${perfil.uid}`}
         accept={ACCEPT_ENTREGA}
         onUploaded={(material) => agregarArchivoEntrega(perfil, clase, material)}
@@ -248,6 +336,11 @@ function EntregasDeAlumnos({ clase, perfil }: { clase: Clase; perfil: Perfil }) 
   const alumnos = inscripciones.data.filter((i) => i.instrumento === clase.instrumento);
   const porAlumno = new Map(entregas.data.map((e) => [e.alumnoId, e]));
 
+  // Comments left on a file the alumno removed meanwhile (see limpiarDevoluciones).
+  useEffect(() => {
+    entregas.data.forEach((e) => limpiarDevoluciones(e, false).catch(() => {}));
+  }, [entregas.data]);
+
   return (
     <Section
       title="Entregas de alumnos"
@@ -270,7 +363,28 @@ function EntregasDeAlumnos({ clase, perfil }: { clase: Clase; perfil: Perfil }) 
               {entrega ? <Badge label="Entregada" tone="success" /> : <Badge label="Pendiente" />}
             </View>
             {entrega?.comentario ? <Text style={styles.body}>“{entrega.comentario}”</Text> : null}
-            {entrega ? <MaterialList materiales={entrega.archivos} /> : null}
+            {entrega ? (
+              <MaterialList
+                materiales={entrega.archivos}
+                devoluciones={entrega.devoluciones}
+                onComentar={(material, segundo, texto) =>
+                  agregarDevolucion(entrega, {
+                    id: Math.random().toString(36).slice(2, 10),
+                    archivoId: material.id,
+                    segundo: Math.round(segundo * 10) / 10,
+                    texto,
+                    fecha: Date.now(),
+                  }).catch(() => {
+                    avisar({ texto: "No se pudo guardar el comentario.", tipo: "error" });
+                  })
+                }
+                onQuitarDevolucion={(devolucion) =>
+                  void quitarDevolucion(entrega, devolucion).catch(() =>
+                    avisar({ texto: "No se pudo borrar el comentario.", tipo: "error" }),
+                  )
+                }
+              />
+            ) : null}
           </View>
         );
       })}
@@ -333,6 +447,10 @@ const styles = StyleSheet.create({
   },
   saveComment: {
     alignSelf: "flex-start",
+  },
+  duplicar: {
+    marginTop: 16,
+    gap: 12,
   },
   delivery: {
     gap: 10,

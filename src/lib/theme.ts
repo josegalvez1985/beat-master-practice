@@ -34,6 +34,11 @@ const palettes = {
     etapaRepertorio: "#f9a129",
     etapaTeoria: "#a78bfa",
     etapaTarea: "#4ade80",
+    // Drum kit pieces (groove grid): cymbals, snare, toms, bass drum.
+    vozPlatillo: "#38bdf8",
+    vozCaja: "#f87171",
+    vozTom: "#c084fc",
+    vozBombo: "#4ade80",
     // Sheet music is always drawn on paper, in both themes.
     paper: "#fffdf8",
     paperInk: "#1c1714",
@@ -65,6 +70,10 @@ const palettes = {
     etapaRepertorio: "#b45309",
     etapaTeoria: "#6d28d9",
     etapaTarea: "#15803d",
+    vozPlatillo: "#0369a1",
+    vozCaja: "#b91c1c",
+    vozTom: "#7e22ce",
+    vozBombo: "#15803d",
     paper: "#ffffff",
     paperInk: "#1c1714",
   },

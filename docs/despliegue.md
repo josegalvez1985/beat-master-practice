@@ -56,6 +56,25 @@ El sitio se verifica de dos formas (alcanza con una):
 Después de verificar: _Sitemaps_ → enviar `sitemap.xml`, e _Inspección de URLs_ → pedir la
 indexación de la portada.
 
+Lo que Google usa para mostrar el sitio (todo en [`index.html`](../index.html) salvo que se diga
+otra cosa):
+
+| Qué                       | Dónde                                                                                                                                                          |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Título y descripción      | `<title>` y `meta description` (hasta ~60 y ~155 caracteres). Iguales a `SITE_TITLE` / `SITE_DESCRIPTION` de [`site.ts`](../src/lib/site.ts), que usa el login |
+| Nombre del sitio          | JSON-LD `WebSite` (`name: "Pulso"`, `alternateName`) y `og:site_name`                                                                                          |
+| Logo en los resultados    | JSON-LD `Organization.logo` → `icons/icon-512.png`                                                                                                             |
+| Ícono junto al resultado  | `favicon.png` (96 px, múltiplo de 48) y `favicon.svg`                                                                                                          |
+| Vista previa al compartir | `og:*` y `twitter:card`, con `og-image.png` (1200×630)                                                                                                         |
+| Texto de la portada       | El contenido inicial de `#root` (se lee sin JavaScript) y, en celular, la línea bajo el logo del login ([`AuthLayout.tsx`](../src/components/AuthLayout.tsx))  |
+| URL canónica              | `link rel="canonical"`; [`PageMeta`](../src/components/PageMeta.tsx) la ajusta en cada pantalla                                                                |
+| Qué rastrear              | [`robots.txt`](../public/robots.txt) y [`sitemap.xml`](../public/sitemap.xml) (solo la portada: el resto pide sesión y responde 404 al rastreador)             |
+
+Google indexa la versión para **celular**: lo que solo aparece en pantallas anchas (la columna de
+la izquierda del login) no cuenta. Si cambias el título o la descripción, cámbialos en los dos
+lugares y prueba la portada en la
+[prueba de resultados enriquecidos](https://search.google.com/test/rich-results).
+
 ### Comprobar que el dominio funciona
 
 | Prueba                                                       | Resultado esperado                                                          |
@@ -122,4 +141,9 @@ npm run deploy:reglas   # Firestore (base `default`) y Storage
 ```
 
 Publica las reglas **antes** (o junto con) el código que las necesita: por ejemplo, borrar una
-clase con entregas requiere las reglas que permiten al profesor borrarlas.
+clase con entregas requiere las reglas que permiten al profesor borrarlas, y guardar un plan de
+batería requiere las que aceptan su ficha. Si el código sale antes, Firebase rechaza esas
+escrituras.
+
+Sin terminal, se pueden pegar en la consola de Firebase (base **`default`** → _Reglas_ →
+_Publicar_); el paso a paso está en [firebase.md](firebase.md#1-configurar-el-proyecto-una-sola-vez).

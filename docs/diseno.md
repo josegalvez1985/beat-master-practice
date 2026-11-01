@@ -137,14 +137,15 @@ registrarse de nuevo con el mismo correo.
 ### Navegación
 
 - **Celular (< 640 px)**: barra inferior con íconos y texto (profesor: Inicio, Planificación,
-  Perfil; alumno: Inicio, **Practicar**, Perfil). _Practicar_ lleva directo al modo práctica de la
+  Herramientas, Perfil; alumno: Inicio, **Practicar**, Herramientas, Perfil). _Practicar_ lleva directo al modo práctica de la
   próxima clase (`/practicar`).
 - **Avisos** breves abajo de la pantalla para lo que pasó ("Foto actualizada", errores al guardar)
   y para deshacer ("Bloque eliminado · **Deshacer**").
 
 ### Barra superior (con sesión)
 
-Logo a la izquierda (lleva al inicio); navegación del rol (profesor: _Inicio_, _Planificación_); a la
+Logo a la izquierda (lleva al inicio); navegación del rol (profesor: _Inicio_, _Planificación_, _Herramientas_; alumno: _Inicio_,
+_Practicar_, _Herramientas_); a la
 derecha el selector de tema, el nombre, el rol y la foto (llevan a **Mi perfil**) y **Salir**. En
 celular la navegación muestra solo íconos, la cuenta solo la foto y el tema se cambia desde el
 perfil.
@@ -154,6 +155,8 @@ perfil.
 - **Foto de perfil**: foto grande (o iniciales), **Subir foto** / **Cambiar foto** y **Quitar foto**.
   La imagen se recorta en cuadrado y se achica a 512 px en el navegador antes de subirla.
 - **Mis datos**: nombre, número de documento, correo, rol e instrumentos.
+- **Instrumentos que enseñas / estudias**: los actuales y botones "+ Piano"… para agregar más
+  (con confirmación). No se quitan desde la app.
 - **Apariencia**: Sistema, Claro u Oscuro.
 
 ### Profesor · Inicio (`/`)
@@ -178,8 +181,9 @@ perfil.
 
 ### Profesor · Alumno (`/alumnos/:id`)
 
-Encabezado con nombre y documento; una tarjeta por instrumento con el porcentaje grande, la barra y
-la lista de clases con su estado _Entregada_ / _Pendiente_.
+Encabezado con nombre y documento; una tarjeta por instrumento con el porcentaje grande, la barra,
+la lista de clases con su estado _Entregada_ / _Pendiente_ y su **diario de práctica** de ese
+instrumento (minutos de la semana contra su meta y las últimas anotaciones).
 
 ### Clase (`/clases/:id`)
 
@@ -210,7 +214,8 @@ la lista de clases con su estado _Entregada_ / _Pendiente_.
   - **Rasgueo**: casillas por corchea con ↓ ↑ ✕ · que cambian al tocarlas, conteo (1 y 2 y…) y
     _Escuchar_ con sonido de rasgueo y la casilla que suena iluminada.
   - **Tempo**: escalera de BPM (inicio → objetivo) y metrónomo con sonido al tempo elegido.
-  - **YouTube** embebido, **Archivos** (galería de imágenes, vista previa de PDF y de partituras
+  - **Afinar** (instrumentos con afinador): abre el afinador en un modal con la afinación de la ficha.
+  - **YouTube** embebido (con velocidad y repetición A-B), **Archivos** (galería de imágenes, vista previa de PDF y de partituras
     Guitar Pro / MusicXML, reproductores de audio y video) y **Texto**.
   - Guardado automático con indicador (_Guardando…_ / _Guardado_) y **Vista del alumno** para ver
     la clase como la verá el alumno.
@@ -218,14 +223,16 @@ la lista de clases con su estado _Entregada_ / _Pendiente_.
     y **Empezar / Continuar práctica**, que abre el **modo práctica**: un bloque por pantalla con
     "Bloque 2 de 5" y puntos de avance, cronómetro con los minutos sugeridos (sigue contando en
     ámbar al pasarse), el contenido en grande, _Anterior_ y **Hecho y siguiente**, y al final
-    _¡Práctica terminada!_ con la invitación a subir la entrega. `?practicar=1` lo abre directo.
+    _¡Práctica terminada!_ con la invitación a subir la entrega y **Anotar N min en mi diario**. `?practicar=1` lo abre directo.
 - **Materiales** (u **Otros materiales** si hay plan): lista con tipo y tamaño; audio y video se
-  reproducen ahí mismo, PDF y partituras se abren en otra pestaña.
+  reproducen ahí mismo con **velocidad** (50, 75, 90, 100 %, sin cambiar el tono) y **repetir de A
+  a B** para un pasaje, PDF y partituras se abren en otra pestaña.
 - **Profesor**: Editar, Eliminar (pide confirmación y avisa que también se borran los materiales y
   las entregas de los alumnos), Subir materiales (con barra de avance por archivo) y **Entregas de
   alumnos** ("1 de 3 alumnos entregaron", con sus archivos y comentarios).
-- **Alumno**: **Tu entrega**, con insignia de estado, botón **Subir audio o video**, sus archivos y un
-  comentario para el profesor.
+- **Alumno**: **Tu entrega**, con insignia de estado, **Grabar audio / video** ahí mismo (se escucha,
+  se puede repetir o descargar, y **Enviar a mi profesor**), _Subir un archivo_ como alternativa, sus
+  archivos y un comentario para el profesor.
 
 ### Alumno · Inicio (`/`)
 
@@ -236,7 +243,69 @@ la lista de clases con su estado _Entregada_ / _Pendiente_.
 - Sin profesor todavía: aviso explicando que el profesor debe agregarlo.
 - Con profesores: una tarjeta por profesor e instrumento con el porcentaje, la barra y las clases,
   ordenadas primero las atrasadas sin entregar, luego las próximas y al final las entregadas.
-- Metrónomo a mano en la columna lateral.
+- En la columna lateral: **Diario de práctica** (minutos de la semana contra la meta, _Anotar
+  práctica_), el **afinador** (solo si estudia un instrumento que lo usa), el metrónomo y **Más
+  herramientas para practicar**.
+
+### Herramientas (`/herramientas`)
+
+- Para alumnos y profesores. Arriba, el instrumento (si hay varios); debajo, tarjetas con **solo las
+  herramientas de ese instrumento** (la elegida con `selected` + borde `primary`), y la herramienta
+  abierta en un panel. Un alumno de batería ve metrónomo, grabadora y diario; uno de piano, también
+  acordes con teclado, oído y lectura en clave de sol y fa.
+- **Metrónomo**: BPM grande, pulsos del compás, _Iniciar práctica_; compás, subdivisión, _Marcar el
+  tempo_ y _Subir el tempo solo_ (+N BPM cada N compases hasta un tope). En el inicio esas opciones
+  están plegadas en _Más opciones_.
+- **Grabadora**: Audio / Video y **Grabar**; mientras graba, punto rojo y tiempo (y la cámara en
+  espejo); después, la toma con velocidad y bucle, _Grabar de nuevo_ y _Descargar_.
+- **Acordes**: buscador (inglés o Do-Re-Mi) y sugerencias; el acorde con su nombre ("Sol mayor"),
+  diagrama o teclado, sus notas y _Escuchar_ / _Nota por nota_.
+- **Oído** y **Lectura**: marcador de aciertos (y racha desde 3), _Empezar_ / _Siguiente_, respuestas
+  que se marcan en verde (correcta) o rojo (la elegida, si falló). La lectura dibuja el pentagrama
+  sobre papel en los dos temas.
+- **Diario** (solo alumnos): meta semanal con −/+, anotar (instrumento, hoy o ayer, minutos,
+  comentario) y las últimas prácticas, que se borran con _Deshacer_.
+
+### Batería
+
+- **Profesor**: dos bloques propios.
+  - **Groove**: grilla de pasos (filas = piezas del kit con su color, columnas = pasos con el conteo
+    "1 e y a" debajo; el pulso con fondo más marcado y un espacio entre compases). Tocar una casilla
+    alterna golpe → acento (más grande, con anillo) → nota fantasma (chica y tenue) → silencio.
+    _Estilo de partida_ carga un groove de la biblioteca; compás, subdivisión, compases y tempo; "+"
+    para sumar piezas (toms, ride, crash…).
+  - **Rudimento**: elige de la lista, la escalera de tempo (desde, hasta, de a) y con qué mano
+    empieza.
+  - Ficha con **superficie** (pad, batería o ambas) y **kit**; estilos de batería (incluye polca
+    paraguaya, guarania y galopa); _Usar plantilla de 60 min_ arma una clase completa de batería.
+  - **Duplicar** la clase a otra fecha (sin archivos) y **comentar** en un segundo exacto de la
+    entrega del alumno ("0:42 · se apura el fill").
+- **Alumno**: en la clase, la grilla suena con su columna en ámbar; tocar el nombre de una pieza la
+  silencia ("tócala tú"), _Click_ y un tempo de práctica que no cambia la clase. El rudimento se ve
+  en grande (R en color de texto, L más tenue, ">" en ámbar para el acento, adornos chicos) con la
+  escalera de tempo y **Lo toqué limpio a N BPM** (récord). Los comentarios del profesor aparecen
+  bajo el reproductor; tocarlos lleva a ese segundo.
+- **Herramientas de batería**: Metrónomo (con click que se calla y click en 2 y 4), Medidor de
+  tiempo (número grande en ms, "Te apuras" / "Vas atrás" / "¡Justo!", gráfico de puntos con la
+  franja de ±25 ms y porcentaje a tiempo), Grooves, Rudimentos (con trofeo y récord), Lectura
+  rítmica (el compás sobre papel, cada nota en verde, ámbar o rojo al tocarla) y Oído rítmico.
+
+### Afinador (`components/Afinador.tsx`)
+
+- Escucha el micrófono y muestra la nota en grande (Do-Re-Mi, con el cifrado y los Hz debajo), una
+  barra de −50 a +50 cents con la aguja ámbar que se vuelve verde (`success`) al quedar a ±5 cents
+  y qué hacer, según el instrumento: _tensa / afloja la cuerda_, _mete / saca la boquilla_ (saxo),
+  _mete / saca la cabeza_ (flauta), _sube / baja la voz_; y _¡Afinado!_.
+- Violín, viento y voz: gráfico de los últimos 3 segundos con la franja de ±5 cents.
+- **Sostener nota**: nota de referencia continua (la cuerda elegida o, en modo cromático, la nota
+  del selector −/+), con el consejo de usar auriculares.
+- Saxo: _Saxo alto (Mib)_ / _Saxo tenor (Sib)_ / _Sonido real (Do)_; muestra la nota escrita.
+- Fila de cuerdas (de la más grave a la más aguda) con **Auto** (detecta la cuerda más cercana);
+  tocar una cuerda la fija como objetivo y suena su nota de referencia.
+- Opciones de instrumento (si estudia varios) y de afinación (Estándar, Drop D, DADGAD…). El arpa
+  paraguaya, la flauta y la voz usan el modo cromático (la nota más cercana).
+- En la clase, **Afinar** (junto a _Empezar práctica_ y en la barra del modo práctica) lo abre en un
+  modal con el instrumento y la afinación de la ficha. Al cerrarlo se apaga el micrófono.
 
 ## Adaptable y accesible
 
@@ -249,12 +318,12 @@ la lista de clases con su estado _Entregada_ / _Pendiente_.
 
 ## Ideas para las próximas versiones
 
-| Pantalla          | Mejora sugerida                                                                                    |
-| ----------------- | -------------------------------------------------------------------------------------------------- |
-| Planificación     | Cuadrícula de calendario en la vista Mes y arrastrar clases para cambiarlas de día                 |
-| Clase             | Que el profesor marque cada entrega como _Revisada_ y deje una devolución escrita o en audio       |
-| Entregas          | Grabar audio o video directamente desde el navegador, sin subir un archivo                         |
-| Materiales        | Visor de partituras MusicXML dentro de la página                                                   |
-| Inicio del alumno | Racha de días de práctica y recordatorios de la próxima clase                                      |
-| General           | Notificaciones (nueva clase, nueva entrega), avisos tipo _toast_ y esqueletos de carga             |
-| Pagos             | Pantalla de suscripción y estado del plan (ver [arquitectura](arquitectura.md#próximamente-pagos)) |
+| Pantalla      | Mejora sugerida                                                                                               |
+| ------------- | ------------------------------------------------------------------------------------------------------------- |
+| Planificación | Cuadrícula de calendario en la vista Mes y arrastrar clases para cambiarlas de día                            |
+| Clase         | Marcar cada entrega como _Revisada_ y dejar devoluciones en audio, además de las escritas con marca de tiempo |
+| Clase         | Copiar un bloque de otra clase (hoy se puede duplicar la clase entera)                                        |
+| Batería       | Medidor de tiempo sobre un groove completo (bombo y caja por separado) y exportar el groove a partitura       |
+| Herramientas  | Guardar el puntaje de oído y lectura para ver el avance semana a semana                                       |
+| General       | Notificaciones (nueva clase, nueva entrega, nueva devolución) y esqueletos de carga                           |
+| Pagos         | Pantalla de suscripción y estado del plan (ver [arquitectura](arquitectura.md#próximamente-pagos))            |

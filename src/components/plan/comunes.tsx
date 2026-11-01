@@ -1,12 +1,15 @@
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { LucideIcon } from "lucide-react";
+import { GrooveGrid } from "@/components/bateria/Groove";
+import { RudimentoBloque } from "@/components/bateria/Rudimento";
 import { AcordesBloque } from "@/components/plan/AcordesBloque";
 import { ArchivosBloque } from "@/components/plan/ArchivosBloque";
 import { RasgueoBloque } from "@/components/plan/RasgueoBloque";
 import { TablaturaBloque } from "@/components/plan/TablaturaBloque";
 import { TempoBloque } from "@/components/plan/TempoBloque";
 import { YoutubeBloque } from "@/components/plan/YoutubeBloque";
+import { rudimento as rudimentoDe } from "@/lib/bateria";
 import type { Clase } from "@/lib/data";
 import type { Material } from "@/lib/files";
 import {
@@ -15,6 +18,7 @@ import {
   etapa as etapaDe,
   minutosTotales,
   niveles,
+  superficies,
   youtube,
   type Bloque,
   type Plan,
@@ -74,6 +78,16 @@ export function ContenidoBloque({
       );
     case "texto":
       return null;
+    case "groove":
+      return (
+        <GrooveGrid
+          groove={bloque}
+          editable={editable}
+          onChange={(groove) => onChange({ ...bloque, ...groove })}
+        />
+      );
+    case "rudimento":
+      return <RudimentoBloque bloque={bloque} editable={editable} onChange={onChange} />;
   }
 }
 
@@ -96,6 +110,10 @@ export function resumen(bloque: Bloque) {
       return bloque.archivos.length === 1 ? "1 archivo" : `${bloque.archivos.length} archivos`;
     case "texto":
       return bloque.notas ? bloque.notas.slice(0, 80) : "Sin texto";
+    case "groove":
+      return `${bloque.compas} · ${bloque.bpm} BPM · ${bloque.compases} ${bloque.compases === 1 ? "compás" : "compases"}`;
+    case "rudimento":
+      return `${rudimentoDe(bloque.rudimento).nombre} · ${bloque.inicio} → ${bloque.objetivo} BPM`;
   }
 }
 
@@ -135,6 +153,10 @@ export function DatosFicha({ clase, plan }: { clase: Clase; plan: Plan }) {
     ficha.estilo,
     conCuerdas(clase.instrumento) ? ficha.afinacion : null,
     conAcordes(clase.instrumento) && ficha.capo ? `Capo en traste ${ficha.capo}` : null,
+    clase.instrumento === "bateria" && ficha.superficie
+      ? superficies.find((s) => s.value === ficha.superficie)?.label
+      : null,
+    clase.instrumento === "bateria" && ficha.kit ? `Kit de ${ficha.kit} cuerpos` : null,
     `${ficha.duracion} min`,
   ].filter(Boolean) as string[];
   return (

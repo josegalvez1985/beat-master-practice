@@ -1,18 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { contextoDeAudio } from "@/lib/audio";
 
 // Metronome with Web Audio: sounds are scheduled slightly ahead on the audio clock, so the
 // tempo stays exact even when the page is busy; the UI only follows the current slot.
 
-export type Sonido = "acento" | "pulso" | "abajo" | "arriba" | "apagado";
+// `subdivision`: the soft click between beats (eighths, triplets, sixteenths).
+export type Sonido = "acento" | "pulso" | "subdivision" | "abajo" | "arriba" | "apagado";
 
-let contexto: AudioContext | null = null;
 let ruido: AudioBuffer | null = null;
-
-function audio() {
-  contexto ??= new AudioContext();
-  if (contexto.state === "suspended") void contexto.resume();
-  return contexto;
-}
 
 function bufferDeRuido(ctx: AudioContext) {
   if (!ruido) {
@@ -23,14 +18,15 @@ function bufferDeRuido(ctx: AudioContext) {
   return ruido;
 }
 
-function sonar(ctx: AudioContext, sonido: Sonido, cuando: number) {
+// One metronome sound at `cuando` (audio clock); also used by the drum practice tools.
+export function sonar(ctx: AudioContext, sonido: Sonido, cuando: number) {
   const gain = ctx.createGain();
   gain.connect(ctx.destination);
-  if (sonido === "acento" || sonido === "pulso") {
-    // Short sine click; higher and louder on beat one.
+  if (sonido === "acento" || sonido === "pulso" || sonido === "subdivision") {
+    // Short sine click; higher and louder on beat one, soft and low between beats.
     const osc = ctx.createOscillator();
-    osc.frequency.value = sonido === "acento" ? 1600 : 1000;
-    gain.gain.setValueAtTime(sonido === "acento" ? 0.5 : 0.3, cuando);
+    osc.frequency.value = sonido === "acento" ? 1600 : sonido === "pulso" ? 1000 : 800;
+    gain.gain.setValueAtTime(sonido === "acento" ? 0.5 : sonido === "pulso" ? 0.3 : 0.12, cuando);
     gain.gain.exponentialRampToValueAtTime(0.001, cuando + 0.05);
     osc.connect(gain);
     osc.start(cuando);
@@ -54,30 +50,33 @@ function sonar(ctx: AudioContext, sonido: Sonido, cuando: number) {
 }
 
 // Plays `slots` per cycle, `porPulso` slots per beat at `bpm`; `sonidoDe` picks each slot's
-// sound (null = silent). Returns the slot sounding now, or -1 when stopped.
+// sound (null = silent) and `programar` can schedule more sounds at that exact audio time (the
+// drum kit of a groove). Returns the slot sounding now, or -1 when stopped.
 export function useMetronomo({
   activo,
   bpm,
   slots,
   porPulso = 1,
   sonidoDe,
+  programar: programarExtra,
 }: {
   activo: boolean;
   bpm: number;
   slots: number;
   porPulso?: number;
   sonidoDe: (slot: number) => Sonido | null;
+  programar?: (slot: number, cuando: number, ctx: AudioContext) => void;
 }) {
   const [actual, setActual] = useState(-1);
   // Latest values without restarting the scheduler (tempo changes apply on the next slot).
-  const config = useRef({ bpm, slots, porPulso, sonidoDe });
+  const config = useRef({ bpm, slots, porPulso, sonidoDe, programarExtra });
   useLayoutEffect(() => {
-    config.current = { bpm, slots, porPulso, sonidoDe };
+    config.current = { bpm, slots, porPulso, sonidoDe, programarExtra };
   });
 
   useEffect(() => {
     if (!activo) return;
-    const ctx = audio();
+    const ctx = contextoDeAudio();
     let slot = 0;
     let siguiente = ctx.currentTime + 0.06;
     const visuales: number[] = [];
@@ -89,10 +88,12 @@ export function useMetronomo({
           slots: total,
           porPulso: subdivision,
           sonidoDe: sonido,
+          programarExtra: extra,
         } = config.current;
         const actualSlot = slot % total;
         const tipo = sonido(actualSlot);
         if (tipo) sonar(ctx, tipo, siguiente);
+        extra?.(actualSlot, siguiente, ctx);
         const espera = Math.max(0, (siguiente - ctx.currentTime) * 1000);
         visuales.push(window.setTimeout(() => setActual(actualSlot), espera));
         // Older timeouts already fired; keep only the pending ones to clear on stop.

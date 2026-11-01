@@ -13,18 +13,19 @@ import {
   Upload,
   type LucideIcon,
 } from "lucide-react";
+import { Reproductor } from "@/components/Reproductor";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   MAX_BYTES,
-  borrarArchivo,
   elegirArchivos,
   formatearTamano,
-  subirArchivo,
+  subirYAnotar,
   useDownloadUrl,
   type Material,
   type MaterialTipo,
 } from "@/lib/files";
+import type { Devolucion } from "@/lib/data";
 import { colors, fonts, radius } from "@/lib/theme";
 
 const iconos: Record<MaterialTipo, LucideIcon> = {
@@ -45,18 +46,26 @@ const etiquetas: Record<MaterialTipo, string> = {
   otro: "Archivo",
 };
 
+type Comentarios = {
+  // The profesor's comments at a point of each file (deliveries).
+  devoluciones?: Devolucion[];
+  onComentar?: (material: Material, segundo: number, texto: string) => Promise<void>;
+  onQuitarDevolucion?: (devolucion: Devolucion) => void;
+};
+
 // List of stored files with inline players for audio and video.
 export function MaterialList({
   materiales,
   onRemove,
+  ...comentarios
 }: {
   materiales: Material[];
   onRemove?: (material: Material) => void;
-}) {
+} & Comentarios) {
   return (
     <View style={styles.list}>
       {materiales.map((material) => (
-        <MaterialRow key={material.id} material={material} onRemove={onRemove} />
+        <MaterialRow key={material.id} material={material} onRemove={onRemove} {...comentarios} />
       ))}
     </View>
   );
@@ -65,10 +74,14 @@ export function MaterialList({
 function MaterialRow({
   material,
   onRemove,
+  devoluciones = [],
+  onComentar,
+  onQuitarDevolucion,
 }: {
   material: Material;
   onRemove?: (material: Material) => void;
-}) {
+} & Comentarios) {
+  const suyas = devoluciones.filter((d) => d.archivoId === material.id);
   const [abierto, setAbierto] = useState(false);
   const reproducible = material.tipo === "audio" || material.tipo === "video";
   // Players load their URL only when opened; other files need it for the "open" link.
@@ -87,6 +100,9 @@ function MaterialRow({
           </Text>
           <Text style={styles.meta}>
             {etiquetas[material.tipo]} · {formatearTamano(material.tamano)}
+            {suyas.length
+              ? ` · ${suyas.length} ${suyas.length === 1 ? "comentario" : "comentarios"} del profesor`
+              : ""}
           </Text>
         </View>
         {reproducible ? (
@@ -122,11 +138,20 @@ function MaterialRow({
         ) : null}
       </View>
       {abierto && url ? (
-        material.tipo === "video" ? (
-          <video controls src={url} style={{ width: "100%", maxHeight: 360, borderRadius: 12 }} />
-        ) : (
-          <audio controls autoPlay src={url} style={{ width: "100%" }} />
-        )
+        <Reproductor
+          url={url}
+          tipo={material.tipo === "video" ? "video" : "audio"}
+          autoPlay={material.tipo === "audio"}
+          marcas={suyas}
+          onComentar={onComentar && ((segundo, texto) => onComentar(material, segundo, texto))}
+          onQuitarMarca={
+            onQuitarDevolucion &&
+            ((id) => {
+              const devolucion = suyas.find((d) => d.id === id);
+              if (devolucion) onQuitarDevolucion(devolucion);
+            })
+          }
+        />
       ) : null}
     </View>
   );
@@ -164,16 +189,12 @@ export function UploadButton({
         continue;
       }
       try {
-        const material = await subirArchivo(carpeta, file, (porcentaje) =>
-          actualizar(index, { porcentaje }),
+        await subirYAnotar(
+          carpeta,
+          file,
+          (porcentaje) => actualizar(index, { porcentaje }),
+          onUploaded,
         );
-        try {
-          await onUploaded(material);
-        } catch (error) {
-          // Not saved in Firestore: remove the file so it is not left orphaned in Storage.
-          await borrarArchivo(material.ruta).catch(() => {});
-          throw error;
-        }
         actualizar(index, { porcentaje: 100 });
       } catch {
         actualizar(index, { error: "No se pudo subir" });

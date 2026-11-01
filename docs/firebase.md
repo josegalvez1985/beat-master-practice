@@ -5,7 +5,7 @@ Pulso usa tres servicios del proyecto Firebase **`beat-master-practice`**:
 | Servicio                                 | Para qué                                                                                                        |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | **Authentication** (correo y contraseña) | Cuentas de profesores y alumnos. El login es con número de documento; por dentro se usa el correo de la cuenta. |
-| **Cloud Firestore**                      | Perfiles, listas de alumnos, clases y entregas.                                                                 |
+| **Cloud Firestore**                      | Perfiles, listas de alumnos, clases, entregas, diario y récords de práctica.                                    |
 | **Cloud Storage**                        | Archivos: materiales de clase y entregas de los alumnos.                                                        |
 
 La configuración web del proyecto está en [`.env`](../.env). Esos valores son públicos por diseño
@@ -54,6 +54,12 @@ Todo se hace en [console.firebase.google.com](https://console.firebase.google.co
    Las reglas de Firestore se publican en la base **`default`** (lo indica `"database"` en
    [`firebase.json`](../firebase.json)). Repite este paso **cada vez** que cambien
    `firestore.rules` o `storage.rules`: si no, el proyecto sigue con las reglas viejas.
+
+   **Sin terminal**: también se pueden pegar en la consola. _Firestore Database_ → elige la base
+   **`default`** en el selector de arriba (no `(default)`) → _Reglas_ → borra todo, pega el
+   archivo completo (desde `rules_version = '2';`) → _Publicar_. Para `storage.rules`, lo mismo
+   en _Storage → Rules_. El archivo del repositorio manda: lo que se edite solo en la consola se
+   pierde en el próximo `npm run deploy:reglas`.
 
    > Las reglas de Storage leen la base `default` (`/databases/default/...`). Si después de
    > publicarlas las subidas siguen fallando con `storage/unauthorized`, la causa puede ser que
@@ -110,6 +116,7 @@ Cada cuenta son **tres registros** que tienen que estar siempre juntos (ver
 2. Cada `documentos/{nro}` tiene un `uid` que existe en `usuarios`, y ese perfil tiene ese mismo
    `nro_documento`.
 3. Cada UID de Authentication tiene su documento en `usuarios`.
+4. Cada anotación de `diario` y cada `records` tiene un `alumnoId` que existe en `usuarios`.
 
 **Si algo no coincide:**
 
@@ -121,7 +128,7 @@ Cada cuenta son **tres registros** que tienen que estar siempre juntos (ver
 
 **Para empezar de cero** (datos de prueba): borra **las tres cosas**, los usuarios de
 Authentication y las colecciones `documentos` y `usuarios` (y, si las hay, `inscripciones`,
-`clases`, `entregas` y los archivos de Storage). Si borras solo las colecciones, las cuentas
+`clases`, `entregas`, `diario`, `records` y los archivos de Storage). Si borras solo las colecciones, las cuentas
 siguen en Authentication y al registrarse de nuevo aparece "Ese correo ya está registrado".
 
 > **No borres un usuario solo desde Authentication** si tiene datos en Firestore: quedan huérfanos
@@ -134,6 +141,7 @@ siguen en Authentication y al registrarse de nuevo aparece "Ese correo ya está 
 | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Database '...' not found`                                                         | La base no existe o tiene otro ID: paso 1. La app busca la base `default`; `(default)` indica un build viejo.                                                                                                                                                               |
 | `Missing or insufficient permissions`                                              | Las reglas no están publicadas (paso 5), o el usuario no tiene acceso (por ejemplo, un alumno que el profesor todavía no agregó).                                                                                                                                           |
+| "Firebase rechazó el plan" al editar una clase (o el alumno no ve el plan)         | El plan usa un campo que las reglas publicadas todavía no conocen (por ejemplo, la ficha de batería). Publica las reglas (paso 5) y vuelve a guardar el plan: lo que no se pudo guardar no llegó a la base.                                                                 |
 | `auth/operation-not-allowed`                                                       | El login con correo y contraseña no está activado: paso 2.                                                                                                                                                                                                                  |
 | `CONFIGURATION_NOT_FOUND` (400 en `signUp`)                                        | Authentication nunca se inició en el proyecto: paso 2 (_Get started_). Si persiste, la API key de `.env` es de otro proyecto.                                                                                                                                               |
 | Login: "No hay ninguna cuenta con ese número de documento."                        | No existe `documentos/{nro}`: el registro no terminó o se borraron los datos. Regístrate de nuevo (antes borra la cuenta suelta en Authentication si la hay: sección 5).                                                                                                    |
