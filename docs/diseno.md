@@ -140,7 +140,8 @@ Los íconos son de [Lucide](https://lucide.dev).
   **Contraseña**.
 - **Recordarme** (tildado por defecto) a la izquierda y _¿Olvidaste tu contraseña?_ a la derecha.
 - Selector de tema arriba a la derecha.
-- Enlaces: _¿Olvidaste tu contraseña?_, _Crea tu cuenta_ y _¿Cómo empiezo? Mira los primeros pasos_.
+- Enlaces: _¿Olvidaste tu contraseña?_, _Crea tu cuenta_, _¿Cómo empiezo? Mira los primeros pasos_
+  y _¿Necesitas ayuda? Escríbenos_.
 - Errores concretos: "No hay ninguna cuenta con ese número de documento." o "Contraseña
   incorrecta.", para saber si hay que registrarse o recuperar la contraseña.
 - Cada modal tiene su propia URL, así se puede abrir en otra pestaña o compartir.
@@ -155,6 +156,11 @@ Los íconos son de [Lucide](https://lucide.dev).
 **Modal Recuperar contraseña** (`?modal=recuperar`): número de documento y correo de la cuenta; si
 coinciden, confirma a qué correo se envió el enlace. Después de crear la contraseña nueva en la
 página de Firebase, **Continuar** vuelve al login.
+
+**Modal Contacto** (`?modal=contacto`, también en _Mi perfil_): motivo (Consulta, Problema con mi
+cuenta, Algo no funciona, Sugerencia), nombre, correo, número de documento (opcional sin cuenta) y
+la consulta; al enviar, "¡Gracias! Te responderemos a …". Aclara que los datos solo se usan para
+responder y que el mensaje va por correo, sin guardarse en Pulso.
 
 **Modal Primeros pasos** (`?modal=primeros-pasos`): pestañas _Soy alumno_ / _Soy profesor_ con
 pasos numerados para registrarse y para la primera vez que se entra (plan de la clase, entregas
@@ -190,6 +196,7 @@ perfil.
 - **Instrumentos que enseñas / estudias**: los actuales y botones "+ Piano"… para agregar más
   (con confirmación). No se quitan desde la app.
 - **Apariencia**: Sistema, Claro u Oscuro.
+- **Ayuda y contacto**: _Escribir a Pulso_ abre el formulario de contacto con sus datos cargados.
 
 ### Profesor · Inicio (`/`)
 

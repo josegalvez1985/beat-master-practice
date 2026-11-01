@@ -9,4 +9,6 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_APP_ID: string;
   readonly VITE_FIREBASE_MEASUREMENT_ID?: string;
   readonly VITE_USE_EMULATORS?: string;
+  // Public Web3Forms key for the contact form (src/lib/contacto.ts).
+  readonly VITE_WEB3FORMS_KEY?: string;
 }

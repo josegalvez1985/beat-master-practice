@@ -376,6 +376,22 @@ Todas las pantallas escuchan Firestore en vivo (`onSnapshot`): cuando el profeso
 alumno, crea una clase o sube un material, el alumno lo ve sin recargar, y lo mismo para las
 entregas del lado del profesor.
 
+## Contacto
+
+Formulario **Contacto** en el login (`?modal=contacto`, enlace _¿Necesitas ayuda? Escríbenos_) y en
+_Mi perfil_ (_Ayuda y contacto_), para alumnos, profesores y quien todavía no tiene cuenta. Envía un
+correo a **jose.jgalvez@gmail.com** con nombre, correo (la respuesta va a ese correo), número de
+documento, rol, motivo, la página y la consulta.
+
+- **Cómo se envía**: con [Web3Forms](https://web3forms.com) ([`contacto.ts`](../src/lib/contacto.ts)),
+  porque el sitio no tiene servidor. La clave va en `VITE_WEB3FORMS_KEY` (`.env`); es pública por
+  diseño: solo permite enviar a la dirección para la que se creó. Sin clave, el formulario avisa que
+  no está configurado.
+- **Sin datos en Firebase**: el mensaje no se guarda en Firestore ni en Storage, así que no hay
+  registros que relacionar ni borrar.
+- Con sesión, nombre, correo y documento vienen cargados; desde el login el documento es opcional.
+  Un campo oculto (`botcheck`) frena a los robots que llenan todo.
+
 ## Próximamente: pagos
 
 Cada profesor y cada alumno pagará para usar el sitio. Todavía no está construido; esta es la

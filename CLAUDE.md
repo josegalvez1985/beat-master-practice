@@ -66,6 +66,8 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
 - La base de Firestore se llama **`default`** (sin paréntesis): `getFirestore(app, "default")`,
   `"database": "default"` en `firebase.json`, `/databases/default/...` en `storage.rules`.
 - Los cambios en `firestore.rules` / `storage.rules` se publican a mano: `npm run deploy:reglas`.
+- Contacto: correo por Web3Forms (`src/lib/contacto.ts`, clave pública `VITE_WEB3FORMS_KEY` en
+  `.env`); no guarda nada en Firebase.
 - `index.html` define `global = globalThis` (lo necesita `Animated` de react-native-web).
 
 ## Comandos

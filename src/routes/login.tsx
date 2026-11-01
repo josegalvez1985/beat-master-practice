@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useSearchParams } from "react-router";
 import { AuthLayout, authStyles } from "@/components/AuthLayout";
+import { ContactoDialog } from "@/components/ContactoDialog";
 import { ForgotPasswordDialog } from "@/components/ForgotPasswordDialog";
 import { Link } from "@/components/Link";
 import { PageMeta } from "@/components/PageMeta";
@@ -23,6 +24,7 @@ const titles: Record<string, string> = {
   registro: "Crear cuenta — Pulso",
   recuperar: "Recuperar contraseña — Pulso",
   "primeros-pasos": "Primeros pasos — Pulso",
+  contacto: "Contacto — Pulso",
 };
 
 export default function LoginPage() {
@@ -115,6 +117,11 @@ export default function LoginPage() {
             <Text style={authStyles.link}>¿Cómo empiezo? Mira los primeros pasos</Text>
           </Link>
         </Text>
+        <Text style={styles.help}>
+          <Link href="/?modal=contacto">
+            <Text style={authStyles.link}>¿Necesitas ayuda? Escríbenos</Text>
+          </Link>
+        </Text>
       </AuthLayout>
 
       <PrimerosPasosDialog
@@ -124,6 +131,11 @@ export default function LoginPage() {
       />
 
       <RegisterDialog visible={modal === "registro"} onClose={closeModal} />
+      <ContactoDialog
+        visible={modal === "contacto"}
+        onClose={closeModal}
+        inicial={{ rol: "sin cuenta", documento: form.documento }}
+      />
       <ForgotPasswordDialog
         visible={modal === "recuperar"}
         onClose={closeModal}

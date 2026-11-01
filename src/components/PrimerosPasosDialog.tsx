@@ -54,6 +54,11 @@ const despues: Record<Role, Paso[]> = {
       detalle:
         "En Mis alumnos ves el avance de cada uno, su diario de práctica y, en batería, sus récords. En Herramientas tienes afinador, metrónomo y más.",
     },
+    {
+      titulo: "¿Dudas?",
+      detalle:
+        "Escríbenos desde «¿Necesitas ayuda?» en el inicio de sesión o desde Mi perfil: te respondemos por correo.",
+    },
   ],
   alumno: [
     {
@@ -85,6 +90,11 @@ const despues: Record<Role, Paso[]> = {
       titulo: "Mira tu avance",
       detalle:
         "Cada entrega suma al progreso de tu instrumento, y el anillo del inicio muestra tu semana: tu meta y lo que practicaste.",
+    },
+    {
+      titulo: "¿Dudas?",
+      detalle:
+        "Escríbenos desde «¿Necesitas ayuda?» en el inicio de sesión o desde Mi perfil: te respondemos por correo.",
     },
   ],
 };

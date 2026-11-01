@@ -18,6 +18,8 @@ con el número de documento.
   con SVG y CSS para que no pese ni gaste memoria.
 - **Cuenta**: cualquiera puede sumar instrumentos (para enseñar o para aprender) desde su perfil, y
   recuperar la contraseña con su documento y su correo.
+- **Contacto**: formulario en el login y en el perfil que envía la consulta por correo (Web3Forms;
+  configurar `VITE_WEB3FORMS_KEY` en `.env`).
 - **Herramientas** (alumnos y profesores), solo las que sirven para cada instrumento: afinador con
   el micrófono, metrónomo con subdivisiones y tempo que sube solo, grabadora, diccionario de
   acordes, entrenamiento auditivo y lectura de notas; y en todo audio, video o YouTube de las clases,

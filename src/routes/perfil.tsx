@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { Camera, Plus, Trash2 } from "lucide-react";
+import { Camera, Mail, Plus, Trash2 } from "lucide-react";
 import { shellStyles } from "@/components/AppShell";
+import { ContactoDialog } from "@/components/ContactoDialog";
 import { PageMeta } from "@/components/PageMeta";
 import { TemaSelector } from "@/components/TemaSelector";
 import { Avatar } from "@/components/ui/avatar";
@@ -73,6 +74,7 @@ export default function PerfilPage() {
   const foto = quitada ? undefined : perfil.foto;
   const profesor = perfil.rol === "profesor";
   const [agregando, setAgregando] = useState<InstrumentId | null>(null);
+  const [contacto, setContacto] = useState(false);
   const faltan = instruments.filter((i) => !perfil.instrumentos.includes(i.id));
 
   const onAgregar = async (id: InstrumentId) => {
@@ -189,6 +191,27 @@ export default function PerfilPage() {
       <Section title="Apariencia" subtitle="Sistema usa el modo claro u oscuro de tu dispositivo.">
         <TemaSelector conTexto />
       </Section>
+
+      <Section
+        title="Ayuda y contacto"
+        subtitle="¿Una duda, un problema o una idea? Escríbenos y te respondemos por correo."
+      >
+        <Button variant="secondary" style={styles.contacto} onPress={() => setContacto(true)}>
+          <Mail size={16} color={buttonForeground("secondary")} />
+          Escribir a Pulso
+        </Button>
+      </Section>
+
+      <ContactoDialog
+        visible={contacto}
+        onClose={() => setContacto(false)}
+        inicial={{
+          rol: perfil.rol,
+          nombre: perfil.nombre,
+          correo: email ?? "",
+          documento: perfil.nro_documento,
+        }}
+      />
     </>
   );
 }
@@ -203,6 +226,9 @@ function Dato({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
+  contacto: {
+    alignSelf: "flex-start",
+  },
   photoRow: {
     flexDirection: "row",
     flexWrap: "wrap",
