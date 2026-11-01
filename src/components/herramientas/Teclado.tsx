@@ -15,16 +15,25 @@ const NEGRAS = [
   { pc: 10, x: 5.75 },
 ];
 
-export function Teclado({ notas, ancho = 320 }: { notas: number[]; ancho?: number }) {
+export function Teclado({
+  notas,
+  ancho = 320,
+  dedos,
+}: {
+  notas: number[];
+  ancho?: number;
+  // Finger number (1 thumb … 5 little finger) to write on each lit key.
+  dedos?: Map<number, number>;
+}) {
   const hasta = DESDE + 24;
-  const dentro = new Set(
-    notas.map((m) => {
-      let n = m;
-      while (n < DESDE) n += 12;
-      while (n > hasta) n -= 12;
-      return n;
-    }),
-  );
+  const plegar = (m: number) => {
+    let n = m;
+    while (n < DESDE) n += 12;
+    while (n > hasta) n -= 12;
+    return n;
+  };
+  const dentro = new Set(notas.map(plegar));
+  const dedoEn = new Map([...(dedos ?? [])].map(([m, d]) => [plegar(m), d]));
   const w = 20;
   const h = 80;
   const blancas = Array.from({ length: BLANCAS }, (_, i) => {
@@ -65,6 +74,36 @@ export function Teclado({ notas, ancho = 320 }: { notas: number[]; ancho?: numbe
           fill={dentro.has(k.midi) ? colors.primary : colors.paperInk}
         />
       ))}
+      {blancas
+        .filter((k) => dedoEn.has(k.midi))
+        .map((k) => (
+          <text
+            key={`d${k.midi}`}
+            x={k.x + w / 2}
+            y={h - 22}
+            fontSize={11}
+            fontWeight={700}
+            textAnchor="middle"
+            fill={colors.primaryForeground}
+          >
+            {dedoEn.get(k.midi)}
+          </text>
+        ))}
+      {negras
+        .filter((k) => dedoEn.has(k.midi))
+        .map((k) => (
+          <text
+            key={`d${k.midi}`}
+            x={k.x + w * 0.3}
+            y={h * 0.6 - 8}
+            fontSize={10}
+            fontWeight={700}
+            textAnchor="middle"
+            fill={colors.primaryForeground}
+          >
+            {dedoEn.get(k.midi)}
+          </text>
+        ))}
       {/* Middle Do marker. */}
       <circle cx={w / 2} cy={h - 9} r={2.5} fill={colors.mutedForeground} />
     </svg>

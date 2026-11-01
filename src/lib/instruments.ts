@@ -13,6 +13,12 @@ export const instruments = [
   { id: "ukelele", name: "Ukelele", icon: Guitar },
   { id: "saxofon", name: "Saxofón", icon: Music },
   { id: "flauta", name: "Flauta", icon: Music },
+  { id: "requinto", name: "Requinto", icon: Guitar },
+  { id: "teclado", name: "Teclado", icon: Piano },
+  { id: "trompeta", name: "Trompeta", icon: Music },
+  { id: "violonchelo", name: "Violonchelo", icon: Music },
+  { id: "contrabajo", name: "Contrabajo", icon: Music },
+  { id: "percusion", name: "Percusión", icon: Drum },
 ] as const;
 
 export type InstrumentId = (typeof instruments)[number]["id"];

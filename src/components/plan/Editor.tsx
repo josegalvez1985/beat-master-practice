@@ -43,6 +43,7 @@ import {
   afinacionesPara,
   conAcordes,
   conCuerdas,
+  conPartitura,
   estilosPara,
   etapa as etapaDe,
   etapas,
@@ -72,6 +73,9 @@ const ETAPA_SUGERIDA: Record<TipoBloque, Etapa> = {
   texto: "teoria",
   rudimento: "tecnica",
   groove: "repertorio",
+  partitura: "repertorio",
+  escala: "tecnica",
+  respiracion: "calentamiento",
 };
 
 // Seconds a deleted block or file can be restored before it is really deleted.
@@ -250,9 +254,11 @@ export function Editor({ clase }: { clase: Clase }) {
         <Text style={styles.ayuda}>
           {clase.instrumento === "bateria"
             ? "Incluye rudimentos con escalera de tempo, grooves con sonido (coordinación, estilo y fill), video para tocar encima y la tarea."
-            : conCuerdas(clase.instrumento)
-              ? "Incluye tablaturas con sonido, acordes, rasgueos, tempo con metrónomo, videos y archivos."
-              : "Incluye tempo con metrónomo, videos de YouTube, archivos y textos."}
+            : conPartitura(clase.instrumento)
+              ? "Incluye escalas y arpegios con sonido, partituras que suenan, respiración (voz y viento) y la tarea, según tu instrumento."
+              : conCuerdas(clase.instrumento)
+                ? "Incluye tablaturas con sonido, acordes, rasgueos, tempo con metrónomo, videos y archivos."
+                : "Incluye tempo con metrónomo, videos de YouTube, archivos y textos."}
         </Text>
       </Section>
     );

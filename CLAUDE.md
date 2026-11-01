@@ -53,6 +53,9 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
 
 ## Herramientas y batería
 
+- Instrumentos (17): la lista vive en `src/lib/instruments.ts` y está copiada en `firestore.rules`
+  (`instrumentosValidos`), `functions/src/herramientas.ts` (`INSTRUMENTOS`) e `index.html`; sumar uno
+  es tocar los cuatro y publicar las reglas.
 - Cada herramienta se habilita **por instrumento** en `src/lib/herramientas.ts` (`para`); nunca para
   todos. `/herramientas` es para alumnos y profesores (el diario, solo alumnos).
 - Los grooves se guardan como un texto por pieza del kit (Firestore no admite listas de listas).

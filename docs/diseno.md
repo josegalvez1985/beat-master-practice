@@ -256,6 +256,15 @@ instrumento (minutos de la semana en ese instrumento, su meta semanal total como
   - **Rasgueo**: casillas por corchea con ↓ ↑ ✕ · que cambian al tocarlas, conteo (1 y 2 y…) y
     _Escuchar_ con sonido de rasgueo y la casilla que suena iluminada.
   - **Tempo**: escalera de BPM (inicio → objetivo) y metrónomo con sonido al tempo elegido.
+  - **Partitura** (teclados, arco, viento, voz y arpa): el mismo editor que la tablatura, con
+    atajos de notas por nombre (Do4, acorde, silencio, figuras) y el pentagrama sin tab, con la clave
+    y el sonido del instrumento.
+  - **Escala o arpegio**: tónica, tipo (mayor, menores, pentatónicas, blues, cromática, arpegios),
+    octavas, figura y tempo; las notas en Do-Re-Mi, el teclado iluminado y _Escuchar_ con la nota que
+    suena resaltada.
+  - **Respiración** (voz y viento): segundos para inhalar, sostener y exhalar, repeticiones y una
+    nota opcional; un círculo que crece al inhalar y se achica al exhalar, con la cuenta, y la nota
+    sonando al exhalar (vocalización o nota larga).
   - **Afinar** (instrumentos con afinador): abre el afinador en un modal con la afinación de la ficha.
   - **YouTube** embebido (con velocidad y repetición A-B), **Archivos** (galería de imágenes, vista previa de PDF y de partituras
     Guitar Pro / MusicXML, reproductores de audio y video) y **Texto**.

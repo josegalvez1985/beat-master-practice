@@ -4,12 +4,16 @@ import type { LucideIcon } from "lucide-react";
 import { GrooveGrid } from "@/components/bateria/Groove";
 import { RudimentoBloque } from "@/components/bateria/Rudimento";
 import { AcordesBloque } from "@/components/plan/AcordesBloque";
+import { EscalaBloque } from "@/components/plan/EscalaBloque";
+import { RespiracionBloque } from "@/components/plan/RespiracionBloque";
 import { ArchivosBloque } from "@/components/plan/ArchivosBloque";
 import { RasgueoBloque } from "@/components/plan/RasgueoBloque";
 import { TablaturaBloque } from "@/components/plan/TablaturaBloque";
 import { TempoBloque } from "@/components/plan/TempoBloque";
 import { YoutubeBloque } from "@/components/plan/YoutubeBloque";
 import { rudimento as rudimentoDe } from "@/lib/bateria";
+import { escala as escalaDe } from "@/lib/escalas";
+import { LATINAS } from "@/lib/notas";
 import type { Clase } from "@/lib/data";
 import type { Material } from "@/lib/files";
 import {
@@ -46,7 +50,19 @@ export function ContenidoBloque({
 }) {
   switch (bloque.tipo) {
     case "tablatura":
+    case "partitura":
       return <TablaturaBloque bloque={bloque} editable={editable} onChange={onChange} />;
+    case "escala":
+      return (
+        <EscalaBloque
+          bloque={bloque}
+          editable={editable}
+          instrumento={clase.instrumento}
+          onChange={onChange}
+        />
+      );
+    case "respiracion":
+      return <RespiracionBloque bloque={bloque} editable={editable} onChange={onChange} />;
     case "acordes":
       return (
         <AcordesBloque
@@ -96,6 +112,12 @@ export function resumen(bloque: Bloque) {
   switch (bloque.tipo) {
     case "tablatura":
       return "Tablatura y pentagrama";
+    case "partitura":
+      return "Partitura con sonido";
+    case "escala":
+      return `${escalaDe(bloque.escala).label} de ${LATINAS[bloque.tonica]} · ${bloque.octavas} octava${bloque.octavas > 1 ? "s" : ""} · ${bloque.bpm} BPM`;
+    case "respiracion":
+      return `${bloque.inhalar}-${bloque.sostener}-${bloque.exhalar} s · ${bloque.repeticiones} veces${bloque.nota !== null ? " · con nota" : ""}`;
     case "acordes":
       return bloque.acordes.length ? bloque.acordes.join(" · ") : "Sin acordes";
     case "rasgueo":

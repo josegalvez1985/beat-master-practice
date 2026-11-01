@@ -11,6 +11,14 @@ import type { InstrumentId } from "@/lib/instruments";
 import { frecuenciaDe, nota } from "@/lib/notas";
 import { colors, fonts, radius } from "@/lib/theme";
 
+// Usual right-hand fingering for a chord in close position: thumb on the lowest note.
+function digitacionMano(midis: number[]) {
+  const dedos = { 2: [1, 5], 3: [1, 3, 5], 4: [1, 2, 3, 5], 5: [1, 2, 3, 4, 5] }[
+    Math.min(5, midis.length) as 2 | 3 | 4 | 5
+  ] ?? [1];
+  return new Map([...midis].sort((a, b) => a - b).map((m, i) => [m, dedos[i] ?? 5]));
+}
+
 const COMUNES_TECLADO = ["C", "G", "D", "A", "E", "F", "Am", "Dm", "Em", "C7", "G7", "Cmaj7"];
 
 // Look up any chord (Am, Lam, F#7, Sibmaj7…), see it the way the instrument plays it and hear
@@ -20,7 +28,8 @@ export function DiccionarioAcordes({ instrumento }: { instrumento: InstrumentId 
   const [acorde, setAcorde] = useState(instrumento === "ukelele" ? "C" : "G");
   const datos = notasDelAcorde(acorde);
   const cuerdas = instrumento === "guitarra" || instrumento === "ukelele" ? instrumento : null;
-  const teclado = instrumento === "piano" || instrumento === "acordeon";
+  const teclado =
+    instrumento === "piano" || instrumento === "acordeon" || instrumento === "teclado";
   const comunes = cuerdas ? ACORDES_COMUNES[cuerdas] : COMUNES_TECLADO;
   const [error, setError] = useState<string | null>(null);
 
@@ -87,7 +96,15 @@ export function DiccionarioAcordes({ instrumento }: { instrumento: InstrumentId 
           <Text style={styles.titulo}>{acorde}</Text>
           <Text style={styles.subtitulo}>{datos.nombre}</Text>
           {cuerdas ? <DiagramaAcorde nombre={acorde} instrumento={cuerdas} ancho={150} /> : null}
-          {teclado ? <Teclado notas={datos.midis} /> : null}
+          {teclado ? (
+            <>
+              <Teclado notas={datos.midis} dedos={digitacionMano(datos.midis)} />
+              <Text style={styles.dedos}>
+                Mano derecha: {[...digitacionMano(datos.midis).values()].join(" - ")} (1 es el
+                pulgar)
+              </Text>
+            </>
+          ) : null}
           <Text style={styles.notas}>
             Notas: {datos.midis.map((m) => nota(m).nombre).join(" · ")}
           </Text>
@@ -169,6 +186,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: 15,
     color: colors.foreground,
+  },
+  dedos: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.mutedForeground,
   },
   botones: {
     flexDirection: "row",

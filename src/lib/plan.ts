@@ -3,18 +3,22 @@ import {
   BookOpen,
   Drum,
   Dumbbell,
+  FileMusic,
   Flame,
   Guitar,
   Hand,
   ListChecks,
+  ListMusic,
   Music2,
   Paperclip,
   PlaySquare,
   Repeat,
   Timer,
   Type,
+  Wind,
 } from "lucide-react";
 import { ESTILOS, type Groove, type Voz } from "@/lib/bateria";
+import type { TipoEscala } from "@/lib/escalas";
 import type { Material } from "@/lib/files";
 import type { InstrumentId } from "@/lib/instruments";
 import { colors } from "@/lib/theme";
@@ -44,6 +48,26 @@ export type Bloque = BloqueBase &
     | { tipo: "tempo"; inicio: number; objetivo: number; paso: number }
     | { tipo: "youtube"; url: string }
     | { tipo: "archivos"; archivos: Material[] }
+    // Written notation with sound (alphaTex with \tuning piano: notes by name, no tab).
+    | { tipo: "partitura"; tex: string }
+    // Scale or arpeggio from a tonic (0 = Do), see src/lib/escalas.ts.
+    | {
+        tipo: "escala";
+        tonica: number;
+        escala: TipoEscala;
+        octavas: number;
+        bpm: number;
+        porPulso: 1 | 2;
+      }
+    // Breathing (voice and winds), with an optional long note to sing or play (MIDI).
+    | {
+        tipo: "respiracion";
+        inhalar: number;
+        sostener: number;
+        exhalar: number;
+        repeticiones: number;
+        nota: number | null;
+      }
     // Drum kit (see src/lib/bateria.ts).
     | ({ tipo: "groove" } & Groove)
     | {
@@ -84,6 +108,16 @@ export const etapas: { value: Etapa; label: string; icon: LucideIcon; color: str
   { value: "libre", label: "Libre", icon: Type, color: colors.mutedForeground },
 ];
 
+// Families of instruments (which blocks and which 60-minute template they get).
+const TECLADOS: InstrumentId[] = ["piano", "teclado", "acordeon"];
+const ARCO: InstrumentId[] = ["violin", "violonchelo", "contrabajo"];
+const VIENTO: InstrumentId[] = ["flauta", "saxofon", "trompeta"];
+export const esPercusion = (i: InstrumentId) => i === "bateria" || i === "percusion";
+// Instruments read from a staff, without tab.
+export const conPartitura = (i: InstrumentId) =>
+  [...TECLADOS, ...ARCO, ...VIENTO, "arpa", "voz"].includes(i);
+export const conRespiracion = (i: InstrumentId) => i === "voz" || VIENTO.includes(i);
+
 export const etapa = (value: Etapa) =>
   etapas.find((e) => e.value === value) ?? etapas[etapas.length - 1]!;
 
@@ -96,7 +130,30 @@ export const tiposDeBloque: {
   soloCuerdas?: boolean;
   soloAcordes?: boolean;
   soloBateria?: boolean;
+  // Any other condition on the instrument.
+  para?: (instrumento: InstrumentId) => boolean;
 }[] = [
+  {
+    value: "partitura",
+    label: "Partitura",
+    descripcion: "Pentagrama con sonido",
+    icon: FileMusic,
+    para: conPartitura,
+  },
+  {
+    value: "escala",
+    label: "Escala o arpegio",
+    descripcion: "Notas, teclado y sonido",
+    icon: ListMusic,
+    para: (i) => !esPercusion(i),
+  },
+  {
+    value: "respiracion",
+    label: "Respiración",
+    descripcion: "Inhalar, sostener, exhalar y nota larga",
+    icon: Wind,
+    para: conRespiracion,
+  },
   {
     value: "groove",
     label: "Groove",
@@ -144,7 +201,10 @@ export const tiposDeBloque: {
 ];
 
 export const conCuerdas = (instrumento: InstrumentId) =>
-  instrumento === "guitarra" || instrumento === "bajo" || instrumento === "ukelele";
+  instrumento === "guitarra" ||
+  instrumento === "bajo" ||
+  instrumento === "ukelele" ||
+  instrumento === "requinto";
 export const conAcordes = (instrumento: InstrumentId) =>
   instrumento === "guitarra" || instrumento === "ukelele";
 
@@ -153,7 +213,8 @@ export const tiposPara = (instrumento: InstrumentId) =>
     (t) =>
       (!t.soloCuerdas || conCuerdas(instrumento)) &&
       (!t.soloAcordes || conAcordes(instrumento)) &&
-      (!t.soloBateria || instrumento === "bateria"),
+      (!t.soloBateria || instrumento === "bateria") &&
+      (!t.para || t.para(instrumento)),
   );
 
 export const niveles: { value: Ficha["nivel"]; label: string }[] = [
@@ -175,7 +236,7 @@ export const estilos = [
 
 // alphaTex tuning (high string first) per instrument and option.
 export const afinaciones: Record<
-  "guitarra" | "bajo" | "ukelele",
+  "guitarra" | "bajo" | "ukelele" | "requinto",
   { label: string; tex: string }[]
 > = {
   guitarra: [
@@ -190,6 +251,8 @@ export const afinaciones: Record<
     { label: "Drop D", tex: "G2 D2 A1 D1" },
   ],
   ukelele: [{ label: "Estándar (GCEA)", tex: "A4 E4 C4 G4" }],
+  // The Paraguayan requinto: a guitar tuned a fourth higher.
+  requinto: [{ label: "Requinto (La)", tex: "A4 E4 C4 G3 D3 A2" }],
 };
 
 export const estilosBateria = [
@@ -216,7 +279,7 @@ export const superficies = [
 ] as const;
 
 export function afinacionesPara(instrumento: InstrumentId) {
-  return instrumento === "bajo" || instrumento === "ukelele"
+  return instrumento === "bajo" || instrumento === "ukelele" || instrumento === "requinto"
     ? afinaciones[instrumento]
     : afinaciones.guitarra;
 }
@@ -283,6 +346,31 @@ function crearBloque(tipo: TipoBloque, instrumento: InstrumentId, etapaInicial: 
       return { ...base, tipo, titulo: "Material", archivos: [] };
     case "texto":
       return { ...base, tipo, titulo: "Indicaciones" };
+    case "partitura":
+      return { ...base, tipo, titulo: "Lectura", tex: texPartitura(instrumento) };
+    case "escala":
+      return {
+        ...base,
+        tipo,
+        titulo: "Escala de Do mayor",
+        tonica: 0,
+        escala: "mayor",
+        octavas: 1,
+        bpm: 70,
+        porPulso: 1,
+      };
+    case "respiracion":
+      return {
+        ...base,
+        tipo,
+        titulo: "Respiración",
+        minutos: 5,
+        inhalar: 4,
+        sostener: 2,
+        exhalar: 6,
+        repeticiones: 6,
+        nota: null,
+      };
     case "groove":
       return { ...base, tipo, titulo: "Groove", ...ESTILOS[0]!.groove };
     case "rudimento":
@@ -381,7 +469,49 @@ const SONIDO: Partial<Record<InstrumentId, { nombre: string; programa: number }>
   guitarra: { nombre: "Guitarra", programa: 25 },
   bajo: { nombre: "Bajo", programa: 33 },
   ukelele: { nombre: "Ukelele", programa: 24 },
+  requinto: { nombre: "Requinto", programa: 25 },
 };
+
+// Staff notation (no tab) for the instrument: its General MIDI sound, its clef and a starting
+// phrase in its register.
+const PARTITURA: Partial<
+  Record<InstrumentId, { nombre: string; programa: number; clave?: string; frase: string }>
+> = {
+  piano: { nombre: "Piano", programa: 0, frase: ":4 C4 D4 E4 F4 | G4 F4 E4 D4 | :2 C4 r" },
+  teclado: { nombre: "Teclado", programa: 4, frase: ":4 C4 E4 G4 E4 | :2 C4 G4 | :1 C4" },
+  acordeon: { nombre: "Acordeón", programa: 21, frase: ":4 C4 D4 E4 G4 | :2 E4 C4 | :1 C4" },
+  arpa: { nombre: "Arpa", programa: 46, frase: ":8 G3 B3 D4 G4 D4 B3 G3 B3 | :2 G3 D4" },
+  violin: { nombre: "Violín", programa: 40, frase: ":4 G4 A4 B4 C5 | D5 C5 B4 A4 | :1 G4" },
+  violonchelo: {
+    nombre: "Violonchelo",
+    programa: 42,
+    clave: "F4",
+    frase: ":4 C3 D3 E3 F3 | G3 F3 E3 D3 | :1 C3",
+  },
+  contrabajo: {
+    nombre: "Contrabajo",
+    programa: 43,
+    clave: "F4",
+    frase: ":4 E2 F#2 G2 A2 | B2 A2 G2 F#2 | :1 E2",
+  },
+  flauta: { nombre: "Flauta", programa: 73, frase: ":4 D5 E5 F#5 G5 | A5 G5 F#5 E5 | :1 D5" },
+  saxofon: { nombre: "Saxofón", programa: 65, frase: ":4 D4 E4 F#4 G4 | A4 G4 F#4 E4 | :1 D4" },
+  trompeta: { nombre: "Trompeta", programa: 56, frase: ":4 C4 D4 E4 F4 | G4 F4 E4 D4 | :1 C4" },
+  voz: { nombre: "Voz", programa: 53, frase: ":4 C4 D4 E4 F4 | G4 F4 E4 D4 | :1 C4" },
+};
+
+export function texPartitura(instrumento: InstrumentId) {
+  const p = PARTITURA[instrumento] ?? PARTITURA.piano!;
+  return [
+    "\\tempo 80",
+    ".",
+    `\\track "${p.nombre}"`,
+    `\\instrument ${p.programa}`,
+    "\\tuning piano",
+    ...(p.clave ? [`\\clef ${p.clave}`] : []),
+    p.frase,
+  ].join("\n");
+}
 
 export function texInicial(instrumento: InstrumentId) {
   const tuning = afinacionesPara(instrumento)[0]?.tex ?? afinaciones.guitarra[0]!.tex;
@@ -402,8 +532,122 @@ export function texInicial(instrumento: InstrumentId) {
 }
 
 // A typical 60-minute class to start from, in the right order.
+// 60-minute templates by family: keyboards, bowed strings, winds, voice and harp.
+function plantillaPorFamilia(instrumento: InstrumentId): Bloque[] | null {
+  const tarea = (notas: string): Bloque => ({
+    ...nuevoBloque("texto", instrumento, "tarea"),
+    titulo: "Para practicar en casa",
+    minutos: 5,
+    notas,
+  });
+  const escala = (titulo: string, minutos: number, cambios: Partial<Bloque> = {}) =>
+    ({
+      ...nuevoBloque("escala", instrumento, "tecnica"),
+      titulo,
+      minutos,
+      ...cambios,
+    }) as Bloque;
+  const partitura = (titulo: string, minutos: number, etapa: Etapa): Bloque => ({
+    ...nuevoBloque("partitura", instrumento, etapa),
+    titulo,
+    minutos,
+  });
+  const respiracion = (titulo: string, minutos: number, cambios: Partial<Bloque> = {}) =>
+    ({
+      ...nuevoBloque("respiracion", instrumento, "calentamiento"),
+      titulo,
+      minutos,
+      ...cambios,
+    }) as Bloque;
+
+  if (TECLADOS.includes(instrumento))
+    return [
+      escala("Escala de Do mayor, manos separadas", 10, {
+        etapa: "calentamiento",
+      } as Partial<Bloque>),
+      escala("Arpegio de Do mayor", 10, { escala: "arpegioMayor", octavas: 2 } as Partial<Bloque>),
+      partitura("Lectura a primera vista", 10, "tecnica"),
+      partitura("Obra de la semana", 20, "repertorio"),
+      tarea(
+        "15 minutos por día: la escala y el arpegio lentos, después la obra por frases, primero manos separadas.",
+      ),
+    ];
+  if (ARCO.includes(instrumento))
+    return [
+      {
+        ...nuevoBloque("tempo", instrumento, "calentamiento"),
+        titulo: "Cuerdas al aire con arco largo",
+        minutos: 10,
+        inicio: 50,
+        objetivo: 70,
+      },
+      escala("Escala de una octava", 10, {
+        tonica: instrumento === "contrabajo" ? 7 : 0,
+      } as Partial<Bloque>),
+      partitura("Estudio de técnica", 15, "tecnica"),
+      partitura("Obra de la semana", 20, "repertorio"),
+      tarea(
+        "20 minutos por día: afina, cuerdas al aire mirando el arco, la escala y la obra. Grábate y súbelo.",
+      ),
+    ];
+  if (VIENTO.includes(instrumento))
+    return [
+      respiracion("Respiración", 5),
+      respiracion("Notas largas", 10, {
+        nota: 60,
+        inhalar: 3,
+        sostener: 0,
+        exhalar: 8,
+      } as Partial<Bloque>),
+      escala("Escala mayor", 10),
+      partitura("Estudio", 10, "tecnica"),
+      partitura("Obra de la semana", 20, "repertorio"),
+      tarea(
+        "15 a 20 minutos por día: respiración y notas largas con afinador, la escala y la obra.",
+      ),
+    ];
+  if (instrumento === "voz")
+    return [
+      respiracion("Respiración costo-diafragmática", 5),
+      respiracion("Vocalización con nota", 10, {
+        nota: 57,
+        inhalar: 3,
+        sostener: 0,
+        exhalar: 6,
+      } as Partial<Bloque>),
+      escala("Escala para vocalizar", 10, { escala: "mayor", bpm: 60 } as Partial<Bloque>),
+      partitura("Melodía de la canción", 15, "repertorio"),
+      {
+        ...nuevoBloque("youtube", instrumento, "repertorio"),
+        titulo: "Canta sobre la versión de referencia",
+        minutos: 15,
+      },
+      tarea(
+        "Todos los días: respiración, 5 minutos de vocalización y la canción con afinador. Graba la canción y súbela.",
+      ),
+    ];
+  if (instrumento === "arpa")
+    return [
+      escala("Arpegios en Sol mayor", 10, {
+        etapa: "calentamiento",
+        tonica: 7,
+        escala: "arpegioMayor",
+        octavas: 2,
+      } as Partial<Bloque>),
+      escala("Escala de Sol mayor", 10, { tonica: 7, octavas: 2 } as Partial<Bloque>),
+      partitura("Bajo y acompañamiento de polca", 15, "tecnica"),
+      partitura("Obra de la semana (polca, guarania o galopa)", 20, "repertorio"),
+      tarea(
+        "20 minutos por día: arpegios con las dos manos, el bajo de la polca con metrónomo y la obra por frases.",
+      ),
+    ];
+  return null;
+}
+
 export function plantilla(instrumento: InstrumentId): Bloque[] {
   if (instrumento === "bateria") return plantillaBateria();
+  const porFamilia = plantillaPorFamilia(instrumento);
+  if (porFamilia) return porFamilia;
   const bloques: Bloque[] = [
     {
       ...nuevoBloque("tempo", instrumento, "calentamiento"),

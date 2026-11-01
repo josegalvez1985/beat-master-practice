@@ -46,6 +46,19 @@ const CONFIG: Partial<Record<InstrumentId, Config>> = {
     historial: true,
     referencia: 69,
   },
+  requinto: { min: 100, max: 1300, ajuste: CUERDA, referencia: 69 },
+  violonchelo: { min: 55, max: 900, ajuste: CUERDA, historial: true, referencia: 57 },
+  contrabajo: { min: 35, max: 500, ajuste: CUERDA, historial: true, referencia: 45 },
+  trompeta: {
+    min: 140,
+    max: 1200,
+    ajuste: [
+      "Muy bajo: mete un poco la bomba de afinación",
+      "Muy alto: saca un poco la bomba de afinación",
+    ],
+    historial: true,
+    referencia: 69,
+  },
   voz: {
     min: 70,
     max: 1100,
@@ -67,6 +80,7 @@ export function afinacionesDelAfinador(instrumento: InstrumentId): Afinacion[] {
     case "guitarra":
     case "bajo":
     case "ukelele":
+    case "requinto":
       return afinacionesPara(instrumento).map((a) => ({
         label: a.label,
         cuerdas: a.tex.split(" ").reverse().map(notaDeTexto),
@@ -74,6 +88,20 @@ export function afinacionesDelAfinador(instrumento: InstrumentId): Afinacion[] {
     case "violin":
       return [
         { label: "Estándar (Sol Re La Mi)", cuerdas: ["G3", "D4", "A4", "E5"].map(notaDeTexto) },
+      ];
+    case "violonchelo":
+      return [
+        { label: "Estándar (Do Sol Re La)", cuerdas: ["C2", "G2", "D3", "A3"].map(notaDeTexto) },
+      ];
+    case "contrabajo":
+      return [
+        { label: "Estándar (Mi La Re Sol)", cuerdas: ["E1", "A1", "D2", "G2"].map(notaDeTexto) },
+      ];
+    // A B♭ trumpet sounds a major second lower than written.
+    case "trompeta":
+      return [
+        { label: "Trompeta en Sib", cuerdas: [], transporte: 2 },
+        { label: "Sonido real (Do)", cuerdas: [], transporte: 0 },
       ];
     // An alto sounds a major sixth lower than written, a tenor a major ninth.
     case "saxofon":

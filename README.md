@@ -1,8 +1,8 @@
 # Pulso
 
 Plataforma web **exclusiva para profesores de música y sus alumnos**, para enseñar y practicar
-instrumentos: guitarra, **arpa paraguaya**, piano, batería, voz, bajo, violín, acordeón, ukelele,
-saxofón y flauta. No es un directorio de profesores: cada profesor agrega a sus alumnos a su lista
+17 instrumentos: guitarra, **requinto**, **arpa paraguaya**, piano, teclado, acordeón, batería,
+percusión, voz, bajo, violín, violonchelo, contrabajo, ukelele, saxofón, trompeta y flauta. No es un directorio de profesores: cada profesor agrega a sus alumnos a su lista
 con el número de documento.
 
 - **Profesores**: se registran con su número de documento y los instrumentos que enseñan, arman sus
@@ -16,6 +16,10 @@ con el número de documento.
 - **Diseño**: tema claro y oscuro, y una escena animada (arpa paraguaya, instrumentos que flotan,
   notas y la línea de pulso) en el login y en el inicio de cada persona con sus instrumentos, hecha
   con SVG y CSS para que no pese ni gaste memoria.
+- **Cada familia de instrumentos con lo suyo**: partituras con sonido (teclados, arco, viento,
+  voz y arpa), escalas y arpegios con teclado y sonido, respiración y notas largas (voz y
+  viento), digitación de mano en los acordes de teclado y una plantilla de clase de 60 minutos
+  por familia.
 - **Cuenta**: cualquiera puede sumar instrumentos (para enseñar o para aprender) desde su perfil, y
   recuperar la contraseña con su documento y su correo.
 - **Asistente con IA** (botón ✦, alumnos y profesores): explica cómo se usa cada pantalla y

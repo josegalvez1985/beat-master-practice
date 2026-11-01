@@ -34,8 +34,19 @@ export type HerramientaId =
   | "diario";
 
 // Instruments that play chords (chord dictionary, chord ear training).
-const ARMONICOS: InstrumentId[] = ["guitarra", "ukelele", "piano", "acordeon", "arpa"];
+const ARMONICOS: InstrumentId[] = [
+  "guitarra",
+  "ukelele",
+  "piano",
+  "acordeon",
+  "arpa",
+  "teclado",
+  "requinto",
+];
 const esBateria = (instrumento: InstrumentId) => instrumento === "bateria";
+// Timing, rhythm reading and rhythmic ear training also serve hand percussion.
+const esPercusion = (instrumento: InstrumentId) =>
+  instrumento === "bateria" || instrumento === "percusion";
 
 export const tocaAcordes = (instrumento: InstrumentId) => ARMONICOS.includes(instrumento);
 
@@ -51,6 +62,11 @@ const CLAVES: Partial<Record<InstrumentId, Clave[]>> = {
   piano: ["sol", "fa"],
   acordeon: ["sol", "fa"],
   arpa: ["sol", "fa"],
+  requinto: ["sol"],
+  teclado: ["sol", "fa"],
+  trompeta: ["sol"],
+  violonchelo: ["fa"],
+  contrabajo: ["fa"],
 };
 export type Clave = "sol" | "fa";
 export const clavesPara = (instrumento: InstrumentId) => CLAVES[instrumento] ?? [];
@@ -81,7 +97,7 @@ export const herramientas: {
     label: "Medidor de tiempo",
     descripcion: "¿Te apuras o vas atrás del click?",
     icon: Crosshair,
-    para: esBateria,
+    para: esPercusion,
   },
   {
     id: "grooves",
@@ -102,14 +118,14 @@ export const herramientas: {
     label: "Lectura rítmica",
     descripcion: "Lee un compás y tócalo en el pad",
     icon: Music4,
-    para: esBateria,
+    para: esPercusion,
   },
   {
     id: "oidoRitmico",
     label: "Oído rítmico",
     descripcion: "Escucha un ritmo y encuéntralo escrito",
     icon: Ear,
-    para: esBateria,
+    para: esPercusion,
   },
   {
     id: "grabadora",
@@ -130,7 +146,7 @@ export const herramientas: {
     label: "Oído",
     descripcion: "Reconoce intervalos y acordes",
     icon: Ear,
-    para: (instrumento) => instrumento !== "bateria",
+    para: (instrumento) => !esPercusion(instrumento),
   },
   {
     id: "lectura",

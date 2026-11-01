@@ -32,7 +32,8 @@ const ACORDES_TODOS = ["", "m", "dim", "7", "maj7", "m7"];
 
 // Where the questions sound: around the instrument's own register.
 function registro(instrumento: InstrumentId): [number, number] {
-  if (instrumento === "bajo") return [40, 52];
+  if (instrumento === "bajo" || instrumento === "contrabajo") return [40, 52];
+  if (instrumento === "violonchelo") return [43, 55];
   if (instrumento === "flauta" || instrumento === "violin") return [62, 74];
   return [52, 64];
 }

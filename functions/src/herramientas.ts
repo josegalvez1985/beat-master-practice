@@ -26,6 +26,12 @@ const INSTRUMENTOS: Record<string, string> = {
   ukelele: "Ukelele",
   saxofon: "Saxofón",
   flauta: "Flauta",
+  requinto: "Requinto",
+  teclado: "Teclado",
+  trompeta: "Trompeta",
+  violonchelo: "Violonchelo",
+  contrabajo: "Contrabajo",
+  percusion: "Percusión",
 };
 const nombreInstrumento = (id: string) => INSTRUMENTOS[id] ?? id;
 
@@ -112,6 +118,27 @@ function bloqueEnPalabras(b: DocumentData) {
       return { ...base, ...notas, compas: b.compas, bpm: b.bpm, compases: b.compases };
     case "youtube":
       return { ...base, ...notas, video: b.url };
+    case "partitura":
+      return { ...base, ...notas, contenido: "partitura escrita con sonido" };
+    case "escala":
+      return {
+        ...base,
+        ...notas,
+        tonica: ["Do", "Do#", "Re", "Re#", "Mi", "Fa", "Fa#", "Sol", "Sol#", "La", "La#", "Si"][
+          b.tonica
+        ],
+        escala: b.escala,
+        octavas: b.octavas,
+        bpm: b.bpm,
+      };
+    case "respiracion":
+      return {
+        ...base,
+        ...notas,
+        segundos: { inhalar: b.inhalar, sostener: b.sostener, exhalar: b.exhalar },
+        repeticiones: b.repeticiones,
+        conNotaLarga: b.nota !== null,
+      };
     case "archivos":
       return { ...base, ...notas, archivos: (b.archivos ?? []).map((a: DocumentData) => a.nombre) };
     default:

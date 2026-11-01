@@ -28,8 +28,8 @@ service cloud.firestore {
 
     function instrumentosValidos(lista) {
       // Keep in sync with src/lib/instruments.ts.
-      return lista is list && lista.size() >= 1 && lista.size() <= 11
-        && lista.hasOnly(['guitarra', 'arpa', 'piano', 'bateria', 'voz', 'bajo', 'violin', 'acordeon', 'ukelele', 'saxofon', 'flauta']);
+      return lista is list && lista.size() >= 1 && lista.size() <= 17
+        && lista.hasOnly(['guitarra', 'arpa', 'piano', 'bateria', 'voz', 'bajo', 'violin', 'acordeon', 'ukelele', 'saxofon', 'flauta', 'requinto', 'teclado', 'trompeta', 'violonchelo', 'contrabajo', 'percusion']);
     }
 
     function textoValido(valor, min, max) {

@@ -5,7 +5,7 @@ import { Partitura } from "@/components/plan/Partitura";
 import { MAX_TEX, type Bloque } from "@/lib/plan";
 import { colors, fonts, radius } from "@/lib/theme";
 
-type Tablatura = Extract<Bloque, { tipo: "tablatura" }>;
+type Tablatura = Extract<Bloque, { tipo: "tablatura" | "partitura" }>;
 
 const ATAJOS: { label: string; texto: string }[] = [
   { label: "Nota", texto: " 3.6" },
@@ -15,6 +15,18 @@ const ATAJOS: { label: string; texto: string }[] = [
   { label: "Negra :4", texto: " :4" },
   { label: "Corchea :8", texto: " :8" },
   { label: "Semicorchea :16", texto: " :16" },
+];
+
+// The "partitura" block: notes by name (C4 = middle Do), no tab.
+const ATAJOS_PARTITURA: { label: string; texto: string }[] = [
+  { label: "Nota (Do4)", texto: " C4" },
+  { label: "Acorde", texto: " (C4 E4 G4)" },
+  { label: "Silencio", texto: " r" },
+  { label: "| Compás", texto: " |" },
+  { label: "Redonda :1", texto: " :1" },
+  { label: "Blanca :2", texto: " :2" },
+  { label: "Negra :4", texto: " :4" },
+  { label: "Corchea :8", texto: " :8" },
 ];
 
 // alphaTex editor with live score + tab preview (profesor), or just the playable score.
@@ -43,7 +55,7 @@ export function TablaturaBloque({
   return (
     <View style={styles.wrap}>
       <View style={styles.atajos}>
-        {ATAJOS.map((atajo) => (
+        {(bloque.tipo === "partitura" ? ATAJOS_PARTITURA : ATAJOS).map((atajo) => (
           <Pressable
             key={atajo.label}
             accessibilityRole="button"

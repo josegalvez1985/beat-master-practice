@@ -42,7 +42,7 @@ const despues: Record<Role, Paso[]> = {
     {
       titulo: "Arma el plan de cada clase",
       detalle:
-        "Abre la clase y usa la plantilla de 60 min o suma bloques: tablaturas, acordes, rasgueos, grooves y rudimentos de batería, tempo, videos y archivos.",
+        "Abre la clase y usa la plantilla de 60 min o suma bloques: partituras y tablaturas con sonido, escalas, acordes, rasgueos, respiración, grooves y rudimentos de batería, tempo, videos y archivos.",
     },
     {
       titulo: "Revisa las entregas",
