@@ -60,17 +60,20 @@ Se cargan antes del primer pintado ([`fonts.ts`](../src/lib/fonts.ts)).
 resplandor suave) sobre fondo carbón con luz de escenario, y al lado la palabra **PULSO** en Bebas
 Neue. El dibujo original es [`public/favicon.svg`](../public/favicon.svg); en la app se usa el
 componente vectorial [`Logo` / `LogoMark`](../src/components/ui/logo.tsx) (barra superior, login,
-404). `npm run iconos` regenera desde el SVG todos los PNG:
+404). `npm run iconos` regenera desde el SVG todos los PNG y el `favicon.ico`. Después de cambiar el
+logo, sube el `?v=` de los íconos y de `og-image.png` en `index.html`: navegadores, WhatsApp y
+Facebook guardan las imágenes por su dirección y si no cambia siguen mostrando la vieja.
 
-| Archivo                                  | Uso                                                               |
-| ---------------------------------------- | ----------------------------------------------------------------- |
-| `public/favicon.svg`, `favicon.png` (96) | Pestaña del navegador y resultados de Google                      |
-| `public/icons/icon-192/512.png`          | App instalada (manifest) y logo en los datos para Google          |
-| `public/icons/apple-touch-icon.png`      | Acceso directo en iPhone/iPad                                     |
-| `public/og-image.png` (1200×630)         | Vista previa al compartir el enlace (WhatsApp, Facebook, X…)      |
-| `public/brand/icon-1024.png`             | Ícono en alta resolución                                          |
-| `public/brand/logo.png`                  | Logo horizontal transparente (2800×960) para **fondos oscuros**   |
-| `public/brand/logo-fondo-claro.png`      | Igual, con texto oscuro para **fondos claros** (documentos, etc.) |
+| Archivo                                  | Uso                                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------------------- |
+| `public/favicon.svg`, `favicon.png` (96) | Pestaña del navegador y resultados de Google                                    |
+| `public/favicon.ico` (16, 32, 48)        | Navegadores y apps que piden `/favicon.ico` directo (favoritos, vistas previas) |
+| `public/icons/icon-192/512.png`          | App instalada (manifest) y logo en los datos para Google                        |
+| `public/icons/apple-touch-icon.png`      | Acceso directo en iPhone/iPad                                                   |
+| `public/og-image.png` (1200×630)         | Vista previa al compartir el enlace (WhatsApp, Facebook, X…)                    |
+| `public/brand/icon-1024.png`             | Ícono en alta resolución                                                        |
+| `public/brand/logo.png`                  | Logo horizontal transparente (2800×960) para **fondos oscuros**                 |
+| `public/brand/logo-fondo-claro.png`      | Igual, con texto oscuro para **fondos claros** (documentos, etc.)               |
 
 **Formas**: tres radios (8 controles chicos, 12 tarjetas y campos, 20 paneles grandes), superficies
 sólidas por elevación con borde opaco (`shared.panel`) y un resplandor ámbar suave en los primeros

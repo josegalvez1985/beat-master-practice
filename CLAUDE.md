@@ -33,7 +33,7 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
 - Títulos con `fonts.heading` / `fonts.headingBold` en minúsculas; `fonts.display` (Bebas, solo
   mayúsculas) únicamente para la marca y números grandes.
 - El logo (`src/components/ui/logo.tsx`) copia el dibujo de `public/favicon.svg`; al cambiarlo,
-  correr `npm run iconos`.
+  correr `npm run iconos` y subir el `?v=` de los íconos y de `og-image.png` en `index.html`.
 - Ilustraciones: SVG en el código + animaciones CSS de `transform`/`opacity`, nunca imágenes,
   videos ni librerías de animación; reutilizar `EscenaMusical` (`src/components/ui/escena-musical.tsx`)
   y respetar `prefers-reduced-motion` (ver `docs/diseno.md`, _Ilustraciones y animación_).

@@ -59,16 +59,17 @@ indexación de la portada.
 Lo que Google usa para mostrar el sitio (todo en [`index.html`](../index.html) salvo que se diga
 otra cosa):
 
-| Qué                       | Dónde                                                                                                                                                          |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Título y descripción      | `<title>` y `meta description` (hasta ~60 y ~155 caracteres). Iguales a `SITE_TITLE` / `SITE_DESCRIPTION` de [`site.ts`](../src/lib/site.ts), que usa el login |
-| Nombre del sitio          | JSON-LD `WebSite` (`name: "Pulso"`, `alternateName`) y `og:site_name`                                                                                          |
-| Logo en los resultados    | JSON-LD `Organization.logo` → `icons/icon-512.png`                                                                                                             |
-| Ícono junto al resultado  | `favicon.png` (96 px, múltiplo de 48) y `favicon.svg`                                                                                                          |
-| Vista previa al compartir | `og:*` y `twitter:card`, con `og-image.png` (1200×630)                                                                                                         |
-| Texto de la portada       | El contenido inicial de `#root` (se lee sin JavaScript) y, en celular, la línea bajo el logo del login ([`AuthLayout.tsx`](../src/components/AuthLayout.tsx))  |
-| URL canónica              | `link rel="canonical"`; [`PageMeta`](../src/components/PageMeta.tsx) la ajusta en cada pantalla                                                                |
-| Qué rastrear              | [`robots.txt`](../public/robots.txt) y [`sitemap.xml`](../public/sitemap.xml) (solo la portada: el resto pide sesión y responde 404 al rastreador)             |
+| Qué                       | Dónde                                                                                                                                                                |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Título y descripción      | `<title>` y `meta description` (hasta ~60 y ~155 caracteres). Iguales a `SITE_TITLE` / `SITE_DESCRIPTION` de [`site.ts`](../src/lib/site.ts), que usa el login       |
+| Nombre del sitio          | JSON-LD `WebSite` (`name: "Pulso"`, `alternateName`) y `og:site_name`                                                                                                |
+| Logo en los resultados    | JSON-LD `Organization.logo` → `icons/icon-512.png`                                                                                                                   |
+| Ícono junto al resultado  | `favicon.png` (96 px, múltiplo de 48), `favicon.svg` y `favicon.ico`, con `?v=` para que se renueven                                                                 |
+| Vista previa al compartir | `og:*` y `twitter:card`, con `og-image.png` (1200×630)                                                                                                               |
+| Renovar una vista previa  | WhatsApp y Facebook guardan la imagen: cambia el `?v=` de `og-image.png` y, en Facebook, usa el [depurador de enlaces](https://developers.facebook.com/tools/debug/) |
+| Texto de la portada       | El contenido inicial de `#root` (se lee sin JavaScript) y, en celular, la línea bajo el logo del login ([`AuthLayout.tsx`](../src/components/AuthLayout.tsx))        |
+| URL canónica              | `link rel="canonical"`; [`PageMeta`](../src/components/PageMeta.tsx) la ajusta en cada pantalla                                                                      |
+| Qué rastrear              | [`robots.txt`](../public/robots.txt) y [`sitemap.xml`](../public/sitemap.xml) (solo la portada: el resto pide sesión y responde 404 al rastreador)                   |
 
 **Qué decir.** El título y la descripción dicen exactamente qué es Pulso: una plataforma
 **exclusiva para profesores de música y sus alumnos**, con lo que hace cada uno. No prometen

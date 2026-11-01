@@ -79,7 +79,7 @@ const outputs = {
       <div style="color:#f8f5ef;">
         <div style="font-family:Bebas;font-size:168px;line-height:.9;letter-spacing:6px;">PULSO</div>
         <div style="font-family:Barlow;font-weight:600;font-size:44px;line-height:1.2;margin-top:18px;">
-          Clases y práctica de música<br>en Paraguay
+          Plataforma para profesores<br>y alumnos de música
         </div>
         <div style="font-family:Barlow;font-weight:500;font-size:30px;color:#f9a129;margin-top:22px;">
           Guitarra · Arpa paraguaya · Piano · Batería y más
@@ -95,3 +95,25 @@ for (const [target, source] of Object.entries(outputs)) {
   writeFileSync(join(project, "public", target), readFileSync(source));
   console.log(target);
 }
+
+// favicon.ico (16, 32 and 48 px, PNG inside): many browsers, bookmark readers and link previews ask
+// for /favicon.ico directly, without reading the HTML.
+const tamanos = [16, 32, 48];
+const pngs = tamanos.map((lado) => readFileSync(shot(`ico-${lado}`, lado, lado, icon)));
+const cabecera = Buffer.alloc(6 + 16 * pngs.length);
+cabecera.writeUInt16LE(0, 0); // reserved
+cabecera.writeUInt16LE(1, 2); // type: icon
+cabecera.writeUInt16LE(pngs.length, 4);
+let offset = cabecera.length;
+pngs.forEach((png, i) => {
+  const entrada = 6 + i * 16;
+  cabecera.writeUInt8(tamanos[i], entrada); // width
+  cabecera.writeUInt8(tamanos[i], entrada + 1); // height
+  cabecera.writeUInt16LE(1, entrada + 4); // color planes
+  cabecera.writeUInt16LE(32, entrada + 6); // bits per pixel
+  cabecera.writeUInt32LE(png.length, entrada + 8);
+  cabecera.writeUInt32LE(offset, entrada + 12);
+  offset += png.length;
+});
+writeFileSync(join(project, "public", "favicon.ico"), Buffer.concat([cabecera, ...pngs]));
+console.log("favicon.ico");
