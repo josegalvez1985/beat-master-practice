@@ -43,7 +43,6 @@ const ARMONICOS: InstrumentId[] = [
   "teclado",
   "requinto",
 ];
-const esBateria = (instrumento: InstrumentId) => instrumento === "bateria";
 // Timing, rhythm reading and rhythmic ear training also serve hand percussion.
 const esPercusion = (instrumento: InstrumentId) =>
   instrumento === "bateria" || instrumento === "percusion";
@@ -102,16 +101,16 @@ export const herramientas: {
   {
     id: "grooves",
     label: "Grooves",
-    descripcion: "Rock, funk, polca, guarania… para tocar encima",
+    descripcion: "Patrones por estilo para tocar encima",
     icon: Drum,
-    para: esBateria,
+    para: esPercusion,
   },
   {
     id: "rudimentos",
     label: "Rudimentos",
     descripcion: "Escalera de tempo y tus récords",
     icon: Repeat,
-    para: esBateria,
+    para: esPercusion,
   },
   {
     id: "ritmo",

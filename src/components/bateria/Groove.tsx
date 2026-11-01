@@ -6,18 +6,20 @@ import { Button, buttonForeground } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Stepper } from "@/components/ui/stepper";
 import {
-  ESTILOS,
+  BASICAS,
   MAX_COMPASES,
   PULSOS,
   SIGUIENTE_GOLPE,
-  VOCES,
   ajustarPistas,
   colorDeVoz,
   conteo,
   golpeEn,
   pasos,
   programarGroove,
+  estilosDe,
+  vocesDe,
   type CompasBateria,
+  type Kit,
   type Golpe,
   type Groove,
   type Subdivision,
@@ -36,8 +38,6 @@ const subdivisiones = [
   { value: "3", label: "Tresillos" },
   { value: "4", label: "Semicorcheas" },
 ] as const;
-// Always shown while editing, even when empty: the basic kit.
-const BASICAS: Voz[] = ["hihat", "caja", "bombo"];
 
 // Drum groove as a step grid (rows = kit pieces, columns = steps). The profesor taps cells to
 // cycle hit → accent → ghost → rest; everyone can play it, mute a voice to play it themselves,
@@ -46,11 +46,16 @@ export function GrooveGrid({
   groove,
   editable,
   onChange,
+  kit = "bateria",
 }: {
   groove: Groove;
   editable: boolean;
   onChange?: (groove: Groove) => void;
+  // Drum kit or hand percussion (cajón, congas, bongó…).
+  kit?: Kit;
 }) {
+  const VOCES = vocesDe(kit);
+  const ESTILOS = estilosDe(kit);
   const [sonando, setSonando] = useState(false);
   const [click, setClick] = useState(!editable);
   const [silenciadas, setSilenciadas] = useState<Set<Voz>>(new Set());
@@ -76,7 +81,8 @@ export function GrooveGrid({
 
   const conPista = VOCES.filter((v) => (groove.pistas[v.id] ?? "").replace(/\./g, ""));
   const visibles = VOCES.filter(
-    (v) => conPista.includes(v) || (editable && (BASICAS.includes(v.id) || v.id in groove.pistas)),
+    (v) =>
+      conPista.includes(v) || (editable && (BASICAS[kit].includes(v.id) || v.id in groove.pistas)),
   );
   const ocultas = VOCES.filter((v) => !visibles.includes(v));
 

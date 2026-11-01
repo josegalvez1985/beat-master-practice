@@ -2,12 +2,13 @@ import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { GrooveGrid } from "@/components/bateria/Groove";
 import { Opciones } from "@/components/plan/comunes";
-import { ESTILOS } from "@/lib/bateria";
+import { estilosDe, type Kit } from "@/lib/bateria";
 import { colors, fonts, radius } from "@/lib/theme";
 
 // Grooves by style to play along: rock to bossa, cumbia and the Paraguayan polca, guarania and
 // galopa. Mute a piece and play it yourself.
-export function BibliotecaGrooves() {
+export function BibliotecaGrooves({ kit = "bateria" }: { kit?: Kit }) {
+  const ESTILOS = estilosDe(kit);
   const [id, setId] = useState(ESTILOS[0]!.id);
   const estilo = ESTILOS.find((e) => e.id === id) ?? ESTILOS[0]!;
   return (
@@ -22,7 +23,7 @@ export function BibliotecaGrooves() {
         <Text style={styles.titulo}>{estilo.nombre}</Text>
         <Text style={styles.texto}>{estilo.consejo}</Text>
       </View>
-      <GrooveGrid key={estilo.id} groove={estilo.groove} editable={false} />
+      <GrooveGrid key={estilo.id} groove={estilo.groove} editable={false} kit={kit} />
     </View>
   );
 }

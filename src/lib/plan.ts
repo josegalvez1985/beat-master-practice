@@ -17,7 +17,7 @@ import {
   Type,
   Wind,
 } from "lucide-react";
-import { ESTILOS, type Groove, type Voz } from "@/lib/bateria";
+import { ESTILOS, ESTILOS_PERCUSION, type Groove, type Voz } from "@/lib/bateria";
 import type { TipoEscala } from "@/lib/escalas";
 import type { Material } from "@/lib/files";
 import type { InstrumentId } from "@/lib/instruments";
@@ -115,7 +115,7 @@ const VIENTO: InstrumentId[] = ["flauta", "saxofon", "trompeta"];
 export const esPercusion = (i: InstrumentId) => i === "bateria" || i === "percusion";
 // Instruments read from a staff, without tab.
 export const conPartitura = (i: InstrumentId) =>
-  [...TECLADOS, ...ARCO, ...VIENTO, "arpa", "voz"].includes(i);
+  [...TECLADOS, ...ARCO, ...VIENTO, "arpa", "voz", "bajo"].includes(i);
 export const conRespiracion = (i: InstrumentId) => i === "voz" || VIENTO.includes(i);
 
 export const etapa = (value: Etapa) =>
@@ -157,16 +157,16 @@ export const tiposDeBloque: {
   {
     value: "groove",
     label: "Groove",
-    descripcion: "Ritmo de batería con sonido",
+    descripcion: "Ritmo en grilla con sonido",
     icon: Drum,
-    soloBateria: true,
+    para: esPercusion,
   },
   {
     value: "rudimento",
     label: "Rudimento",
     descripcion: "Digitación R/L y escalera de tempo",
     icon: Repeat,
-    soloBateria: true,
+    para: esPercusion,
   },
   {
     value: "tablatura",
@@ -206,7 +206,7 @@ export const conCuerdas = (instrumento: InstrumentId) =>
   instrumento === "ukelele" ||
   instrumento === "requinto";
 export const conAcordes = (instrumento: InstrumentId) =>
-  instrumento === "guitarra" || instrumento === "ukelele";
+  instrumento === "guitarra" || instrumento === "ukelele" || instrumento === "requinto";
 
 export const tiposPara = (instrumento: InstrumentId) =>
   tiposDeBloque.filter(
@@ -372,7 +372,12 @@ function crearBloque(tipo: TipoBloque, instrumento: InstrumentId, etapaInicial: 
         nota: null,
       };
     case "groove":
-      return { ...base, tipo, titulo: "Groove", ...ESTILOS[0]!.groove };
+      return {
+        ...base,
+        tipo,
+        titulo: "Groove",
+        ...(instrumento === "percusion" ? ESTILOS_PERCUSION : ESTILOS)[0]!.groove,
+      };
     case "rudimento":
       return {
         ...base,
@@ -498,6 +503,12 @@ const PARTITURA: Partial<
   saxofon: { nombre: "Saxofón", programa: 65, frase: ":4 D4 E4 F#4 G4 | A4 G4 F#4 E4 | :1 D4" },
   trompeta: { nombre: "Trompeta", programa: 56, frase: ":4 C4 D4 E4 F4 | G4 F4 E4 D4 | :1 C4" },
   voz: { nombre: "Voz", programa: 53, frase: ":4 C4 D4 E4 F4 | G4 F4 E4 D4 | :1 C4" },
+  bajo: {
+    nombre: "Bajo",
+    programa: 33,
+    clave: "F4",
+    frase: ":4 E2 G2 A2 B2 | :2 A2 G2 | :1 E2",
+  },
 };
 
 export function texPartitura(instrumento: InstrumentId) {
@@ -606,6 +617,40 @@ function plantillaPorFamilia(instrumento: InstrumentId): Bloque[] | null {
         "15 a 20 minutos por día: respiración y notas largas con afinador, la escala y la obra.",
       ),
     ];
+  if (instrumento === "percusion") {
+    const estilo = (id: string) =>
+      (ESTILOS_PERCUSION.find((e) => e.id === id) ?? ESTILOS_PERCUSION[0]!).groove;
+    return [
+      {
+        ...nuevoBloque("rudimento", instrumento, "calentamiento"),
+        titulo: "Manos alternadas",
+        minutos: 10,
+        rudimento: "simples",
+        inicio: 60,
+        objetivo: 90,
+      },
+      {
+        ...nuevoBloque("groove", instrumento, "tecnica"),
+        ...estilo("cajon-pop"),
+        titulo: "Sonidos: bajo y slap en el cajón",
+        minutos: 10,
+      },
+      {
+        ...nuevoBloque("groove", instrumento, "repertorio"),
+        ...estilo("tumbao"),
+        titulo: "Patrón del estilo",
+        minutos: 20,
+      },
+      {
+        ...nuevoBloque("youtube", instrumento, "repertorio"),
+        titulo: "Toca encima de la canción",
+        minutos: 10,
+      },
+      tarea(
+        "15 minutos por día: manos alternadas con metrónomo, los sonidos limpios y el patrón sin click. Graba el patrón y súbelo.",
+      ),
+    ];
+  }
   if (instrumento === "voz")
     return [
       respiracion("Respiración costo-diafragmática", 5),

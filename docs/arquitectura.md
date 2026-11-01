@@ -159,20 +159,20 @@ Tipos en [`src/lib/plan.ts`](../src/lib/plan.ts). Cada bloque tiene `id`, `etapa
 técnica, repertorio, teoría, tarea o libre), `titulo`, `minutos`, `notas` y un `tipo` con su
 contenido:
 
-| `tipo`        | Contenido                                                                                                                                                                       | Instrumentos                       |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| `tablatura`   | `tex`: alphaTex (pentagrama + tab con sonido)                                                                                                                                   | guitarra, bajo, ukelele            |
-| `acordes`     | `acordes`: nombres (`Am`, `G7`, `Lam`, `Fa#m`…)                                                                                                                                 | guitarra, ukelele                  |
-| `rasgueo`     | `compas` (4/4, 3/4, 6/8), `golpes` (↓ ↑ ✕ ·), `bpm`                                                                                                                             | guitarra, ukelele                  |
-| `tempo`       | `inicio`, `objetivo`, `paso` (BPM)                                                                                                                                              | todos                              |
-| `youtube`     | `url`                                                                                                                                                                           | todos                              |
-| `archivos`    | `archivos`: `Material[]` en `clases/{claseId}/`                                                                                                                                 | todos                              |
-| `texto`       | solo `notas`                                                                                                                                                                    | todos                              |
-| `partitura`   | `tex`: alphaTex con `\tuning piano` (notas por nombre, `C4` = Do central), sin tablatura, con el sonido y la clave del instrumento                                              | teclados, arco, viento, voz y arpa |
-| `escala`      | `tonica` (0 = Do), `escala` (mayor, menores, pentatónicas, blues, cromática, arpegios), `octavas`, `bpm`, `porPulso`                                                            | todos menos batería y percusión    |
-| `respiracion` | `inhalar`, `sostener`, `exhalar` (segundos), `repeticiones`, `nota` (MIDI de la nota larga, o null)                                                                             | voz y viento                       |
-| `groove`      | `compas`, `subdivision` (2, 3, 4), `compases` (1–4), `bpm`, `pistas`: un texto por pieza del kit, un carácter por paso (`.` silencio, `x` golpe, `>` acento, `o` nota fantasma) | batería                            |
-| `rudimento`   | `rudimento` (id de la lista PAS de [`bateria.ts`](../src/lib/bateria.ts)), `inicio`, `objetivo`, `paso` (BPM), `empiezaCon` (R o L)                                             | batería                            |
+| `tipo`        | Contenido                                                                                                                                                                       | Instrumentos                                        |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `tablatura`   | `tex`: alphaTex (pentagrama + tab con sonido)                                                                                                                                   | guitarra, bajo, ukelele                             |
+| `acordes`     | `acordes`: nombres (`Am`, `G7`, `Lam`, `Fa#m`…)                                                                                                                                 | guitarra, ukelele                                   |
+| `rasgueo`     | `compas` (4/4, 3/4, 6/8), `golpes` (↓ ↑ ✕ ·), `bpm`                                                                                                                             | guitarra, ukelele                                   |
+| `tempo`       | `inicio`, `objetivo`, `paso` (BPM)                                                                                                                                              | todos                                               |
+| `youtube`     | `url`                                                                                                                                                                           | todos                                               |
+| `archivos`    | `archivos`: `Material[]` en `clases/{claseId}/`                                                                                                                                 | todos                                               |
+| `texto`       | solo `notas`                                                                                                                                                                    | todos                                               |
+| `partitura`   | `tex`: alphaTex con `\tuning piano` (notas por nombre, `C4` = Do central), sin tablatura, con el sonido y la clave del instrumento                                              | teclados, arco, viento, voz, arpa y bajo            |
+| `escala`      | `tonica` (0 = Do), `escala` (mayor, menores, pentatónicas, blues, cromática, arpegios), `octavas`, `bpm`, `porPulso`                                                            | todos menos batería y percusión                     |
+| `respiracion` | `inhalar`, `sostener`, `exhalar` (segundos), `repeticiones`, `nota` (MIDI de la nota larga, o null)                                                                             | voz y viento                                        |
+| `groove`      | `compas`, `subdivision` (2, 3, 4), `compases` (1–4), `bpm`, `pistas`: un texto por pieza del kit, un carácter por paso (`.` silencio, `x` golpe, `>` acento, `o` nota fantasma) | batería y percusión (cada uno con su set de piezas) |
+| `rudimento`   | `rudimento` (id de la lista PAS de [`bateria.ts`](../src/lib/bateria.ts)), `inicio`, `objetivo`, `paso` (BPM), `empiezaCon` (R o L)                                             | batería y percusión                                 |
 
 Las tablaturas y los archivos Guitar Pro / MusicXML se dibujan y suenan con
 [alphaTab](https://alphatab.net) ([`Partitura.tsx`](../src/components/plan/Partitura.tsx)), que se
@@ -267,20 +267,20 @@ herramienta se muestra **solo para los instrumentos donde tiene sentido**, segú
 de la persona (perfil y, en el alumno, las listas de sus profesores). La tabla está en
 [`herramientas.ts`](../src/lib/herramientas.ts):
 
-| Herramienta            | Instrumentos                                                                                                       |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Afinador               | guitarra, requinto, bajo, ukelele, violín, violonchelo, contrabajo, arpa, saxofón, trompeta, flauta, voz           |
-| Metrónomo              | todos                                                                                                              |
-| Grabadora              | todos                                                                                                              |
-| Diccionario de acordes | guitarra y ukelele (diagrama), piano, teclado y acordeón (teclado con digitación de mano), arpa y requinto (notas) |
-| Oído                   | todos menos batería y percusión; el ejercicio de acordes, solo los que tocan acordes                               |
-| Lectura de notas       | todos menos batería y percusión, con su clave (sol, fa o las dos)                                                  |
-| Diario                 | todos (solo alumnos: el profesor lo ve en la ficha del alumno)                                                     |
-| Medidor de tiempo      | batería y percusión                                                                                                |
-| Grooves (biblioteca)   | batería                                                                                                            |
-| Rudimentos             | batería (récords en `records`)                                                                                     |
-| Lectura rítmica        | batería y percusión                                                                                                |
-| Oído rítmico           | batería y percusión                                                                                                |
+| Herramienta            | Instrumentos                                                                                                                                                            |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Afinador               | guitarra, requinto, bajo, ukelele, violín, violonchelo, contrabajo, arpa, saxofón, trompeta, flauta, voz                                                                |
+| Metrónomo              | todos                                                                                                                                                                   |
+| Grabadora              | todos                                                                                                                                                                   |
+| Diccionario de acordes | guitarra, ukelele y requinto (diagrama; el del requinto es la forma de guitarra una cuarta más grave), piano, teclado y acordeón (teclado con digitación), arpa (notas) |
+| Oído                   | todos menos batería y percusión; el ejercicio de acordes, solo los que tocan acordes                                                                                    |
+| Lectura de notas       | todos menos batería y percusión, con su clave (sol, fa o las dos)                                                                                                       |
+| Diario                 | todos (solo alumnos: el profesor lo ve en la ficha del alumno)                                                                                                          |
+| Medidor de tiempo      | batería y percusión                                                                                                                                                     |
+| Grooves (biblioteca)   | batería (kit) y percusión (cajón, congas, bongó, shaker, claves, cencerro, güiro)                                                                                       |
+| Rudimentos             | batería y percusión (récords en `records`)                                                                                                                              |
+| Lectura rítmica        | batería y percusión                                                                                                                                                     |
+| Oído rítmico           | batería y percusión                                                                                                                                                     |
 
 Todas funcionan en el navegador, con un solo `AudioContext` ([`audio.ts`](../src/lib/audio.ts)) y
 las notas de [`notas.ts`](../src/lib/notas.ts). El micrófono y la cámara exigen HTTPS (o
@@ -312,15 +312,15 @@ las notas de [`notas.ts`](../src/lib/notas.ts). El micrófono y la cámara exige
 Cada familia tiene sus bloques y su **plantilla de 60 minutos** (`plantilla()` de
 [`plan.ts`](../src/lib/plan.ts)):
 
-| Familia             | Instrumentos                                          | Plantilla                                                                         |
-| ------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Cuerdas con trastes | guitarra, requinto, bajo, ukelele                     | Tempo, tablatura, acordes y rasgueo (guitarra y ukelele), tarea                   |
-| Teclados            | piano, teclado, acordeón                              | Escala, arpegio, lectura a primera vista, obra (partituras), tarea                |
-| Arco                | violín, violonchelo, contrabajo                       | Cuerdas al aire con metrónomo, escala, estudio y obra (partituras), tarea         |
-| Viento              | flauta, saxofón, trompeta                             | Respiración, notas largas, escala, estudio y obra, tarea                          |
-| Voz                 | voz                                                   | Respiración, vocalización con nota, escala, melodía, canción de referencia, tarea |
-| Arpa paraguaya      | arpa                                                  | Arpegios y escala de Sol, bajo de polca y obra (polca, guarania o galopa), tarea  |
-| Percusión           | batería (grooves y rudimentos, ver abajo) y percusión | Batería: la suya; percusión: tempo, archivos y tarea                              |
+| Familia             | Instrumentos                                                  | Plantilla                                                                                                    |
+| ------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Cuerdas con trastes | guitarra, requinto, bajo, ukelele                             | Tempo, tablatura, acordes y rasgueo (guitarra, ukelele y requinto; el bajo, partitura en clave de fa), tarea |
+| Teclados            | piano, teclado, acordeón                                      | Escala, arpegio, lectura a primera vista, obra (partituras), tarea                                           |
+| Arco                | violín, violonchelo, contrabajo                               | Cuerdas al aire con metrónomo, escala, estudio y obra (partituras), tarea                                    |
+| Viento              | flauta, saxofón, trompeta                                     | Respiración, notas largas, escala, estudio y obra, tarea                                                     |
+| Voz                 | voz                                                           | Respiración, vocalización con nota, escala, melodía, canción de referencia, tarea                            |
+| Arpa paraguaya      | arpa                                                          | Arpegios y escala de Sol, bajo de polca y obra (polca, guarania o galopa), tarea                             |
+| Percusión           | batería (kit) y percusión (cajón, congas, bongó y accesorios) | Batería: la suya. Percusión: manos alternadas, sonidos del cajón, patrón del estilo, canción y tarea         |
 
 El requinto paraguayo se afina como una guitarra una cuarta más aguda (La Re Sol Do Mi La); la
 trompeta en Sib y el saxo muestran en el afinador la nota escrita.

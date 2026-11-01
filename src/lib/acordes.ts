@@ -168,9 +168,15 @@ function cejilla(raiz: string, calidad: string): Digitacion | null {
   return opciones.sort((a, b) => (a.cejilla ?? 0) - (b.cejilla ?? 0))[0] ?? null;
 }
 
-export function digitacion(nombre: string, instrumento: "guitarra" | "ukelele"): Digitacion | null {
+export type InstrumentoAcordes = "guitarra" | "ukelele" | "requinto";
+
+export function digitacion(nombre: string, instrumento: InstrumentoAcordes): Digitacion | null {
   const acorde = analizar(nombre);
   if (!acorde) return null;
+  // The Paraguayan requinto is tuned a fourth above the guitar: its chord X is played with the
+  // guitar shape of the chord a fourth below (the requinto's A is the E shape).
+  if (instrumento === "requinto")
+    return digitacion(NOTAS[(NOTAS.indexOf(acorde.raiz) + 7) % 12]! + acorde.calidad, "guitarra");
   const clave = acorde.raiz + acorde.calidad;
   if (instrumento === "ukelele") {
     const abierto = UKELELE[clave];
@@ -203,6 +209,8 @@ export const ACORDES_COMUNES = {
     "Fmaj7",
   ],
   ukelele: ["C", "G", "Am", "F", "D", "Em", "A", "Dm", "G7", "E7", "A7", "Bm"],
+  // Keys of Paraguayan folk music on the requinto.
+  requinto: ["A", "D", "E", "E7", "Bm", "F#m", "A7", "B7", "G", "C", "Am", "Dm"],
 };
 
 // --- Notes of a chord (dictionary and ear training) ---
@@ -268,10 +276,14 @@ export function notasDelAcorde(nombre: string) {
 }
 
 // Open strings (MIDI), lowest to highest, as in the fingerings.
-const AL_AIRE = { guitarra: [40, 45, 50, 55, 59, 64], ukelele: [67, 60, 64, 69] };
+const AL_AIRE = {
+  guitarra: [40, 45, 50, 55, 59, 64],
+  ukelele: [67, 60, 64, 69],
+  requinto: [45, 50, 55, 60, 64, 69],
+};
 
 // What the fingering sounds like, string by string (for a strum).
-export function notasDeDigitacion(nombre: string, instrumento: "guitarra" | "ukelele") {
+export function notasDeDigitacion(nombre: string, instrumento: InstrumentoAcordes) {
   const forma = digitacion(nombre, instrumento);
   if (!forma) return null;
   return forma.trastes.flatMap((traste, i) =>

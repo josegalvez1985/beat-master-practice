@@ -25,9 +25,14 @@ const COMUNES_TECLADO = ["C", "G", "D", "A", "E", "F", "Am", "Dm", "Em", "C7", "
 // it: diagram on guitar and ukulele, keyboard on piano and accordion, notes on the harp.
 export function DiccionarioAcordes({ instrumento }: { instrumento: InstrumentId }) {
   const [texto, setTexto] = useState("");
-  const [acorde, setAcorde] = useState(instrumento === "ukelele" ? "C" : "G");
+  const [acorde, setAcorde] = useState(
+    instrumento === "ukelele" ? "C" : instrumento === "requinto" ? "A" : "G",
+  );
   const datos = notasDelAcorde(acorde);
-  const cuerdas = instrumento === "guitarra" || instrumento === "ukelele" ? instrumento : null;
+  const cuerdas =
+    instrumento === "guitarra" || instrumento === "ukelele" || instrumento === "requinto"
+      ? instrumento
+      : null;
   const teclado =
     instrumento === "piano" || instrumento === "acordeon" || instrumento === "teclado";
   const comunes = cuerdas ? ACORDES_COMUNES[cuerdas] : COMUNES_TECLADO;

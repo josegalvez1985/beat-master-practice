@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { digitacion } from "@/lib/acordes";
+import { digitacion, type InstrumentoAcordes } from "@/lib/acordes";
 import { colors, fonts } from "@/lib/theme";
 
 const TRASTES = 5;
@@ -12,7 +12,7 @@ export function DiagramaAcorde({
   ancho = 96,
 }: {
   nombre: string;
-  instrumento: "guitarra" | "ukelele";
+  instrumento: InstrumentoAcordes;
   ancho?: number;
 }) {
   const acorde = digitacion(nombre, instrumento);

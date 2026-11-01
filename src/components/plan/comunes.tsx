@@ -68,7 +68,11 @@ export function ContenidoBloque({
         <AcordesBloque
           bloque={bloque}
           editable={editable}
-          instrumento={clase.instrumento === "ukelele" ? "ukelele" : "guitarra"}
+          instrumento={
+            clase.instrumento === "ukelele" || clase.instrumento === "requinto"
+              ? clase.instrumento
+              : "guitarra"
+          }
           onChange={onChange}
         />
       );
@@ -99,6 +103,7 @@ export function ContenidoBloque({
         <GrooveGrid
           groove={bloque}
           editable={editable}
+          kit={clase.instrumento === "percusion" ? "percusion" : "bateria"}
           onChange={(groove) => onChange({ ...bloque, ...groove })}
         />
       );

@@ -341,6 +341,10 @@ instrumento (minutos de la semana en ese instrumento, su meta semanal total como
   en grande (R en color de texto, L más tenue, ">" en ámbar para el acento, adornos chicos) con la
   escalera de tempo y **Lo toqué limpio a N BPM** (récord). Los comentarios del profesor aparecen
   bajo el reproductor; tocarlos lleva a ese segundo.
+- **Percusión de manos**: la misma grilla con su set: cajón (bajo y slap), congas (abierta, slap y
+  bajo), bongó (macho y hembra), shaker, claves, cencerro y güiro, y patrones de cajón pop, rumba,
+  tumbao, martillo, cumbia y bossa. Usa también los rudimentos (manos alternadas), el medidor de
+  tiempo y la lectura y el oído rítmico.
 - **Herramientas de batería**: Metrónomo (con click que se calla y click en 2 y 4), Medidor de
   tiempo (número grande en ms, "Te apuras" / "Vas atrás" / "¡Justo!", gráfico de puntos con la
   franja de ±25 ms y porcentaje a tiempo), Grooves, Rudimentos (con trofeo y récord), Lectura

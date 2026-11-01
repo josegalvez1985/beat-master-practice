@@ -134,7 +134,7 @@ function Contenido({
     case "tiempo":
       return <MedidorTiempo />;
     case "grooves":
-      return <BibliotecaGrooves />;
+      return <BibliotecaGrooves kit={instrumento === "percusion" ? "percusion" : "bateria"} />;
     case "rudimentos":
       return <EntrenadorRudimentos />;
     case "ritmo":

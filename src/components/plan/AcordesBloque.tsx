@@ -4,7 +4,7 @@ import { Plus, X } from "lucide-react";
 import { DiagramaAcorde } from "@/components/plan/DiagramaAcorde";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ACORDES_COMUNES, analizar } from "@/lib/acordes";
+import { ACORDES_COMUNES, analizar, type InstrumentoAcordes } from "@/lib/acordes";
 import type { Bloque } from "@/lib/plan";
 import { colors, fonts, radius } from "@/lib/theme";
 
@@ -19,7 +19,7 @@ export function AcordesBloque({
 }: {
   bloque: Acordes;
   editable: boolean;
-  instrumento: "guitarra" | "ukelele";
+  instrumento: InstrumentoAcordes;
   onChange: (bloque: Acordes) => void;
 }) {
   const [nombre, setNombre] = useState("");

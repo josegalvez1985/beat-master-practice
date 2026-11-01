@@ -17,11 +17,26 @@ export type Voz =
   | "tom1"
   | "tom2"
   | "tomPiso"
-  | "bombo";
+  | "bombo"
+  // Hand percussion.
+  | "cajonBajo"
+  | "cajonSlap"
+  | "congaAbierta"
+  | "congaSlap"
+  | "congaBajo"
+  | "bongoMacho"
+  | "bongoHembra"
+  | "shaker"
+  | "claves"
+  | "cencerro"
+  | "guiro";
+
+// Which set of voices a groove uses: the drum kit or hand percussion.
+export type Kit = "bateria" | "percusion";
 
 type Grupo = "platillo" | "caja" | "tom" | "bombo";
 
-export const VOCES: { id: Voz; label: string; grupo: Grupo }[] = [
+export const VOCES: { id: Voz; label: string; grupo: Grupo; kit?: Kit }[] = [
   { id: "crash", label: "Crash", grupo: "platillo" },
   { id: "ride", label: "Ride", grupo: "platillo" },
   { id: "hihat", label: "Hi-hat", grupo: "platillo" },
@@ -33,7 +48,25 @@ export const VOCES: { id: Voz; label: string; grupo: Grupo }[] = [
   { id: "tom2", label: "Tom 2", grupo: "tom" },
   { id: "tomPiso", label: "Tom de piso", grupo: "tom" },
   { id: "bombo", label: "Bombo", grupo: "bombo" },
+  { id: "shaker", label: "Shaker", grupo: "platillo", kit: "percusion" },
+  { id: "claves", label: "Claves", grupo: "platillo", kit: "percusion" },
+  { id: "cencerro", label: "Cencerro", grupo: "platillo", kit: "percusion" },
+  { id: "guiro", label: "Güiro", grupo: "platillo", kit: "percusion" },
+  { id: "cajonSlap", label: "Cajón slap", grupo: "caja", kit: "percusion" },
+  { id: "bongoMacho", label: "Bongó macho", grupo: "caja", kit: "percusion" },
+  { id: "bongoHembra", label: "Bongó hembra", grupo: "tom", kit: "percusion" },
+  { id: "congaSlap", label: "Conga slap", grupo: "caja", kit: "percusion" },
+  { id: "congaAbierta", label: "Conga abierta", grupo: "tom", kit: "percusion" },
+  { id: "congaBajo", label: "Conga bajo", grupo: "bombo", kit: "percusion" },
+  { id: "cajonBajo", label: "Cajón bajo", grupo: "bombo", kit: "percusion" },
 ];
+
+export const vocesDe = (kit: Kit) => VOCES.filter((v) => (v.kit ?? "bateria") === kit);
+// Always shown while editing, even when empty.
+export const BASICAS: Record<Kit, Voz[]> = {
+  bateria: ["hihat", "caja", "bombo"],
+  percusion: ["cajonSlap", "cajonBajo"],
+};
 
 export const colorDeVoz = (voz: Voz) => {
   const grupo = VOCES.find((v) => v.id === voz)?.grupo ?? "caja";
@@ -148,6 +181,68 @@ export function sonarVoz(ctx: AudioContext, voz: Voz, cuando: number, intensidad
     case "crash":
       ruidoFiltrado(ctx, salida(ctx, 0.35 * v, cuando, 1.3, pan), cuando, 1.3, "highpass", 4000);
       return;
+    case "cajonBajo": {
+      const g = salida(ctx, 0.85 * v, cuando, 0.3, pan);
+      tono(ctx, g, cuando, 0.3, 110, 60);
+      ruidoFiltrado(ctx, salida(ctx, 0.12 * v, cuando, 0.08, pan), cuando, 0.08, "lowpass", 900);
+      return;
+    }
+    case "cajonSlap":
+      ruidoFiltrado(
+        ctx,
+        salida(ctx, 0.5 * v, cuando, 0.12, pan),
+        cuando,
+        0.12,
+        "bandpass",
+        2600,
+        1.2,
+      );
+      tono(ctx, salida(ctx, 0.18 * v, cuando, 0.05, pan), cuando, 0.05, 420, 380, "triangle");
+      return;
+    case "congaAbierta":
+    case "congaBajo":
+    case "bongoMacho":
+    case "bongoHembra": {
+      const base = { congaAbierta: 230, congaBajo: 120, bongoMacho: 430, bongoHembra: 320 }[voz];
+      const largo = voz === "congaBajo" ? 0.25 : 0.32;
+      tono(ctx, salida(ctx, 0.6 * v, cuando, largo, pan), cuando, largo, base * 1.15, base);
+      return;
+    }
+    case "congaSlap":
+      ruidoFiltrado(
+        ctx,
+        salida(ctx, 0.45 * v, cuando, 0.09, pan),
+        cuando,
+        0.09,
+        "bandpass",
+        1800,
+        1.5,
+      );
+      tono(ctx, salida(ctx, 0.2 * v, cuando, 0.06, pan), cuando, 0.06, 380, 330, "triangle");
+      return;
+    case "shaker":
+      ruidoFiltrado(ctx, salida(ctx, 0.22 * v, cuando, 0.07, pan), cuando, 0.07, "highpass", 6500);
+      return;
+    case "claves":
+      tono(ctx, salida(ctx, 0.35 * v, cuando, 0.05, pan), cuando, 0.05, 2500, 2400);
+      return;
+    case "cencerro": {
+      const g = salida(ctx, 0.12 * v, cuando, 0.25, pan);
+      tono(ctx, g, cuando, 0.25, 560, 555, "square");
+      tono(ctx, g, cuando, 0.25, 845, 840, "square");
+      return;
+    }
+    case "guiro":
+      ruidoFiltrado(
+        ctx,
+        salida(ctx, 0.25 * v, cuando, 0.16, pan),
+        cuando,
+        0.16,
+        "bandpass",
+        3200,
+        3,
+      );
+      return;
     case "tom1":
     case "tom2":
     case "tomPiso": {
@@ -215,6 +310,99 @@ export function programarGroove(
 }
 
 // Style library: starting points a drum teacher would write on the board (editable).
+// Hand percussion patterns (cajón, congas, bongó and small percussion).
+export const ESTILOS_PERCUSION: typeof ESTILOS = [
+  {
+    id: "cajon-pop",
+    nombre: "Cajón pop / balada",
+    consejo:
+      "Bajo en el centro con la palma; el slap en el borde superior en 2 y 4, como la caja de una batería.",
+    groove: {
+      compas: "4/4",
+      subdivision: 2,
+      compases: 1,
+      bpm: 85,
+      pistas: { cajonBajo: "x...xx..", cajonSlap: "..>...>.", shaker: "xxxxxxxx" },
+    },
+  },
+  {
+    id: "rumba-cajon",
+    nombre: "Rumba en cajón",
+    consejo: "El acento cae en el 3 y el 6 de cada grupo de tres: deja que el slap empuje.",
+    groove: {
+      compas: "4/4",
+      subdivision: 2,
+      compases: 1,
+      bpm: 100,
+      pistas: { cajonBajo: "x..x..x.", cajonSlap: "..>..>.>" },
+    },
+  },
+  {
+    id: "tumbao",
+    nombre: "Tumbao de conga",
+    consejo: "Los dos tonos abiertos del 4 y el 4-y son el corazón: el resto, suave y parejo.",
+    groove: {
+      compas: "4/4",
+      subdivision: 2,
+      compases: 1,
+      bpm: 95,
+      pistas: {
+        congaSlap: "..>.....",
+        congaAbierta: "......xx",
+        congaBajo: "x...x...",
+        claves: "x..x..x.",
+      },
+    },
+  },
+  {
+    id: "martillo",
+    nombre: "Martillo de bongó",
+    consejo: "Corcheas continuas alternando manos; el tono abierto del macho marca el 4.",
+    groove: {
+      compas: "4/4",
+      subdivision: 2,
+      compases: 1,
+      bpm: 100,
+      pistas: { bongoMacho: "x.x.x.>.", bongoHembra: ".x.x.x.x", cencerro: "x...x..." },
+    },
+  },
+  {
+    id: "cumbia-percusion",
+    nombre: "Cumbia",
+    consejo:
+      "El güiro (o la guacharaca) lleva las semicorcheas; la conga abierta contesta en el contratiempo.",
+    groove: {
+      compas: "4/4",
+      subdivision: 4,
+      compases: 1,
+      bpm: 95,
+      pistas: {
+        guiro: "x.>xx.>xx.>xx.>x",
+        congaAbierta: "......x.......x.",
+        congaBajo: "x.......x.......",
+      },
+    },
+  },
+  {
+    id: "bossa-percusion",
+    nombre: "Bossa nova",
+    consejo: "Shaker suave y constante; las claves dibujan la clave de bossa en dos compases.",
+    groove: {
+      compas: "4/4",
+      subdivision: 2,
+      compases: 2,
+      bpm: 120,
+      pistas: {
+        shaker: "xxxxxxxxxxxxxxxx",
+        claves: "x..x..x...x..x..",
+        congaBajo: "x...x...x...x...",
+      },
+    },
+  },
+];
+
+export const estilosDe = (kit: Kit) => (kit === "percusion" ? ESTILOS_PERCUSION : ESTILOS);
+
 export const ESTILOS: {
   id: string;
   nombre: string;
