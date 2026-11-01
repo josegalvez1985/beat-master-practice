@@ -8,7 +8,8 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { CalendarDays, ChevronRight, Inbox, Plus, Search, Trash2, Users } from "lucide-react";
-import { shellStyles } from "@/components/AppShell";
+import { Bienvenida } from "@/components/Bienvenida";
+import { Pastilla, pastillaStyles } from "@/components/ui/pastilla";
 import { ClaseItem } from "@/components/ClaseItem";
 import { Avatar } from "@/components/ui/avatar";
 import { Link } from "@/components/Link";
@@ -62,12 +63,26 @@ export default function ProfesorInicio() {
         title="Inicio — Pulso"
         description="Tus alumnos, su progreso y tus próximas clases."
       />
-      <View>
-        <Text style={shellStyles.pageTitle}>Hola, {perfil.nombre.split(" ")[0]}</Text>
-        <Text style={shellStyles.pageSubtitle}>
-          Enseñas {perfil.instrumentos.map((id) => instrumento(id).name).join(", ")}.
-        </Text>
-      </View>
+      <Bienvenida
+        titulo={`Hola, ${perfil.nombre.split(" ")[0]}`}
+        subtitulo={`Enseñas ${perfil.instrumentos.map((id) => instrumento(id).name).join(", ")}.`}
+        instrumentos={perfil.instrumentos}
+      >
+        <View style={[pastillaStyles.fila, styles.porInstrumento]}>
+          {perfil.instrumentos.map((id) => {
+            const item = instrumento(id);
+            const cantidad = inscripciones.data.filter((i) => i.instrumento === id).length;
+            return (
+              <Pastilla
+                key={id}
+                icon={item.icon}
+                label={item.name}
+                valor={`${cantidad} ${cantidad === 1 ? "alumno" : "alumnos"}`}
+              />
+            );
+          })}
+        </View>
+      </Bienvenida>
 
       <View style={styles.stats}>
         <Stat icon={Users} label="Alumnos" value={String(alumnos)} />
@@ -300,6 +315,9 @@ function ProximasClases({ clases }: { clases: Clase[] }) {
 }
 
 const styles = StyleSheet.create({
+  porInstrumento: {
+    marginTop: 12,
+  },
   stats: {
     flexDirection: "row",
     flexWrap: "wrap",

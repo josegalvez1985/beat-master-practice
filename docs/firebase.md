@@ -151,3 +151,35 @@ siguen en Authentication y al registrarse de nuevo aparece "Ese correo ya está 
 | Las subidas fallan con `storage/unauthorized`                                      | Storage no está activado o sus reglas no están publicadas: pasos 3 y 5 (y la nota del paso 5 sobre la base `default`).                                                                                                                                                      |
 | Subir un archivo da **error de CORS** (`preflight … does not have HTTP ok status`) | No es CORS: **el bucket de Storage no existe** (Google responde 404). Activa Storage (paso 3) y publica las reglas (paso 5). Se comprueba con `curl https://firebasestorage.googleapis.com/v0/b/beat-master-practice.firebasestorage.app/o`: 404 = no existe, 403 = existe. |
 | "Sin conexión" al entrar o registrarse                                             | Sin internet, o Firestore todavía no existe (paso 1).                                                                                                                                                                                                                       |
+| Recuperar contraseña: `auth/unauthorized-continue-uri`                             | El sitio desde donde se pidió el reseteo no está en los dominios autorizados: paso 4.                                                                                                                                                                                       |
+
+## 7. Plan Blaze y costos
+
+El proyecto necesita el plan **Blaze** (pago por uso, con cuotas gratis): Storage lo exige para
+tener un bucket, y las Cloud Functions pendientes también. Lo que hace falta:
+
+1. Una **cuenta de facturación** de Google Cloud con tarjeta (crédito o débito internacional),
+   vinculada desde la consola: _Upgrade → Blaze_.
+2. Una **alerta de presupuesto** (por ejemplo, US$20 con avisos al 50, 90 y 100 %): Blaze **no
+   tiene tope de gasto**, cobra todo lo que pase de la cuota gratis.
+
+**Qué cuesta** (referencia para unos 200 alumnos y 20 profesores):
+
+| Servicio           | Por qué cuesta                                                                                                                                     | Aproximado por mes            |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| Firestore          | La base se llama `default` (sin paréntesis) y **las bases con nombre no tienen cuota gratis**: cada lectura y escritura se cobra, aunque es barato | US$1 a 3                      |
+| Storage, guardar   | São Paulo no tiene la capa gratis _Always Free_ (solo regiones de EE. UU.); crece con cada video                                                   | US$1 al inicio, ~US$17 al año |
+| Storage, descargas | Ver videos desde São Paulo hacia internet es lo más caro                                                                                           | US$10 a 12                    |
+| Cloud Functions    | Muy pocas invocaciones (cuota gratis de 2 millones por mes)                                                                                        | ~US$0                         |
+
+**El video manda en el costo**: bajar la calidad de la grabadora (`grabadora.ts`) o preferir audio
+cuando alcanza es lo que más ahorra. Los precios cambian: confírmalos en
+[Firebase pricing](https://firebase.google.com/pricing),
+[Firestore pricing](https://cloud.google.com/firestore/pricing) (tabla por ubicación) y
+[precios de red de Google Cloud](https://cloud.google.com/vpc/network-pricing).
+
+**¿Por qué no Cloudinary para los archivos?** Borrar en Cloudinary exige su clave secreta, que no
+puede estar en el navegador: sin servidor, cada archivo borrado quedaría huérfano. Sus archivos son
+públicos por enlace salvo con enlaces firmados (otra vez, servidor), y acá hay videos de alumnos.
+Y con este volumen de video su plan gratis (25 créditos) no alcanza: el siguiente cuesta unos
+US$89 a 99 por mes. Firebase Storage con sus reglas resuelve permisos y borrados sin servidor.

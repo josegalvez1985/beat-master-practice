@@ -70,6 +70,12 @@ otra cosa):
 | URL canónica              | `link rel="canonical"`; [`PageMeta`](../src/components/PageMeta.tsx) la ajusta en cada pantalla                                                                |
 | Qué rastrear              | [`robots.txt`](../public/robots.txt) y [`sitemap.xml`](../public/sitemap.xml) (solo la portada: el resto pide sesión y responde 404 al rastreador)             |
 
+**Qué decir.** El título y la descripción dicen exactamente qué es Pulso: una plataforma
+**exclusiva para profesores de música y sus alumnos**, con lo que hace cada uno. No prometen
+"clases de guitarra en …": Pulso no es un directorio para encontrar profesores, y quien llega
+buscando eso se va enseguida, lo que baja la posición del sitio. Mejor menos visitas, pero de
+profesores y alumnos que sí lo van a usar.
+
 Google indexa la versión para **celular**: lo que solo aparece en pantallas anchas (la columna de
 la izquierda del login) no cuenta. Si cambias el título o la descripción, cámbialos en los dos
 lugares y prueba la portada en la

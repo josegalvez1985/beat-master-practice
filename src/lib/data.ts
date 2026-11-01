@@ -559,6 +559,30 @@ export function anotarPractica(
   });
 }
 
+// Finishing a class's practice mode logs its minutes once a day: the id is fixed
+// ({alumnoId}_{claseId}_{fecha}) and the rules do not let an entry change, so finishing again
+// that day keeps the first one. Returns false when it was already logged.
+export async function anotarPracticaDeClase(alumnoId: string, clase: Clase, minutos: number) {
+  const ref = doc(db, "diario", `${alumnoId}_${clase.id}_${hoy()}`);
+  try {
+    await setDoc(ref, {
+      alumnoId,
+      instrumento: clase.instrumento,
+      fecha: hoy(),
+      minutos: Math.min(600, Math.max(1, Math.round(minutos))),
+      comentario: `Práctica de la clase: ${clase.titulo}`.slice(0, 500),
+      creadoEn: serverTimestamp(),
+    });
+    return true;
+  } catch (error) {
+    // Writing over an existing entry is an update, which the rules reject.
+    if ((error as { code?: string })?.code !== "permission-denied") throw error;
+    const snap = await getDoc(ref).catch(() => null);
+    if (snap?.exists()) return false;
+    throw error;
+  }
+}
+
 export function borrarDelDiario(id: string) {
   return deleteDoc(doc(db, "diario", id));
 }

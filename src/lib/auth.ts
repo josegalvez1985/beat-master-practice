@@ -175,13 +175,17 @@ export async function register(datos: {
   }
 }
 
-// Both must match the same account: the document number and its email.
+// Both must match the same account: the document number and its email. After choosing the new
+// password, Firebase's page shows "Continuar" back to the login of the site it was asked from
+// (its domain must be in Authentication → Authorized domains).
 export async function resetPassword(nroDocumento: string, email: string) {
   const emailCuenta = await emailDeDocumento(nroDocumento);
   if (!emailCuenta) throw new AuthError("sin-cuenta");
   if (emailCuenta.toLowerCase() !== email.trim().toLowerCase())
     throw new AuthError("correo-no-coincide");
-  await sendPasswordResetEmail(auth, emailCuenta);
+  await sendPasswordResetEmail(auth, emailCuenta, {
+    url: window.location.origin + import.meta.env.BASE_URL,
+  });
 }
 
 export function signOut() {

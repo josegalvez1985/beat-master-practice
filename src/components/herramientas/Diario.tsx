@@ -293,10 +293,20 @@ export function DiarioDelAlumno({
 }) {
   const diario = useDiarioDe(alumnoId, instrumento);
   if (diario.loading) return <ActivityIndicator color={colors.primary} />;
+  // Only this instrument's entries are readable here, while the goal counts every instrument the
+  // alumno plays: a percentage would be wrong, so the goal is shown apart.
   return (
     <View style={styles.bloque}>
       <Text style={styles.subtitulo}>Diario de práctica</Text>
-      <Meta minutos={minutosDeEstaSemana(diario.data)} meta={metaSemanal} />
+      <Text style={styles.metaNumero}>
+        {minutosDeEstaSemana(diario.data)}
+        <Text style={styles.muted}> min de {instrumentoDe(instrumento).name} esta semana</Text>
+      </Text>
+      <Text style={styles.muted}>
+        {metaSemanal
+          ? `Su meta semanal (todos sus instrumentos): ${metaSemanal} min.`
+          : "No definió una meta semanal."}
+      </Text>
       {diario.data.length ? (
         <ListaDiario entradas={diario.data.slice(0, 5)} conInstrumento={false} />
       ) : (

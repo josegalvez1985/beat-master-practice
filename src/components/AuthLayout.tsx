@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-n
 import { Music } from "lucide-react";
 import { TemaSelector } from "@/components/TemaSelector";
 import { Chip } from "@/components/ui/chip";
+import { EscenaMusical } from "@/components/ui/escena-musical";
 import { GradientText } from "@/components/ui/gradient-text";
 import { Logo } from "@/components/ui/logo";
 import { StageGlow } from "@/components/ui/stage-glow";
@@ -29,6 +30,10 @@ export function AuthLayout({
           <StageGlow />
           <View style={styles.asideContent}>
             <Logo size={40} />
+            <EscenaMusical
+              alto={300}
+              etiqueta="Arpa paraguaya, guitarra, batería, piano y micrófono, con notas musicales"
+            />
             <View>
               <View style={styles.asideTitle}>
                 <Text style={styles.asideHeading}>Cada sesión cuenta.</Text>
@@ -58,9 +63,10 @@ export function AuthLayout({
                 <Logo size={36} />
                 {/* Google indexes the phone layout: what Pulso is has to be visible here too. */}
                 <Text style={styles.lead}>
-                  Clases y práctica de música en Paraguay: guitarra, arpa paraguaya, piano, batería
-                  y más.
+                  Exclusiva para profesores de música y sus alumnos: clases planificadas, afinador,
+                  metrónomo y grabaciones. Guitarra, arpa paraguaya, piano, batería y más.
                 </Text>
+                <EscenaMusical alto={130} compacta />
               </>
             )}
             <Text style={styles.heading}>{title}</Text>

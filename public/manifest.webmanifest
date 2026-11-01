@@ -1,7 +1,7 @@
 {
-  "name": "Pulso — Clases y práctica de música",
+  "name": "Pulso — Profesores y alumnos de música",
   "short_name": "Pulso",
-  "description": "Profesores y alumnos de música en Paraguay: clases, materiales, prácticas en audio o video y progreso. Guitarra, arpa paraguaya, piano, batería y más.",
+  "description": "Exclusiva para profesores de música y sus alumnos: planifica clases, practica con afinador y metrónomo, envía grabaciones y sigue el progreso.",
   "lang": "es-PY",
   "start_url": ".",
   "scope": ".",

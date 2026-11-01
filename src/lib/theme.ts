@@ -190,7 +190,7 @@ style.textContent = (["dark", "light"] as const)
 style.textContent += `
 :focus-visible { outline: 2px solid var(${cssVar("ring")}); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }`;
 document.head.appendChild(style);
 media.addEventListener("change", () => tema === "sistema" && aplicarTema());

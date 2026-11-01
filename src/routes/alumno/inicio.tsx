@@ -2,7 +2,8 @@ import { useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { CalendarDays, UserPlus, Wrench } from "lucide-react";
 import { Afinador } from "@/components/Afinador";
-import { shellStyles } from "@/components/AppShell";
+import { AvanceSemana } from "@/components/AvanceSemana";
+import { Bienvenida } from "@/components/Bienvenida";
 import { ClaseItem } from "@/components/ClaseItem";
 import { ResumenDiario } from "@/components/herramientas/Diario";
 import { Link } from "@/components/Link";
@@ -43,12 +44,17 @@ export default function AlumnoInicio() {
   return (
     <>
       <PageMeta title="Inicio — Pulso" description="Tus clases, tus entregas y tu progreso." />
-      <View>
-        <Text style={shellStyles.pageTitle}>Hola, {perfil.nombre.split(" ")[0]}</Text>
-        <Text style={shellStyles.pageSubtitle}>
-          Tu número de documento: {formatearDocumento(perfil.nro_documento)}
-        </Text>
-      </View>
+      <Bienvenida
+        titulo={`Hola, ${perfil.nombre.split(" ")[0]}`}
+        instrumentos={instrumentosDe(perfil.instrumentos, inscripciones.data)}
+      >
+        <AvanceSemana
+          perfil={perfil}
+          instrumentos={instrumentosDe(perfil.instrumentos, inscripciones.data)}
+          clases={clases.data}
+          entregas={entregas.data}
+        />
+      </Bienvenida>
 
       {inscripciones.data.length && !clases.loading ? (
         <ProximaPractica alumnoId={perfil.uid} clases={clases.data} entregas={entregas.data} />

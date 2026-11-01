@@ -24,9 +24,7 @@ import { Button, buttonForeground } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Section } from "@/components/ui/section";
-import { avisar } from "@/components/ui/toast";
-import { anotarPractica, type Clase } from "@/lib/data";
-import { hoy } from "@/lib/dates";
+import { anotarPracticaDeClase, type Clase } from "@/lib/data";
 import { etapa as etapaDe, type Bloque, type Plan } from "@/lib/plan";
 import { hechosDeClase, marcarHecho, usePractica } from "@/lib/practica";
 import { colors, fonts, radius } from "@/lib/theme";
@@ -167,7 +165,20 @@ function ModoPractica({
 }) {
   const [indice, setIndice] = useState(inicio);
   const [terminado, setTerminado] = useState(false);
-  const [anotado, setAnotado] = useState(false);
+  // The diary entry written when finishing (updates the weekly progress right away).
+  const [diario, setDiario] = useState<{
+    estado: "anotando" | "anotado" | "ya" | "error";
+    minutos: number;
+  } | null>(null);
+
+  const registrar = (minutos: number) => {
+    if (!alumnoId || minutos <= 0) return;
+    setDiario({ estado: "anotando", minutos });
+    anotarPracticaDeClase(alumnoId, clase, minutos).then(
+      (nuevo) => setDiario({ estado: nuevo ? "anotado" : "ya", minutos }),
+      () => setDiario({ estado: "error", minutos }),
+    );
+  };
   const total = plan.bloques.length;
   const bloque = plan.bloques[indice];
 
@@ -176,21 +187,6 @@ function ModoPractica({
     const minutos = plan.bloques
       .filter((b) => hechos.has(b.id))
       .reduce((total, b) => total + (b.minutos || 0), 0);
-    const anotar = async () => {
-      if (!alumnoId) return;
-      try {
-        await anotarPractica(alumnoId, {
-          instrumento: clase.instrumento,
-          fecha: hoy(),
-          minutos: Math.min(600, Math.max(1, minutos)),
-          comentario: `Plan de la clase: ${clase.titulo}`.slice(0, 500),
-        });
-        setAnotado(true);
-        avisar({ texto: `Anotaste ${minutos} min en tu diario.` });
-      } catch {
-        avisar({ texto: "No se pudo anotar en el diario.", tipo: "error" });
-      }
-    };
     return (
       <Section title="Plan de la clase">
         <View style={styles.final}>
@@ -199,8 +195,26 @@ function ModoPractica({
           </View>
           <Text style={styles.finalTitulo}>¡Práctica terminada!</Text>
           <Text style={styles.finalTexto}>
-            {listos} de {total} bloques hechos. Ahora graba tu práctica y súbela como entrega.
+            {listos} de {total} bloques hechos. Ahora graba tu práctica y súbela como entrega: así
+            cuenta en el avance de tus clases.
           </Text>
+          {diario ? (
+            <Text
+              accessibilityLiveRegion="polite"
+              style={[
+                styles.finalTexto,
+                diario.estado === "error" && { color: colors.destructive },
+              ]}
+            >
+              {diario.estado === "anotando"
+                ? "Anotando en tu diario…"
+                : diario.estado === "anotado"
+                  ? `Anotamos ${diario.minutos} min en tu diario: tu avance de la semana ya se actualizó.`
+                  : diario.estado === "ya"
+                    ? "Esta práctica ya estaba anotada hoy en tu diario."
+                    : "No se pudo anotar en tu diario."}
+            </Text>
+          ) : null}
           <View style={styles.finalAcciones}>
             <Button
               variant="secondary"
@@ -212,10 +226,10 @@ function ModoPractica({
               <RotateCcw size={16} color={buttonForeground("secondary")} />
               Repasar desde el inicio
             </Button>
-            {alumnoId && minutos > 0 ? (
-              <Button variant="secondary" disabled={anotado} onPress={anotar}>
+            {diario?.estado === "error" ? (
+              <Button variant="secondary" onPress={() => registrar(minutos)}>
                 <NotebookPen size={16} color={buttonForeground("secondary")} />
-                {anotado ? "Anotado en tu diario" : `Anotar ${minutos} min en mi diario`}
+                Reintentar
               </Button>
             ) : null}
             <Button onPress={onSalir}>Volver a la clase</Button>
@@ -228,8 +242,15 @@ function ModoPractica({
   const etapa = etapaDe(bloque.etapa);
   const siguiente = () => {
     onMarcar(bloque, true);
-    if (indice + 1 >= total) setTerminado(true);
-    else setIndice(indice + 1);
+    if (indice + 1 >= total) {
+      setTerminado(true);
+      // Minutes of every block done, this one included (`hechos` updates on the next render).
+      registrar(
+        plan.bloques
+          .filter((b) => b.id === bloque.id || hechos.has(b.id))
+          .reduce((suma, b) => suma + (b.minutos || 0), 0),
+      );
+    } else setIndice(indice + 1);
   };
 
   return (

@@ -83,7 +83,9 @@ Firebase Auth trabaja con correo, así que el documento se traduce a correo con
    qué falló ("No hay ninguna cuenta con ese número de documento" o "Contraseña incorrecta"); no
    revela nada nuevo, porque `documentos/{nro}` ya se puede consultar de a uno.
 3. **Recuperar contraseña**: pide **documento y correo**; solo si el correo coincide con el de esa
-   cuenta, Firebase envía el enlace para crear una contraseña nueva.
+   cuenta, Firebase envía el enlace (en español) al correo registrado. Después de crear la
+   contraseña nueva, la página de Firebase muestra **Continuar**, que vuelve al login del sitio
+   desde donde se pidió (www.pypulso.online, GitHub Pages o `localhost`).
 
 > **Compromiso conocido.** Para que el login funcione sin backend propio, `documentos/{nro}` se puede
 > leer de a uno sin sesión (nunca listar). Quien conozca un número de documento puede ver el correo
@@ -179,7 +181,9 @@ por Vite. El profesor edita con guardado automático; los cambios de archivos se
 **Registro de práctica** ([`practica.ts`](../src/lib/practica.ts)): cada _Hecho_ guarda fecha, clase,
 bloque y minutos en `localStorage` del alumno (últimos 6 meses). De ahí salen la **racha** (días
 seguidos hasta hoy o ayer) y los **minutos de la semana** del inicio. Es una ayuda personal, no un
-dato evaluado: vale por dispositivo y no se guarda en Firestore.
+dato evaluado: vale por dispositivo y no se guarda en Firestore. Lo que el alumno quiere que vea su
+profesor va al **diario de práctica** (colección `diario`, ver abajo): al terminar el modo práctica
+esos minutos se anotan ahí solos (ver _Progreso_).
 
 ### `entregas/{claseId}_{alumnoId}`
 
@@ -337,8 +341,24 @@ progreso = clases con entrega del alumno / clases planificadas por su profesor p
 
 Cuenta todas las clases del plan, también las futuras: es el avance sobre el plan completo (por
 ejemplo, 1 entrega de 12 clases = 8 %). Se calcula en el navegador con `progreso()` de
-[`data.ts`](../src/lib/data.ts). El profesor lo ve en **Mis alumnos** y en el detalle de cada
-alumno; el alumno, en su inicio.
+[`data.ts`](../src/lib/data.ts), **la misma función en las dos vistas**: el profesor lo ve en
+**Mis alumnos** y en el detalle de cada alumno; el alumno, en su inicio. Una clase cuenta cuando el
+alumno **entrega** su grabación (terminar el modo práctica no alcanza), y se actualiza en vivo.
+
+**Avance de la semana** (anillo del inicio del alumno, `avanceSemanal()` de
+[`avance.ts`](../src/lib/avance.ts)), de lunes a domingo:
+
+1. Con **meta semanal**: minutos anotados en el diario (todos sus instrumentos) / meta.
+2. Sin meta: clases de esta semana entregadas / clases de esta semana.
+3. Sin meta ni clases en la semana: solo los minutos, con el enlace para definir la meta.
+
+Al **terminar el modo práctica**, los minutos de los bloques hechos se anotan solos en el diario
+(id `{alumnoId}_{claseId}_{fecha}`: una vez por clase y por día; terminarla otra vez ese día no
+duplica, porque las reglas no dejan cambiar una anotación). Así el anillo sube enseguida.
+
+El **profesor** ve en el diario del alumno solo los minutos de **su** instrumento (no puede leer
+los demás) y la meta semanal como dato aparte, sin porcentaje: la meta cuenta todos los
+instrumentos del alumno y compararla con una parte daría un número falso.
 
 ## Búsqueda de alumnos
 

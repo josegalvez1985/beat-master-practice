@@ -34,6 +34,14 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
   mayúsculas) únicamente para la marca y números grandes.
 - El logo (`src/components/ui/logo.tsx`) copia el dibujo de `public/favicon.svg`; al cambiarlo,
   correr `npm run iconos`.
+- Ilustraciones: SVG en el código + animaciones CSS de `transform`/`opacity`, nunca imágenes,
+  videos ni librerías de animación; reutilizar `EscenaMusical` (`src/components/ui/escena-musical.tsx`)
+  y respetar `prefers-reduced-motion` (ver `docs/diseno.md`, _Ilustraciones y animación_).
+- Al agregar algo visible para alumnos o profesores, actualizar _Primeros pasos_
+  (`src/components/PrimerosPasosDialog.tsx`) y las guías.
+- Textos para Google: `SITE_TITLE` / `SITE_DESCRIPTION` en `src/lib/site.ts` e iguales en
+  `index.html`. Dicen exactamente qué es Pulso (exclusiva para profesores de música y sus alumnos),
+  nunca "clases de … en …": no es un directorio de profesores (ver `docs/despliegue.md`).
 
 ## Plan de clase (bloques)
 

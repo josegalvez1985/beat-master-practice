@@ -80,21 +80,44 @@ sólidas por elevación con borde opaco (`shared.panel`) y un resplandor ámbar 
 extra, casillas de 20 px; anillo de foco ámbar al navegar con teclado y sin animaciones si el sistema
 pide reducir movimiento.
 
+## Ilustraciones y animación
+
+Las imágenes del sitio son **SVG dibujado en el código y animaciones CSS**, no fotos, videos ni
+librerías de animación: pesan unos KB, no descargan nada y no gastan memoria del dispositivo.
+[`EscenaMusical`](../src/components/ui/escena-musical.tsx) es la base para reutilizar:
+
+- **Qué muestra**: al centro el **arpa paraguaya** (sello del sitio, en el login y para quien la
+  toca) o un **ecualizador**; alrededor, burbujas con instrumentos que flotan; notas que suben y la
+  **línea de pulso** de la marca con un destello que la recorre.
+- **Personal**: recibe los instrumentos de la persona y los pone primero, así la escena es la de
+  _su_ música sin perder la idea del sitio.
+- **Reglas para cualquier animación nueva**: solo `transform` y `opacity` (las resuelve la GPU,
+  sin recalcular la página); colores de `colors` (cambian con el tema); `aria-hidden` si es
+  decorativa o `role="img"` con descripción si dice algo; y quieta con
+  `prefers-reduced-motion` (la escena la apaga, y la regla global corta las animaciones
+  infinitas).
+- **Tamaños usados**: 300 px de alto en el login de escritorio, 130 en el de celular (`compacta`),
+  170 / 112 en la bienvenida.
+
 ## Componentes base
 
-| Componente                            | Archivo              | Para qué                                                                        |
-| ------------------------------------- | -------------------- | ------------------------------------------------------------------------------- |
-| `Button`                              | `ui/button.tsx`      | Variantes `default` (ámbar), `secondary`, `outline`; tamaños `sm`, `lg`, `icon` |
-| `Input`, `PasswordInput`, `DateInput` | `ui/`                | Campos; la contraseña tiene botón para mostrarla                                |
-| `Chip`                                | `ui/chip.tsx`        | Instrumentos y filtros; seleccionable                                           |
-| `Segmented`                           | `ui/segmented.tsx`   | Pestañas tipo píldora (Semana / Mes / Año, Soy alumno / Soy profesor)           |
-| `Dialog`                              | `ui/dialog.tsx`      | Modal centrado; se cierra con la X, clic afuera o Escape                        |
-| `Section`, `Badge`                    | `ui/section.tsx`     | Tarjeta con título y acciones; insignias de estado                              |
-| `Stat`                                | `ui/stat.tsx`        | Indicadores grandes del inicio del profesor                                     |
-| `Progress`                            | `ui/progress.tsx`    | Barra de progreso                                                               |
-| `EmptyState`                          | `ui/empty-state.tsx` | Lista vacía con ícono, explicación y acción                                     |
-| `MaterialList`, `UploadButton`        | `Materials.tsx`      | Archivos con reproductor de audio/video y subida con barra de avance            |
-| `ClaseItem`, `Avatar`                 | `ClaseItem.tsx`      | Fila de clase con fecha en chip; iniciales de la persona                        |
+| Componente                            | Archivo                 | Para qué                                                                                  |
+| ------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------- |
+| `Button`                              | `ui/button.tsx`         | Variantes `default` (ámbar), `secondary`, `outline`; tamaños `sm`, `lg`, `icon`           |
+| `Input`, `PasswordInput`, `DateInput` | `ui/`                   | Campos; la contraseña tiene botón para mostrarla                                          |
+| `Chip`                                | `ui/chip.tsx`           | Instrumentos y filtros; seleccionable                                                     |
+| `Segmented`                           | `ui/segmented.tsx`      | Pestañas tipo píldora (Semana / Mes / Año, Soy alumno / Soy profesor)                     |
+| `Dialog`                              | `ui/dialog.tsx`         | Modal centrado; se cierra con la X, clic afuera o Escape                                  |
+| `Section`, `Badge`                    | `ui/section.tsx`        | Tarjeta con título y acciones; insignias de estado                                        |
+| `Stat`                                | `ui/stat.tsx`           | Indicadores grandes del inicio del profesor                                               |
+| `Progress`                            | `ui/progress.tsx`       | Barra de progreso                                                                         |
+| `EmptyState`                          | `ui/empty-state.tsx`    | Lista vacía con ícono, explicación y acción                                               |
+| `MaterialList`, `UploadButton`        | `Materials.tsx`         | Archivos con reproductor de audio/video y subida con barra de avance                      |
+| `ClaseItem`, `Avatar`                 | `ClaseItem.tsx`         | Fila de clase con fecha en chip; iniciales de la persona                                  |
+| `EscenaMusical`                       | `ui/escena-musical.tsx` | Ilustración animada: arpa o ecualizador, instrumentos flotando, notas y la línea de pulso |
+| `Bienvenida`                          | `Bienvenida.tsx`        | Saludo del inicio con la escena de los instrumentos de la persona                         |
+| `Anillo`                              | `ui/anillo.tsx`         | Progreso circular con el porcentaje al centro; se llena al aparecer                       |
+| `Pastilla`                            | `ui/pastilla.tsx`       | Etiqueta redonda con ícono y un dato ("Guitarra · 12 alumnos")                            |
 
 Los íconos son de [Lucide](https://lucide.dev).
 
@@ -104,9 +127,12 @@ Los íconos son de [Lucide](https://lucide.dev).
 
 - **Logo** (ícono de pulso + PULSO) arriba del formulario; en escritorio, arriba de la columna
   izquierda.
-- **Escritorio**: dos columnas. A la izquierda, el mensaje "Cada sesión cuenta. Vuelve a tu
-  instrumento." con los instrumentos; a la derecha, el formulario.
-- **Celular**: solo el formulario.
+- **Escritorio**: dos columnas. A la izquierda, el logo, la **escena musical** (arpa paraguaya con
+  las cuerdas vibrando, guitarra, batería, piano y micrófono flotando) y el mensaje "Cada sesión
+  cuenta. Vuelve a tu instrumento." con los instrumentos; a la derecha, el formulario.
+- **Celular**: el logo, una línea que dice qué es Pulso ("Exclusiva para profesores de música y
+  sus alumnos…"; es lo que lee Google, que indexa la versión para celular), la escena en versión
+  compacta y el formulario.
 - Campos: **Nro. de documento** (teclado numérico, precargado si se marcó Recordarme) y
   **Contraseña**.
 - **Recordarme** (tildado por defecto) a la izquierda y _¿Olvidaste tu contraseña?_ a la derecha.
@@ -124,11 +150,14 @@ Los íconos son de [Lucide](https://lucide.dev).
 4. Errores concretos: documento ya registrado, correo en uso, falta instrumento…
 
 **Modal Recuperar contraseña** (`?modal=recuperar`): número de documento y correo de la cuenta; si
-coinciden, confirma a qué correo se envió el enlace.
+coinciden, confirma a qué correo se envió el enlace. Después de crear la contraseña nueva en la
+página de Firebase, **Continuar** vuelve al login.
 
 **Modal Primeros pasos** (`?modal=primeros-pasos`): pestañas _Soy alumno_ / _Soy profesor_ con
-pasos numerados para registrarse y para la primera vez que se entra, y un botón **Crear mi
-cuenta**.
+pasos numerados para registrarse y para la primera vez que se entra (plan de la clase, entregas
+grabadas, herramientas, avance), y un botón **Crear mi cuenta**. Los pasos están en
+[`PrimerosPasosDialog.tsx`](../src/components/PrimerosPasosDialog.tsx): **actualízalos cada vez que
+se agregue algo que el alumno o el profesor usen**.
 
 **Cuenta incompleta**: si el registro quedó a medias (cuenta sin perfil), en lugar de la app se ve
 "Tu cuenta no terminó de crearse" con un botón **Salir** que borra esa cuenta para poder
@@ -161,7 +190,9 @@ perfil.
 
 ### Profesor · Inicio (`/`)
 
-- Saludo e instrumentos que enseña.
+- **Bienvenida**: saludo e instrumentos que enseña, con una pastilla por instrumento y **cuántos
+  alumnos** tiene en esa lista ("Guitarra · 12 alumnos"), junto a la escena musical con **sus**
+  instrumentos flotando (el arpa al centro si la enseña; si no, el ecualizador).
 - Indicadores: **Alumnos**, **Clases este mes**, **Entregas esta semana**.
 - **Agregar alumno**: un solo buscador que acepta número de documento o nombre; cada resultado
   muestra botones "+ Guitarra", "+ Piano"… (uno por instrumento que enseña) y "Guitarra ✓" si ya está
@@ -183,7 +214,8 @@ perfil.
 
 Encabezado con nombre y documento; una tarjeta por instrumento con el porcentaje grande, la barra,
 la lista de clases con su estado _Entregada_ / _Pendiente_ y su **diario de práctica** de ese
-instrumento (minutos de la semana contra su meta y las últimas anotaciones).
+instrumento (minutos de la semana en ese instrumento, su meta semanal total como dato aparte y las
+últimas anotaciones).
 
 ### Clase (`/clases/:id`)
 
@@ -223,7 +255,8 @@ instrumento (minutos de la semana contra su meta y las últimas anotaciones).
     y **Empezar / Continuar práctica**, que abre el **modo práctica**: un bloque por pantalla con
     "Bloque 2 de 5" y puntos de avance, cronómetro con los minutos sugeridos (sigue contando en
     ámbar al pasarse), el contenido en grande, _Anterior_ y **Hecho y siguiente**, y al final
-    _¡Práctica terminada!_ con la invitación a subir la entrega y **Anotar N min en mi diario**. `?practicar=1` lo abre directo.
+    _¡Práctica terminada!_ con la invitación a subir la entrega (es lo que cuenta en el avance de las clases) y el aviso
+    "Anotamos N min en tu diario: tu avance de la semana ya se actualizó" (se anota solo). `?practicar=1` lo abre directo.
 - **Materiales** (u **Otros materiales** si hay plan): lista con tipo y tamaño; audio y video se
   reproducen ahí mismo con **velocidad** (50, 75, 90, 100 %, sin cambiar el tono) y **repetir de A
   a B** para un pasaje, PDF y partituras se abren en otra pestaña.
@@ -236,7 +269,11 @@ instrumento (minutos de la semana contra su meta y las últimas anotaciones).
 
 ### Alumno · Inicio (`/`)
 
-- Saludo y su número de documento bien visible (para dárselo al profesor).
+- **Bienvenida**: saludo, **sus instrumentos** en pastillas y **su semana** en un anillo de
+  progreso que se llena al aparecer (verde al 100 %): meta semanal o, sin meta, clases de la semana
+  entregadas (ver _Progreso_ en [arquitectura](arquitectura.md#progreso)); al lado, la escena con sus
+  instrumentos. El número de documento sigue en el aviso para quien aún no está en una lista y en
+  _Mi perfil_.
 - **Tu próxima práctica** (borde ámbar): la clase pendiente más cercana (hoy, mañana o atrasada),
   sus bloques y minutos y **Practicar ahora**; al lado la **racha** (días seguidos) y los **minutos
   de esta semana**. Si no hay pendientes: "¡Estás al día!".

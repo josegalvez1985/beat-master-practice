@@ -1,7 +1,9 @@
 # Pulso
 
-Plataforma web para **enseñar y practicar instrumentos musicales**: guitarra, **arpa paraguaya**, piano, batería, voz,
-bajo, violín, acordeón, ukelele, saxofón y flauta.
+Plataforma web **exclusiva para profesores de música y sus alumnos**, para enseñar y practicar
+instrumentos: guitarra, **arpa paraguaya**, piano, batería, voz, bajo, violín, acordeón, ukelele,
+saxofón y flauta. No es un directorio de profesores: cada profesor agrega a sus alumnos a su lista
+con el número de documento.
 
 - **Profesores**: se registran con su número de documento y los instrumentos que enseñan, arman sus
   listas de alumnos (buscándolos por documento o nombre), planifican clases por semana, mes o año,
@@ -11,6 +13,11 @@ bajo, violín, acordeón, ukelele, saxofón y flauta.
 - **Alumnos**: se registran con su número de documento y sus instrumentos. Cuando un profesor los
   agrega a su lista, ven sus clases, se graban (o suben) sus prácticas en audio o video, siguen su
   barra de progreso y llevan un diario con meta semanal.
+- **Diseño**: tema claro y oscuro, y una escena animada (arpa paraguaya, instrumentos que flotan,
+  notas y la línea de pulso) en el login y en el inicio de cada persona con sus instrumentos, hecha
+  con SVG y CSS para que no pese ni gaste memoria.
+- **Cuenta**: cualquiera puede sumar instrumentos (para enseñar o para aprender) desde su perfil, y
+  recuperar la contraseña con su documento y su correo.
 - **Herramientas** (alumnos y profesores), solo las que sirven para cada instrumento: afinador con
   el micrófono, metrónomo con subdivisiones y tempo que sube solo, grabadora, diccionario de
   acordes, entrenamiento auditivo y lectura de notas; y en todo audio, video o YouTube de las clases,
@@ -59,27 +66,28 @@ una colección, documenta su relación en
 
 ## Guías
 
-| Guía                                         | Contenido                                                                                                                             |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| [docs/firebase.md](docs/firebase.md)         | Configurar Firebase, publicar reglas, emuladores, revisar y limpiar los datos, problemas comunes                                      |
-| [docs/backend.md](docs/backend.md)           | **Backend NoSQL (Firestore)**: relaciones, sin registros huérfanos, datos duplicados, cómo diseñar una colección, límites             |
-| [docs/arquitectura.md](docs/arquitectura.md) | Rutas, sesión, login por documento, modelo de datos, permisos, progreso, herramientas por instrumento, batería y pagos (próximamente) |
-| [docs/diseno.md](docs/diseno.md)             | Identidad visual, componentes, diseño de cada pantalla (herramientas y batería incluidas) e ideas de mejora                           |
-| [docs/despliegue.md](docs/despliegue.md)     | GitHub Actions, GitHub Pages, dominio www.pypulso.online, Google Search Console, Firebase Hosting y publicar las reglas               |
+| Guía                                         | Contenido                                                                                                                                  |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| [docs/firebase.md](docs/firebase.md)         | Configurar Firebase, publicar reglas (terminal o consola), emuladores, revisar y limpiar los datos, problemas comunes, plan Blaze y costos |
+| [docs/backend.md](docs/backend.md)           | **Backend NoSQL (Firestore)**: relaciones, sin registros huérfanos, datos duplicados, cómo diseñar una colección, límites                  |
+| [docs/arquitectura.md](docs/arquitectura.md) | Rutas, sesión, login por documento, modelo de datos, permisos, progreso, herramientas por instrumento, batería y pagos (próximamente)      |
+| [docs/diseno.md](docs/diseno.md)             | Identidad visual, componentes, diseño de cada pantalla (herramientas y batería incluidas) e ideas de mejora                                |
+| [docs/despliegue.md](docs/despliegue.md)     | GitHub Actions, GitHub Pages, dominio www.pypulso.online, Google Search Console, Firebase Hosting y publicar las reglas                    |
 
 ## Scripts
 
-| Script                  | Descripción                                                             |
-| ----------------------- | ----------------------------------------------------------------------- |
-| `npm run dev`           | Servidor de desarrollo contra el proyecto real de Firebase              |
-| `npm run dev:emulators` | Servidor de desarrollo contra los emuladores locales                    |
-| `npm run emulators`     | Levanta los emuladores de Auth, Firestore y Storage (requiere Java 21+) |
-| `npm run build`         | Compila el sitio en `dist/`                                             |
-| `npm run preview`       | Sirve localmente el build                                               |
-| `npm run deploy:reglas` | Publica `firestore.rules` y `storage.rules` en Firebase                 |
-| `npm run typecheck`     | Comprueba tipos con TypeScript                                          |
-| `npm run lint`          | ESLint                                                                  |
-| `npm run format`        | Formatea con Prettier                                                   |
+| Script                  | Descripción                                                                             |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| `npm run dev`           | Servidor de desarrollo contra el proyecto real de Firebase                              |
+| `npm run dev:emulators` | Servidor de desarrollo contra los emuladores locales                                    |
+| `npm run emulators`     | Levanta los emuladores de Auth, Firestore y Storage (requiere Java 21+)                 |
+| `npm run build`         | Compila el sitio en `dist/`                                                             |
+| `npm run preview`       | Sirve localmente el build                                                               |
+| `npm run deploy:reglas` | Publica `firestore.rules` y `storage.rules` en Firebase                                 |
+| `npm run typecheck`     | Comprueba tipos con TypeScript                                                          |
+| `npm run lint`          | ESLint                                                                                  |
+| `npm run format`        | Formatea con Prettier                                                                   |
+| `npm run iconos`        | Regenera los íconos y logos PNG desde `public/favicon.svg` (después de cambiar el logo) |
 
 ## Estructura
 
@@ -92,7 +100,7 @@ una colección, documenta su relación en
 | `src/components/plan/`                             | Plan de clase por bloques: editor, modo práctica y cada tipo de bloque                                                         |
 | `src/components/herramientas/`                     | Diario de práctica, diccionario de acordes, oído, lectura de notas y teclado                                                   |
 | `src/components/bateria/`                          | Grilla de grooves, rudimentos, medidor de tiempo, lectura y oído rítmico, notación rítmica                                     |
-| `src/components/ui/`                               | Componentes base: `Button`, `Input`, `Dialog`, `Chip`, `Segmented`, `Progress`…                                                |
+| `src/components/ui/`                               | Componentes base: `Button`, `Input`, `Dialog`, `Chip`, `Progress`… y `EscenaMusical` (ilustración animada liviana, SVG + CSS)  |
 | `src/lib/firebase.ts`                              | Conexión a Firebase (o a los emuladores)                                                                                       |
 | `src/lib/auth.ts`                                  | Sesión compartida entre pestañas, registro, login y recuperación por documento                                                 |
 | `src/lib/data.ts`                                  | Lecturas en vivo y escrituras de Firestore (con sus cascadas); cálculo del progreso                                            |

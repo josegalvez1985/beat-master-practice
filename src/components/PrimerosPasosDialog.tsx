@@ -16,7 +16,10 @@ const registro: Paso[] = [
     detalle:
       "Nombre y apellido, número de documento (solo números), correo y una contraseña de al menos 6 caracteres.",
   },
-  { titulo: "Elige tus instrumentos", detalle: "Puedes marcar uno o varios." },
+  {
+    titulo: "Elige tus instrumentos",
+    detalle: "Uno o varios. Más adelante puedes sumar otros desde Mi perfil.",
+  },
 ];
 
 const despues: Record<Role, Paso[]> = {
@@ -24,7 +27,7 @@ const despues: Record<Role, Paso[]> = {
     {
       titulo: "Entra con tu documento",
       detalle:
-        "Usa tu número de documento y tu contraseña. La sesión sigue abierta en todas tus pestañas.",
+        "Usa tu número de documento y tu contraseña. Si la olvidas, la recuperas con tu documento y tu correo.",
     },
     {
       titulo: "Arma tus listas de alumnos",
@@ -34,22 +37,29 @@ const despues: Record<Role, Paso[]> = {
     {
       titulo: "Planifica tus clases",
       detalle:
-        "En Planificación, crea clases por semana, mes o año. Puedes repetirlas cada semana.",
+        "En Planificación, crea clases por semana, mes o año. Puedes repetirlas cada semana o duplicar una clase.",
     },
     {
-      titulo: "Sube materiales",
-      detalle: "Abre una clase y sube audios, videos, PDF o partituras para tus alumnos.",
+      titulo: "Arma el plan de cada clase",
+      detalle:
+        "Abre la clase y usa la plantilla de 60 min o suma bloques: tablaturas, acordes, rasgueos, grooves y rudimentos de batería, tempo, videos y archivos.",
+    },
+    {
+      titulo: "Revisa las entregas",
+      detalle:
+        "Escucha o mira la grabación de cada alumno, más lento o en bucle, y comenta en el segundo exacto.",
     },
     {
       titulo: "Sigue el progreso",
-      detalle: "En Mis alumnos ves la barra de progreso de cada uno y sus entregas.",
+      detalle:
+        "En Mis alumnos ves el avance de cada uno, su diario de práctica y, en batería, sus récords. En Herramientas tienes afinador, metrónomo y más.",
     },
   ],
   alumno: [
     {
       titulo: "Entra con tu documento",
       detalle:
-        "Usa tu número de documento y tu contraseña. La sesión sigue abierta en todas tus pestañas.",
+        "Usa tu número de documento y tu contraseña. Si la olvidas, la recuperas con tu documento y tu correo.",
     },
     {
       titulo: "Pásale tu documento a tu profesor",
@@ -57,16 +67,24 @@ const despues: Record<Role, Paso[]> = {
         "Tu profesor te agrega a su lista con tu número de documento. Hasta entonces no verás clases.",
     },
     {
-      titulo: "Mira tus clases",
-      detalle: "Cuando te agregue, en Inicio aparecen sus clases y los materiales de cada una.",
+      titulo: "Practica tus clases",
+      detalle:
+        "En Inicio toca Practicar ahora: el plan de la clase bloque por bloque, con cronómetro y sonido.",
     },
     {
-      titulo: "Sube tu práctica",
-      detalle: "Abre la clase y sube tu tarea en audio o video. Tu profesor la ve al instante.",
+      titulo: "Grábate y entrega",
+      detalle:
+        "En la clase, graba tu práctica en audio o video (o sube un archivo) y envíala. Tu profesor la ve al instante y puede comentarla.",
     },
     {
-      titulo: "Avanza en tu progreso",
-      detalle: "Cada entrega suma a tu barra de progreso de ese instrumento.",
+      titulo: "Usa tus herramientas",
+      detalle:
+        "En Herramientas: afinador, metrónomo, grabadora y ejercicios de oído y lectura, según tu instrumento.",
+    },
+    {
+      titulo: "Mira tu avance",
+      detalle:
+        "Cada entrega suma al progreso de tu instrumento, y el anillo del inicio muestra tu semana: tu meta y lo que practicaste.",
     },
   ],
 };
