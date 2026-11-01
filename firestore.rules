@@ -200,6 +200,14 @@ service cloud.firestore {
       allow delete: if signedIn() && resource.data.alumnoId == me();
     }
 
+    // asistenteUso/{uid}: the AI assistant's usage of one person (today's questions, the month's
+    // tokens). One per user (same id), written only by the Cloud Function (Admin SDK); the owner
+    // can read it. It hangs from usuarios, which are never deleted.
+    match /asistenteUso/{uid} {
+      allow read: if signedIn() && uid == me();
+      allow write: if false;
+    }
+
     // entregas/{claseId}_{alumnoId}: what an alumno uploads for a class. `devoluciones` are the
     // profesor's comments at a point of a file: stored inside the delivery, so they are deleted
     // with it (and with the class). The alumno never writes them, only removes them together with

@@ -392,6 +392,46 @@ documento, rol, motivo, la página y la consulta.
 - Con sesión, nombre, correo y documento vienen cargados; desde el login el documento es opcional.
   Un campo oculto (`botcheck`) frena a los robots que llenan todo.
 
+## Asistente con IA
+
+Botón ✦ abajo a la derecha en todas las pantallas con sesión (alumnos y profesores): un chat que
+explica cómo se usa Pulso y consulta los datos de quien pregunta.
+
+```
+Sitio (React)                        Cloud Function (Firebase)                 API de Claude
+botón ✦ → chat
+preguntarAsistente ────────────────► valida la sesión y el límite del día
+{pregunta, historial, guia,          arma el system: instrucciones + guía
+ pantalla}                           (cacheada) + contexto ──────────────────► Claude Opus 5.5
+                                                         ◄── tool_use (búsquedas fijas)
+                                     lee Firestore, solo lo de esa persona ──► (hasta 5 vueltas)
+                                                         ◄── respuesta
+◄──────────────────────────────────── {respuesta, usadasHoy, limite}
+                                     suma el uso en asistenteUso/{uid}
+```
+
+- **Backend en Firebase**: la Cloud Function `preguntarAsistente`
+  ([`functions/src/asistente.ts`](../functions/src/asistente.ts)), región `southamerica-east1`.
+  La clave de la API de Claude vive en **Secret Manager** (`ANTHROPIC_API_KEY`): nunca en el código
+  ni en el navegador.
+- **Modelo**: `claude-opus-5-5` con esfuerzo `low` (chat) y respaldo automático si rechaza una
+  pregunta (`fallbacks: "default"`). Se cambia en la constante `MODELO`; `claude-haiku-5-5` cuesta
+  unas 40 veces menos.
+- **Solo lectura y solo lo propio**: la IA no consulta libremente; tiene búsquedas fijas
+  ([`herramientas.ts`](../functions/src/herramientas.ts)): el alumno, su resumen, sus clases (con
+  plan y entrega), su diario y récords; el profesor, su resumen, sus clases (con las entregas), sus
+  alumnos y la ficha de cada uno. Cada búsqueda filtra por quien pregunta (la Function usa el Admin
+  SDK, que no pasa por las reglas). No escribe nada.
+- **La guía de uso** la manda el sitio: las secciones _Pantallas_ de
+  [diseño](diseno.md#pantallas), y _Progreso_ y _Herramientas de práctica_ de esta guía
+  ([`asistente-envio.ts`](../src/lib/asistente-envio.ts)). Queda al día con cada publicación del
+  sitio, sin volver a publicar la Function.
+- **Límites**: 30 preguntas por persona y por día (las que fallan no cuentan), 5 vueltas, 8
+  búsquedas y 8000 tokens por pregunta, 10 mensajes de historial.
+- **Uso y costo**: `asistenteUso/{uid}` (uno por persona) guarda las preguntas del día y los tokens
+  del mes. **No se guardan las preguntas ni las respuestas**; la conversación vive solo en memoria
+  del navegador y se pierde al cerrar.
+
 ## Próximamente: pagos
 
 Cada profesor y cada alumno pagará para usar el sitio. Todavía no está construido; esta es la

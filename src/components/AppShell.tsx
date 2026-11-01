@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { Outlet, useLocation } from "react-router";
 import { CalendarDays, Home, LogOut, Play, UserRound, Wrench, type LucideIcon } from "lucide-react";
+import { Asistente } from "@/components/Asistente";
 import { Link } from "@/components/Link";
 import { TemaSelector } from "@/components/TemaSelector";
 import { Avatar } from "@/components/ui/avatar";
@@ -115,6 +116,7 @@ export function AppShell() {
           pathname={pathname}
         />
       ) : null}
+      <Asistente />
     </View>
   );
 }

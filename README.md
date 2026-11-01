@@ -18,6 +18,9 @@ con el número de documento.
   con SVG y CSS para que no pese ni gaste memoria.
 - **Cuenta**: cualquiera puede sumar instrumentos (para enseñar o para aprender) desde su perfil, y
   recuperar la contraseña con su documento y su correo.
+- **Asistente con IA** (botón ✦, alumnos y profesores): explica cómo se usa cada pantalla y
+  consulta las clases, el avance y los alumnos de quien pregunta, solo lectura. Corre en una Cloud
+  Function de Firebase con la API de Claude ([docs/firebase.md](docs/firebase.md), sección 8).
 - **Contacto**: formulario en el login y en el perfil que envía la consulta por correo (Web3Forms;
   configurar `VITE_WEB3FORMS_KEY` en `.env`).
 - **Herramientas** (alumnos y profesores), solo las que sirven para cada instrumento: afinador con
@@ -78,18 +81,19 @@ una colección, documenta su relación en
 
 ## Scripts
 
-| Script                  | Descripción                                                                             |
-| ----------------------- | --------------------------------------------------------------------------------------- |
-| `npm run dev`           | Servidor de desarrollo contra el proyecto real de Firebase                              |
-| `npm run dev:emulators` | Servidor de desarrollo contra los emuladores locales                                    |
-| `npm run emulators`     | Levanta los emuladores de Auth, Firestore y Storage (requiere Java 21+)                 |
-| `npm run build`         | Compila el sitio en `dist/`                                                             |
-| `npm run preview`       | Sirve localmente el build                                                               |
-| `npm run deploy:reglas` | Publica `firestore.rules` y `storage.rules` en Firebase                                 |
-| `npm run typecheck`     | Comprueba tipos con TypeScript                                                          |
-| `npm run lint`          | ESLint                                                                                  |
-| `npm run format`        | Formatea con Prettier                                                                   |
-| `npm run iconos`        | Regenera los íconos y logos PNG desde `public/favicon.svg` (después de cambiar el logo) |
+| Script                     | Descripción                                                                             |
+| -------------------------- | --------------------------------------------------------------------------------------- |
+| `npm run dev`              | Servidor de desarrollo contra el proyecto real de Firebase                              |
+| `npm run dev:emulators`    | Servidor de desarrollo contra los emuladores locales                                    |
+| `npm run emulators`        | Levanta los emuladores de Auth, Firestore y Storage (requiere Java 21+)                 |
+| `npm run build`            | Compila el sitio en `dist/`                                                             |
+| `npm run preview`          | Sirve localmente el build                                                               |
+| `npm run deploy:reglas`    | Publica `firestore.rules` y `storage.rules` en Firebase                                 |
+| `npm run deploy:funciones` | Publica las Cloud Functions (el asistente con IA) en Firebase                           |
+| `npm run typecheck`        | Comprueba tipos con TypeScript                                                          |
+| `npm run lint`             | ESLint                                                                                  |
+| `npm run format`           | Formatea con Prettier                                                                   |
+| `npm run iconos`           | Regenera los íconos y logos PNG desde `public/favicon.svg` (después de cambiar el logo) |
 
 ## Estructura
 
@@ -113,6 +117,7 @@ una colección, documenta su relación en
 | `src/lib/bateria.ts`                               | Kit sintetizado, grooves por estilo, rudimentos y ritmos                                                                       |
 | `src/lib/files.ts`                                 | Subida y descarga de archivos en Storage                                                                                       |
 | `src/lib/theme.ts`                                 | Colores, fuentes y estilos compartidos                                                                                         |
+| `functions/`                                       | Cloud Functions de Firebase: el asistente con IA (`asistente.ts`, `herramientas.ts`)                                           |
 | `firestore.rules`, `storage.rules`                 | Reglas de seguridad                                                                                                            |
 | `firebase.json`                                    | Emuladores, reglas y Firebase Hosting                                                                                          |
 | `.github/workflows/`                               | CI y publicación en GitHub Pages                                                                                               |

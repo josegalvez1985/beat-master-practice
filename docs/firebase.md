@@ -188,3 +188,42 @@ puede estar en el navegador: sin servidor, cada archivo borrado quedaría huérf
 públicos por enlace salvo con enlaces firmados (otra vez, servidor), y acá hay videos de alumnos.
 Y con este volumen de video su plan gratis (25 créditos) no alcanza: el siguiente cuesta unos
 US$89 a 99 por mes. Firebase Storage con sus reglas resuelve permisos y borrados sin servidor.
+
+## 8. Asistente con IA (Cloud Functions)
+
+El asistente corre en una Cloud Function ([`functions/`](../functions/)); necesita el plan
+**Blaze** (sección 7). Una sola vez:
+
+1. **La clave de la API de Claude**: créala en [platform.claude.com](https://platform.claude.com)
+   (_API Keys_) y guárdala en Secret Manager desde la terminal, **nunca en un archivo ni en un
+   chat** (si una clave se pega en algún lado, revócala y crea otra):
+
+   ```sh
+   npx firebase functions:secrets:set ANTHROPIC_API_KEY
+   ```
+
+   El comando pide la clave sin mostrarla.
+
+2. **Instalar y publicar** la Function:
+
+   ```sh
+   npm --prefix functions install
+   npm run deploy:funciones
+   ```
+
+   Publica `preguntarAsistente` en `southamerica-east1`. La primera vez Firebase activa solo las
+   APIs que faltan (Cloud Functions, Cloud Build, Artifact Registry, Secret Manager).
+
+3. **Publicar las reglas** (`npm run deploy:reglas`): incluyen `asistenteUso`.
+
+Para cambiar la clave: repite el paso 1 y vuelve a publicar la Function. Para apagar el asistente
+sin tocar el sitio: `npx firebase functions:delete preguntarAsistente`.
+
+**Costo**: cada pregunta se registra en `asistenteUso/{uid}` con los tokens del mes; el detalle real
+está en la consola de Claude. Con `claude-opus-5-5` (US$ 4 / 20 por millón de tokens de entrada /
+salida; lo cacheado, la guía, se lee a US$ 0,20) una pregunta típica cuesta unos pocos centavos;
+con `claude-haiku-5-5` (US$ 0,10 / 0,50), unas 40 veces menos. Se cambia en `MODELO`
+(`functions/src/asistente.ts`) y se vuelve a publicar.
+
+**Emuladores**: crea `functions/.secret.local` con `ANTHROPIC_API_KEY=...` (no se versiona) y corre
+`npm run emulators`.

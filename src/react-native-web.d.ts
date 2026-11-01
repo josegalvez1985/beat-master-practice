@@ -9,6 +9,7 @@ declare module "react-native" {
 
   interface TextProps {
     href?: string;
+    hrefAttrs?: { target?: string; rel?: string; download?: boolean | string };
   }
 
   interface ViewStyle {

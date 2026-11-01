@@ -354,6 +354,18 @@ instrumento (minutos de la semana en ese instrumento, su meta semanal total como
 - En la clase, **Afinar** (junto a _Empezar práctica_ y en la barra del modo práctica) lo abre en un
   modal con el instrumento y la afinación de la ficha. Al cerrarlo se apaga el micrófono.
 
+### Asistente (botón ✦)
+
+- Botón redondo ámbar abajo a la derecha (sobre la barra inferior en el celular) en todas las
+  pantallas con sesión.
+- Se abre como tarjeta en escritorio (400 px) y a pantalla completa en el celular: cabecera con
+  _Asistente_, _Nueva conversación_ y cerrar; el saludo con sugerencias según el rol y
+  "¿Cómo se usa _esta pantalla_?"; burbujas (la persona a la derecha con el tinte `selected`, el
+  asistente a la izquierda con Markdown simple); "Pensando…" mientras responde; un error se
+  muestra con _Reintentar_.
+- Pie: "Hoy: N de 30 · Puede equivocarse: revisa lo importante. Solo ve tus datos y no cambia
+  nada." Enter envía; Shift+Enter, nueva línea.
+
 ## Adaptable y accesible
 
 - Puntos de corte: 640 px (celular → tablet) y 1024 px (dos columnas).

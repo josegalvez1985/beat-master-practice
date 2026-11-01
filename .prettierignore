@@ -3,3 +3,5 @@ dist
 package-lock.json
 # Google Search Console verification: must stay byte-identical.
 public/google*.html
+functions/lib
+functions/node_modules

@@ -6,7 +6,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig([
-  { ignores: ["dist/*"] },
+  { ignores: ["dist/*", "functions/lib/*", "functions/node_modules/*"] },
   js.configs.recommended,
   tseslint.configs.recommended,
   reactHooks.configs.flat.recommended,
@@ -17,7 +17,7 @@ export default defineConfig([
     },
   },
   {
-    files: ["scripts/**"],
+    files: ["scripts/**", "functions/**"],
     languageOptions: {
       globals: globals.node,
     },
