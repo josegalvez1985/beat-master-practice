@@ -90,8 +90,10 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
 
 ## Datos del proyecto
 
-- La base de Firestore se llama **`default`** (sin paréntesis): `getFirestore(app, "default")`,
-  `"database": "default"` en `firebase.json`, `/databases/default/...` en `storage.rules`.
+- La base de Firestore es **`(default)`** (con paréntesis, edición Standard, `nam5`): la única que
+  las reglas de Storage pueden leer. Sin nombre en `firebase.ts` y en `getFirestore()` de las
+  funciones, `"database": "(default)"` en `firebase.json`, `/databases/(default)/...` en
+  `storage.rules`. La vieja `default` (sin paréntesis) se copió con `scripts/copiar-base.mjs`.
 - Los cambios en `firestore.rules` / `storage.rules` se publican a mano: `npm run deploy:reglas`.
 - Asistente con IA: Cloud Function `preguntarAsistente` (`functions/`), clave en Secret Manager
   (`ANTHROPIC_API_KEY`, nunca en archivos). Solo lectura y solo los datos de quien pregunta: cada

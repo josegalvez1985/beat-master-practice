@@ -20,7 +20,7 @@ const POR_PAGINA = 50;
 const CUENTAS_POR_PAGINA = 100;
 const ARCHIVOS_POR_PAGINA = 100;
 
-const db = () => getFirestore("default");
+const db = () => getFirestore();
 
 type Entrada = { que?: unknown; coleccion?: unknown; despues?: unknown; pagina?: unknown };
 

@@ -1,6 +1,7 @@
 rules_version = '2';
 
-// Files are checked against the Firestore documents they belong to (cross-service rules).
+// Files are checked against the Firestore documents they belong to (cross-service rules). Storage
+// can only read the "(default)" database, which is why the app uses that one.
 service firebase.storage {
   match /b/{bucket}/o {
     function signedIn() {
@@ -8,7 +9,7 @@ service firebase.storage {
     }
 
     function clase(claseId) {
-      return firestore.get(/databases/default/documents/clases/$(claseId)).data;
+      return firestore.get(/databases/(default)/documents/clases/$(claseId)).data;
     }
 
     function esDelProfesor(claseId) {
@@ -16,7 +17,7 @@ service firebase.storage {
     }
 
     function inscripto(claseId) {
-      return firestore.exists(/databases/default/documents/inscripciones/$(clase(claseId).profesorId + '_' + request.auth.uid + '_' + clase(claseId).instrumento));
+      return firestore.exists(/databases/(default)/documents/inscripciones/$(clase(claseId).profesorId + '_' + request.auth.uid + '_' + clase(claseId).instrumento));
     }
 
     // 200 MB per file; keep in sync with MAX_BYTES in src/lib/files.ts.
@@ -49,7 +50,7 @@ service firebase.storage {
     // to 512 px JPEG, so 2 MB is plenty.
     match /usuarios/{uid}/foto.jpg {
       allow read: if signedIn() && (uid == request.auth.uid
-        || firestore.get(/databases/default/documents/usuarios/$(request.auth.uid)).data.rol == 'profesor');
+        || firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.rol == 'profesor');
       allow create, update: if signedIn() && uid == request.auth.uid
         && request.resource.size < 2 * 1024 * 1024
         && request.resource.contentType == 'image/jpeg';

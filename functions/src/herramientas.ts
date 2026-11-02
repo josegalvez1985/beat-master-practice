@@ -11,7 +11,7 @@ export type Rol = "alumno" | "profesor";
 // A search that cannot run (missing or someone else's data): the message goes back to the model.
 export class ErrorHerramienta extends Error {}
 
-const db = () => getFirestore("default");
+const db = () => getFirestore();
 
 const MAX_CLASES = 40;
 const INSTRUMENTOS: Record<string, string> = {

@@ -13,12 +13,12 @@ Pulso es una aplicación **solo web** para enseñar y practicar instrumentos mus
 Toda cuenta se identifica por su **número de documento** (`nro_documento`): con él se registra, entra
 y lo buscan los profesores.
 
-| Capa     | Tecnología                                                                                              |
-| -------- | ------------------------------------------------------------------------------------------------------- |
-| Interfaz | React 19 con la API de React Native (`View`, `Text`, `Pressable`…) renderizada por **react-native-web** |
-| Build    | **Vite** (`react-native` → `react-native-web` por alias en `vite.config.ts`)                            |
-| Rutas    | **React Router** (`src/main.tsx`)                                                                       |
-| Backend  | **Firebase**: Authentication, Cloud Firestore (base **`default`**), Cloud Storage ([guía](firebase.md)) |
+| Capa     | Tecnología                                                                                                |
+| -------- | --------------------------------------------------------------------------------------------------------- |
+| Interfaz | React 19 con la API de React Native (`View`, `Text`, `Pressable`…) renderizada por **react-native-web**   |
+| Build    | **Vite** (`react-native` → `react-native-web` por alias en `vite.config.ts`)                              |
+| Rutas    | **React Router** (`src/main.tsx`)                                                                         |
+| Backend  | **Firebase**: Authentication, Cloud Firestore (base **`(default)`**), Cloud Storage ([guía](firebase.md)) |
 
 > **`global` en el navegador.** El `Animated` de react-native-web (lo usa el metrónomo) llama a
 > `global.cancelAnimationFrame`, que solo existe en Node. Un script en [`index.html`](../index.html)

@@ -19,11 +19,13 @@ Todo se hace en [console.firebase.google.com](https://console.firebase.google.co
 
 1. **Crear la base de datos Firestore**
    _Build → Firestore Database → Create database_.
-   - ID de la base: **`default`** (sin paréntesis). Es el nombre que usan
-     [`firebase.ts`](../src/lib/firebase.ts), [`firebase.json`](../firebase.json) y
-     [`storage.rules`](../storage.rules); si cambia, hay que cambiarlo en los tres.
-   - Ubicación: **`southamerica-east1` (São Paulo)**, la más cercana a Paraguay. No se puede cambiar
-     después.
+   - ID de la base: **`(default)`** (con paréntesis), edición **Standard**. Es la única que las
+     reglas de Storage pueden leer, y la que usan [`firebase.ts`](../src/lib/firebase.ts),
+     [`firebase.json`](../firebase.json), [`storage.rules`](../storage.rules) y las Cloud
+     Functions. Desde la terminal:
+     `npx firebase firestore:databases:create "(default)" --location nam5`.
+   - Ubicación: **`nam5` (Estados Unidos)**. Los avisos (`functions/src/avisos.ts`) corren en
+     `us-central1` por eso. No se puede cambiar después.
    - Modo: **producción**. Bloquea todo hasta que publiques las reglas del paso 5.
 2. **Activar el login con correo y contraseña**
    _Build → Authentication → Get started → Sign-in method → Email/Password → Enable_.
@@ -51,20 +53,36 @@ Todo se hace en [console.firebase.google.com](https://console.firebase.google.co
    La primera vez, Firebase pregunta si Storage puede leer Firestore (las reglas de archivos
    consultan las clases y las listas de alumnos). Responde que sí.
 
-   Las reglas de Firestore se publican en la base **`default`** (lo indica `"database"` en
+   Las reglas de Firestore se publican en la base **`(default)`** (lo indica `"database"` en
    [`firebase.json`](../firebase.json)). Repite este paso **cada vez** que cambien
    `firestore.rules` o `storage.rules`: si no, el proyecto sigue con las reglas viejas.
 
-   **Sin terminal**: también se pueden pegar en la consola. _Firestore Database_ → elige la base
-   **`default`** en el selector de arriba (no `(default)`) → _Reglas_ → borra todo, pega el
-   archivo completo (desde `rules_version = '2';`) → _Publicar_. Para `storage.rules`, lo mismo
-   en _Storage → Rules_. El archivo del repositorio manda: lo que se edite solo en la consola se
-   pierde en el próximo `npm run deploy:reglas`.
+   **Sin terminal**: también se pueden pegar en la consola. _Firestore Database_ → base
+   **`(default)`** → _Reglas_ → borra todo, pega el archivo completo (desde
+   `rules_version = '2';`) → _Publicar_. Para `storage.rules`, lo mismo en _Storage → Rules_. El
+   archivo del repositorio manda: lo que se edite solo en la consola se pierde en el próximo
+   `npm run deploy:reglas`.
 
-   > Las reglas de Storage leen la base `default` (`/databases/default/...`). Si después de
-   > publicarlas las subidas siguen fallando con `storage/unauthorized`, la causa puede ser que
-   > Storage no admita leer una base con nombre propio; la salida sería una base `(default)` para
-   > lo que consultan esas reglas.
+   > Las reglas de Storage leen la base `(default)` (`/databases/(default)/...`): Firebase no les
+   > deja leer otra (_"Storage Security Rules can only access documents from the default Cloud
+   > Firestore database"_). Con una base con nombre propio, toda subida falla con
+   > `storage/unauthorized` y la consola de Storage muestra _Errores_ en las métricas de las reglas.
+
+### Base `(default)`: de dónde viene
+
+Pulso empezó con una base llamada `default` (sin paréntesis, edición Enterprise). Las reglas de
+Storage no pueden leerla, así que no se podía subir ningún archivo. En noviembre de 2026 los datos
+pasaron a `(default)` con [`scripts/copiar-base.mjs`](../scripts/copiar-base.mjs), que usa la
+sesión de `npx firebase login`:
+
+```sh
+node scripts/copiar-base.mjs            # solo cuenta los documentos de cada base
+node scripts/copiar-base.mjs --copiar   # copia todo (mismos ids y campos; se puede repetir)
+```
+
+El script no borra nada. Cuando todo funcione con `(default)`, la base vieja se borra a mano:
+_Firestore Database_ → base `default` → _Eliminar base de datos_ (o
+`npx firebase firestore:databases:delete default`). Así deja de cobrarse.
 
 Con eso la app ya funciona en `npm run dev` contra el proyecto real.
 
@@ -116,7 +134,7 @@ Cada cuenta son **tres registros** que tienen que estar siempre juntos (ver
 | Firestore `usuarios/{UID}`       | El perfil, con `nro_documento`                                 |
 | Firestore `documentos/{nro_doc}` | El número de documento, con el `uid` y el `email` de la cuenta |
 
-**Para revisar** (base `default`):
+**Para revisar** (base `(default)`):
 
 1. Las tres cantidades coinciden: usuarios de Authentication, documentos de `usuarios` y de
    `documentos`.
@@ -152,7 +170,7 @@ siguen en Authentication y al registrarse de nuevo aparece "Ese correo ya está 
 
 | Mensaje                                                                            | Causa y solución                                                                                                                                                                                                                                                            |
 | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Database '...' not found`                                                         | La base no existe o tiene otro ID: paso 1. La app busca la base `default`; `(default)` indica un build viejo.                                                                                                                                                               |
+| `Database '...' not found`                                                         | La base no existe o tiene otro ID: paso 1. La app busca la base `(default)`; si el mensaje nombra `default` (sin paréntesis), es un build viejo.                                                                                                                            |
 | `Missing or insufficient permissions`                                              | Las reglas no están publicadas (paso 5), o el usuario no tiene acceso (por ejemplo, un alumno que el profesor todavía no agregó).                                                                                                                                           |
 | "Firebase rechazó el plan" al editar una clase (o el alumno no ve el plan)         | El plan usa un campo que las reglas publicadas todavía no conocen (por ejemplo, la ficha de batería). Publica las reglas (paso 5) y vuelve a guardar el plan: lo que no se pudo guardar no llegó a la base.                                                                 |
 | `auth/operation-not-allowed`                                                       | El login con correo y contraseña no está activado: paso 2.                                                                                                                                                                                                                  |
@@ -162,7 +180,7 @@ siguen en Authentication y al registrarse de nuevo aparece "Ese correo ya está 
 | Registro: "Ese correo ya está registrado en otra cuenta."                          | Quedó una cuenta en Authentication sin perfil, o el correo es de otra persona. Revisa la sección 5.                                                                                                                                                                         |
 | "Tu cuenta no terminó de crearse"                                                  | Cuenta de Authentication sin perfil. **Salir** la borra; después, registrarse de nuevo.                                                                                                                                                                                     |
 | Subir un material o una entrega: "Firebase no lo permitió (permission-denied)"     | El archivo subió, pero Firestore rechazó guardarlo en la clase o la entrega (y la app lo borró para que no quede huérfano): las reglas publicadas son más viejas que el código. Publica las reglas (paso 5).                                                                |
-| Las subidas fallan con `storage/unauthorized`                                      | Storage no está activado o sus reglas no están publicadas: pasos 3 y 5 (y la nota del paso 5 sobre la base `default`).                                                                                                                                                      |
+| Las subidas fallan con `storage/unauthorized`                                      | Storage no está activado, sus reglas no están publicadas, o la app usa una base que no es `(default)` (Storage solo puede leer esa): pasos 1, 3 y 5.                                                                                                                        |
 | Publicar las Functions: `User code failed to load ... Timeout after 10000`         | Firebase le da 10 s a cargar `functions/` y desde una carpeta de OneDrive la primera carga tarda más. Usa `npm run deploy:funciones` (le da 60 s); con `npx firebase deploy` directo, antes `$env:FUNCTIONS_DISCOVERY_TIMEOUT=60` en PowerShell.                            |
 | Subir un archivo da **error de CORS** (`preflight … does not have HTTP ok status`) | No es CORS: **el bucket de Storage no existe** (Google responde 404). Activa Storage (paso 3) y publica las reglas (paso 5). Se comprueba con `curl https://firebasestorage.googleapis.com/v0/b/beat-master-practice.firebasestorage.app/o`: 404 = no existe, 403 = existe. |
 | "Sin conexión" al entrar o registrarse                                             | Sin internet, o Firestore todavía no existe (paso 1).                                                                                                                                                                                                                       |
@@ -181,12 +199,12 @@ tener un bucket, y las Cloud Functions pendientes también. Lo que hace falta:
 
 **Qué cuesta** (referencia para unos 200 alumnos y 20 profesores):
 
-| Servicio           | Por qué cuesta                                                                                                                                     | Aproximado por mes            |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| Firestore          | La base se llama `default` (sin paréntesis) y **las bases con nombre no tienen cuota gratis**: cada lectura y escritura se cobra, aunque es barato | US$1 a 3                      |
-| Storage, guardar   | São Paulo no tiene la capa gratis _Always Free_ (solo regiones de EE. UU.); crece con cada video                                                   | US$1 al inicio, ~US$17 al año |
-| Storage, descargas | Ver videos desde São Paulo hacia internet es lo más caro                                                                                           | US$10 a 12                    |
-| Cloud Functions    | Muy pocas invocaciones (cuota gratis de 2 millones por mes)                                                                                        | ~US$0                         |
+| Servicio           | Por qué cuesta                                                                                                          | Aproximado por mes            |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| Firestore          | La base `(default)` tiene cuota gratis por día (50.000 lecturas, 20.000 escrituras); pasarla se cobra, aunque es barato | US$0 a 2                      |
+| Storage, guardar   | São Paulo no tiene la capa gratis _Always Free_ (solo regiones de EE. UU.); crece con cada video                        | US$1 al inicio, ~US$17 al año |
+| Storage, descargas | Ver videos desde São Paulo hacia internet es lo más caro                                                                | US$10 a 12                    |
+| Cloud Functions    | Muy pocas invocaciones (cuota gratis de 2 millones por mes)                                                             | ~US$0                         |
 
 **El video manda en el costo**: bajar la calidad de la grabadora (`grabadora.ts`) o preferir audio
 cuando alcanza es lo que más ahorra. Los precios cambian: confírmalos en

@@ -153,15 +153,18 @@ Antes de escribir código, responde y documenta:
 | Escrituras por `writeBatch` / transacción | 500                               | Cascadas grandes (borrar una clase con cientos de entregas).                                   |
 | Lecturas `get()`/`exists()` por regla     | 10 (una escritura), 20 (un batch) | Reglas que encadenan muchas comprobaciones.                                                    |
 | `getAfter()` / `existsAfter()`            | Solo dentro del mismo batch       | Validar dos documentos que nacen juntos.                                                       |
+| Reglas de Storage que leen Firestore      | 2 documentos, solo de `(default)` | `storage.rules` lee la clase y la inscripción; un tercero, u otra base, rechaza la subida.     |
 | Tamaño de un documento                    | 1 MiB                             | Listas dentro de un documento (`materiales`, máx. 30 por regla).                               |
 | Storage y Firestore                       | Sin transacción común             | Por eso el orden: archivo primero al borrar, borrar el archivo si falla la anotación al subir. |
 
 ## Base de datos y dónde está cada cosa
 
-La base se llama **`default`** (sin paréntesis): `getFirestore(app, "default")` en
-[`firebase.ts`](../src/lib/firebase.ts), `"database": "default"` en
-[`firebase.json`](../firebase.json) y `/databases/default/...` en
-[`storage.rules`](../storage.rules).
+La base es **`(default)`** (con paréntesis), la única que las reglas de Storage pueden leer:
+`initializeFirestore(app, …)` sin nombre en [`firebase.ts`](../src/lib/firebase.ts),
+`getFirestore()` en las Cloud Functions, `"database": "(default)"` en
+[`firebase.json`](../firebase.json) y `/databases/(default)/...` en
+[`storage.rules`](../storage.rules). Hasta noviembre de 2026 era `default` (sin paréntesis); ver
+[firebase.md](firebase.md#base-default-de-dónde-viene).
 
 | Archivo                                               | Qué tiene                                                                   |
 | ----------------------------------------------------- | --------------------------------------------------------------------------- |

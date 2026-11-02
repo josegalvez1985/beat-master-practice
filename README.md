@@ -69,8 +69,10 @@ npm run dev
 Abre http://localhost:5173. La primera pantalla es el login.
 
 > Antes de usar la app con el proyecto real hay que configurar Firebase una vez (crear Firestore
-> con el ID de base **`default`**, activar Authentication con correo y contraseña, Storage y
-> publicar las reglas): ver **[docs/firebase.md](docs/firebase.md)**.
+> con el ID de base **`(default)`**, activar Authentication con correo y contraseña, Storage y
+> publicar las reglas): ver **[docs/firebase.md](docs/firebase.md)**. Si los datos todavía están
+> en la base vieja `default` (sin paréntesis), las subidas de archivos fallan: hay que copiarlos
+> una vez ([docs/despliegue.md](docs/despliegue.md#pasar-a-la-base-default-una-vez)).
 > Para probar sin tocar datos reales, usa los emuladores (misma guía, sección 3).
 
 > **Si `npm run dev` o `npm run build` fallan con `Cannot find package ... node_modules`**, la
@@ -88,13 +90,13 @@ una colección, documenta su relación en
 
 ## Guías
 
-| Guía                                         | Contenido                                                                                                                                                                        |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [docs/firebase.md](docs/firebase.md)         | Configurar Firebase, publicar reglas (terminal o consola), emuladores, revisar y limpiar los datos, problemas comunes, plan Blaze y costos, asistente (clave de la API) y avisos |
-| [docs/backend.md](docs/backend.md)           | **Backend NoSQL (Firestore)**: relaciones, sin registros huérfanos, datos duplicados, cómo diseñar una colección, límites                                                        |
-| [docs/arquitectura.md](docs/arquitectura.md) | Rutas, sesión, login por documento, modelo de datos, permisos, progreso, herramientas por instrumento, batería, administración y pagos (próximamente)                            |
-| [docs/diseno.md](docs/diseno.md)             | Identidad visual, componentes, diseño de cada pantalla (herramientas, batería, asistente y administración incluidos) e ideas de mejora                                           |
-| [docs/despliegue.md](docs/despliegue.md)     | GitHub Actions, GitHub Pages, dominio www.pypulso.online, Google Search Console, Firebase Hosting y publicar las reglas y las Cloud Functions                                    |
+| Guía                                         | Contenido                                                                                                                                                                                                     |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [docs/firebase.md](docs/firebase.md)         | Configurar Firebase (base `(default)` y por qué), publicar reglas (terminal o consola), emuladores, revisar y limpiar los datos, problemas comunes, plan Blaze y costos, asistente (clave de la API) y avisos |
+| [docs/backend.md](docs/backend.md)           | **Backend NoSQL (Firestore)**: relaciones, sin registros huérfanos, datos duplicados, cómo diseñar una colección, límites                                                                                     |
+| [docs/arquitectura.md](docs/arquitectura.md) | Rutas, sesión, login por documento, modelo de datos, permisos, progreso, herramientas por instrumento, batería, administración y pagos (próximamente)                                                         |
+| [docs/diseno.md](docs/diseno.md)             | Identidad visual, componentes, diseño de cada pantalla (herramientas, batería, asistente y administración incluidos) e ideas de mejora                                                                        |
+| [docs/despliegue.md](docs/despliegue.md)     | GitHub Actions, GitHub Pages, dominio www.pypulso.online, Google Search Console, Firebase Hosting, publicar las reglas y las Cloud Functions, y pasar a la base `(default)`                                   |
 
 ## Scripts
 
@@ -135,6 +137,7 @@ una colección, documenta su relación en
 | `src/lib/files.ts`                                 | Subida y descarga de archivos en Storage                                                                                       |
 | `src/lib/theme.ts`                                 | Colores, fuentes y estilos compartidos                                                                                         |
 | `functions/`                                       | Cloud Functions de Firebase: asistente con IA (`asistente.ts`, `herramientas.ts`), avisos y administración (`admin.ts`)        |
+| `scripts/`                                         | Publicar las Functions (`deploy-funciones.mjs`), generar íconos y copiar la base vieja a `(default)` (`copiar-base.mjs`)       |
 | `firestore.rules`, `storage.rules`                 | Reglas de seguridad                                                                                                            |
 | `firebase.json`                                    | Emuladores, reglas y Firebase Hosting                                                                                          |
 | `.github/workflows/`                               | CI y publicación en GitHub Pages                                                                                               |

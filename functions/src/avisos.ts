@@ -8,9 +8,9 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 //
 // The database is in nam5 (United States), so the Firestore triggers run in us-central1.
 
-const db = () => getFirestore("default");
+const db = () => getFirestore();
 const SITIO = "https://www.pypulso.online";
-const opciones = { database: "default", region: "us-central1" } as const;
+const opciones = { database: "(default)", region: "us-central1" } as const;
 
 type Aviso = { titulo: string; cuerpo: string; url: string; tag?: string };
 

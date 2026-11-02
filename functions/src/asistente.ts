@@ -34,7 +34,7 @@ const MAX_PREGUNTA = 1500;
 const MAX_GUIA = 40000;
 const MAX_RESULTADO = 20000;
 
-const db = () => getFirestore("default");
+const db = () => getFirestore();
 
 const INSTRUCCIONES = `Eres el asistente de Pulso (www.pypulso.online), una plataforma web exclusiva para profesores de música y sus alumnos en Paraguay. El profesor arma listas de alumnos por instrumento, planifica clases por bloques y revisa las grabaciones; el alumno practica, entrega su audio o video y sigue su avance. Instrumentos (17): guitarra, requinto, arpa paraguaya, piano, teclado, acordeón, batería, percusión, voz, bajo, violín, violonchelo, contrabajo, ukelele, saxofón, trompeta y flauta.
 

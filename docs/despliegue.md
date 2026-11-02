@@ -144,7 +144,7 @@ Las reglas no se publican con GitHub Pages. Cada vez que cambien `firestore.rule
 
 ```sh
 npx firebase login      # una vez por computadora
-npm run deploy:reglas   # Firestore (base `default`) y Storage
+npm run deploy:reglas   # Firestore (base `(default)`) y Storage
 ```
 
 Publica las reglas **antes** (o junto con) el código que las necesita: por ejemplo, borrar una
@@ -152,7 +152,7 @@ clase con entregas requiere las reglas que permiten al profesor borrarlas, y gua
 batería requiere las que aceptan su ficha. Si el código sale antes, Firebase rechaza esas
 escrituras.
 
-Sin terminal, se pueden pegar en la consola de Firebase (base **`default`** → _Reglas_ →
+Sin terminal, se pueden pegar en la consola de Firebase (base **`(default)`** → _Reglas_ →
 _Publicar_); el paso a paso está en [firebase.md](firebase.md#1-configurar-el-proyecto-una-sola-vez).
 
 ## Cloud Functions
@@ -168,3 +168,22 @@ Si el sitio nuevo llama a una función nueva (por ejemplo, la página `/admin` l
 `verBackend`), publica las Functions **antes** o junto con el sitio: si no, esa pantalla muestra un
 error. La clave del asistente se cambia aparte (Secret Manager): ver
 [firebase.md](firebase.md#8-asistente-con-ia-cloud-functions).
+
+## Pasar a la base `(default)` (una vez)
+
+El código usa la base `(default)`, la única que pueden leer las reglas de Storage. Si el proyecto
+todavía tiene sus datos en la base vieja `default` (sin paréntesis), hay que hacer esto una vez,
+en este orden y en un momento sin uso
+([por qué](firebase.md#base-default-de-dónde-viene)):
+
+```sh
+npx firebase firestore:databases:create "(default)" --location nam5   # 1. crear la base (Standard)
+npm run deploy:reglas                                                  # 2. reglas en la base nueva
+node scripts/copiar-base.mjs --copiar                                  # 3. copiar los datos
+npm run deploy:funciones                                               # 4. funciones contra la base nueva
+```
+
+5. Publicar el sitio (push a `main`). Hasta entonces el sitio publicado sigue escribiendo en la
+   base vieja: si alguien guardó algo, corre otra vez el paso 3 justo antes.
+6. Subir un archivo a una clase para comprobarlo. Si funciona, borrar la base vieja:
+   `npx firebase firestore:databases:delete default` (no se puede deshacer).
