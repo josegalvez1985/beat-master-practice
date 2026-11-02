@@ -47,6 +47,30 @@ service cloud.firestore {
       return lista is list && lista.size() <= 30;
     }
 
+    // The profesor's plan (suscripciones/{uid}, src/lib/planes.ts): a 30-day trial or a paid plan,
+    // then 5 working days to pay (Monday to Friday, Paraguay time, UTC-3: from a weekday the
+    // same weekday next week, from Saturday or Sunday the next Friday). After that, creating
+    // classes, adding alumnos and uploading files is blocked; nothing is deleted. Keep in sync
+    // with src/lib/planes.ts, functions/src/planes.ts and storage.rules.
+    // `venceEn` is set by a paid plan or by days the admin granted (also during the trial).
+    function venceDe(s) {
+      return 'venceEn' in s ? s.venceEn : s.pruebaDesde + duration.value(30, 'd');
+    }
+
+    function bloqueoDe(vence) {
+      let dia = (vence - duration.value(3, 'h')).dayOfWeek();
+      return vence + duration.value(dia == 6 ? 6 : (dia == 7 ? 5 : 7), 'd');
+    }
+
+    // No plan record (a profesor from before the plans, until /admin creates the trials): blocked.
+    // The admin account (documentos/4169298, as in src/lib/admin.ts) has everything enabled.
+    function habilitado(uid) {
+      let ruta = /databases/$(database)/documents/suscripciones/$(uid);
+      let admin = /databases/$(database)/documents/documentos/4169298;
+      return (exists(admin) && get(admin).data.uid == uid)
+        || (exists(ruta) && request.time < bloqueoDe(venceDe(get(ruta).data)));
+    }
+
     // documentos/{nro_documento} -> { uid, email }: makes the document number unique and lets
     // the login turn it into the account email. Readable one by one, never listable.
     // documentos and usuarios point at each other and are only created together, in one batch,
@@ -73,7 +97,11 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/documentos/$(request.resource.data.nro_documento)).data.uid == me()
         && instrumentosValidos(request.resource.data.instrumentos)
         && request.resource.data.terminos is list && request.resource.data.terminos.size() <= 100
-        && request.resource.data.creadoEn == request.time;
+        && request.resource.data.creadoEn == request.time
+        // A profesor is born with the trial of their plan and their phone, in the same batch.
+        && (request.resource.data.rol != 'profesor'
+          || (existsAfter(/databases/$(database)/documents/suscripciones/$(uid))
+            && existsAfter(/databases/$(database)/documents/telefonos/$(uid))));
       // Role and document number never change. `foto` points at the owner's fixed Storage path,
       // so the profile and its photo file stay related one to one. `metaSemanal`: the alumno's
       // weekly practice goal in minutes (absent = no goal). `recordatorio`: hour of the daily
@@ -97,20 +125,49 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // inscripciones/{profesorId}_{alumnoId}_{instrumento}: the profesor's student lists.
+    // suscripciones/{uid}: the profesor's plan, one per profesor, never deleted. The profesor
+    // creates it only while registering (same batch as the profile, which requires it), as a
+    // 30-day trial from the server time. Paid plans and the trials of profesores from before the
+    // plans are written by the Cloud Functions (activarPlan, planesAdmin) as the admin.
+    match /suscripciones/{uid} {
+      allow read: if signedIn() && uid == me();
+      allow create: if signedIn() && uid == me()
+        && !exists(/databases/$(database)/documents/usuarios/$(uid))
+        && getAfter(/databases/$(database)/documents/usuarios/$(uid)).data.rol == 'profesor'
+        && request.resource.data.keys().hasOnly(['plan', 'pruebaDesde'])
+        && request.resource.data.plan == 'prueba'
+        && request.resource.data.pruebaDesde == request.time;
+      allow update, delete: if false;
+    }
+
+    // pagos/{profesorId}_{referencia}: each payment the admin recorded (activarPlan) and each
+    // exception (habilitarDias, tipo "cortesia", Gs. 0). Hangs from usuarios (never deleted); the
+    // profesor reads their own, nobody writes from the app.
+    match /pagos/{id} {
+      allow read: if signedIn() && resource.data.profesorId == me();
+      allow write: if false;
+    }
+
+    // telefonos/{uid}: the profesor's mobile, apart from usuarios (which every profesor can read):
+    // only its owner reads it here; the admin sees it through planesAdmin. Created in the same
+    // batch as the profile of a new profesor (which requires it), or later by a profesor from
+    // before the phones. Never deleted. Keep the pattern in sync with src/lib/telefono.ts.
+    match /telefonos/{uid} {
+      allow read: if signedIn() && uid == me();
+      allow create, update: if signedIn() && uid == me()
+        && getAfter(/databases/$(database)/documents/usuarios/$(uid)).data.rol == 'profesor'
+        && request.resource.data.keys().hasOnly(['telefono', 'actualizadoEn'])
+        && request.resource.data.telefono is string
+        && request.resource.data.telefono.matches('^[+]5959[0-9]{8}$')
+        && request.resource.data.actualizadoEn == request.time;
+      allow delete: if false;
+    }
+
+    // inscripciones/{profesorId}_{alumnoId}_{instrumento}: the profesor's student lists. Created
+    // only by the agregarAlumno Cloud Function, which checks the plan and its limit of alumnos.
     match /inscripciones/{id} {
       allow read: if signedIn() && (resource.data.profesorId == me() || resource.data.alumnoId == me());
-      allow create: if esProfesor()
-        && request.resource.data.keys().hasOnly(['profesorId', 'profesorNombre', 'alumnoId', 'alumnoNombre', 'alumnoDocumento', 'instrumento', 'creadoEn'])
-        && request.resource.data.profesorId == me()
-        && id == me() + '_' + request.resource.data.alumnoId + '_' + request.resource.data.instrumento
-        && request.resource.data.instrumento in usuario(me()).instrumentos
-        && request.resource.data.profesorNombre == usuario(me()).nombre
-        && usuario(request.resource.data.alumnoId).rol == 'alumno'
-        && request.resource.data.alumnoNombre == usuario(request.resource.data.alumnoId).nombre
-        && request.resource.data.alumnoDocumento == usuario(request.resource.data.alumnoId).nro_documento
-        && request.resource.data.creadoEn == request.time;
-      allow update: if false;
+      allow create, update: if false;
       allow delete: if signedIn() && resource.data.profesorId == me();
     }
 
@@ -144,14 +201,20 @@ service cloud.firestore {
       allow read: if signedIn()
         && (resource.data.profesorId == me() || inscripto(resource.data.profesorId, resource.data.instrumento));
       allow create: if esProfesor()
+        && habilitado(me())
         && request.resource.data.profesorId == me()
         && request.resource.data.profesorNombre == usuario(me()).nombre
         && request.resource.data.instrumento in usuario(me()).instrumentos
         && request.resource.data.creadoEn == request.time
         && claseValida(request.resource.data);
+      // With the plan blocked, only attendance and removing materials.
       allow update: if signedIn() && resource.data.profesorId == me()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['titulo', 'descripcion', 'fecha', 'materiales', 'ficha', 'bloques', 'hora', 'modalidad', 'enlace', 'asistencia', 'evento'])
-        && claseValida(request.resource.data);
+        && claseValida(request.resource.data)
+        && (habilitado(me())
+          || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['asistencia'])
+          || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['materiales'])
+            && request.resource.data.materiales.size() < resource.data.materiales.size()));
       allow delete: if signedIn() && resource.data.profesorId == me();
     }
 

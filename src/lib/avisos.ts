@@ -28,11 +28,17 @@ export async function estadoAvisos(): Promise<EstadoAvisos> {
   return Notification.permission === "granted" && tokenGuardado() ? "activo" : "apagado";
 }
 
+// Our own service worker (public/sw.js), if this browser already has it.
+const registroPropio = () =>
+  "serviceWorker" in navigator
+    ? navigator.serviceWorker.getRegistration(import.meta.env.BASE_URL)
+    : Promise.resolve(undefined);
+
 export async function activarAvisos(uid: string) {
   if (!VAPID) throw new Error("sin-configurar");
   if ((await Notification.requestPermission()) !== "granted") throw new Error("bloqueado");
   const registro =
-    (await navigator.serviceWorker.getRegistration(import.meta.env.BASE_URL)) ??
+    (await registroPropio()) ??
     (await navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`));
   const token = await getToken(getMessaging(app), {
     vapidKey: VAPID,
@@ -52,7 +58,17 @@ export async function desactivarAvisos() {
   const token = tokenGuardado();
   if (!token) return;
   await deleteDoc(doc(db, "dispositivos", token));
-  await deleteToken(getMessaging(app)).catch(() => {});
+  // deleteToken alone would register Firebase's default /firebase-messaging-sw.js, which does not
+  // exist (the server answers with the HTML page: "unsupported MIME type ('text/html')"). So the
+  // messaging instance first gets our own worker through getToken. Without it, nothing to delete
+  // here: the device document is gone and the Function drops the dead token.
+  const registro = await registroPropio();
+  if (VAPID && registro && Notification.permission === "granted") {
+    const messaging = getMessaging(app);
+    await getToken(messaging, { vapidKey: VAPID, serviceWorkerRegistration: registro })
+      .then(() => deleteToken(messaging))
+      .catch(() => {});
+  }
   try {
     localStorage.removeItem(CLAVE);
   } catch {

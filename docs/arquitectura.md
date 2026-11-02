@@ -40,7 +40,8 @@ y lo buscan los profesores.
 | `/perfil`            | ambos      | Mi perfil: foto, datos de la cuenta, instrumentos (agregar más) y tema (claro, oscuro o sistema)           |
 | `/practicar`         | alumno     | Abre el modo práctica de la próxima clase pendiente (o "No tienes prácticas pendientes")                   |
 | `/herramientas`      | ambos      | Herramientas de práctica según el instrumento (`?instrumento=…&h=…`)                                       |
-| `/admin`             | admin      | **Administración**: todo el backend en solo lectura (colecciones, cuentas y archivos)                      |
+| `/plan`              | profesor   | **Mi plan**: estado, vencimiento, planes, cómo pagar y pagos registrados                                   |
+| `/admin`             | admin      | **Administración**: planes de los profesores y todo el backend en solo lectura                             |
 | cualquier otra       | —          | 404                                                                                                        |
 
 Los guardas están en [`RouteGuards.tsx`](../src/components/RouteGuards.tsx):
@@ -138,8 +139,9 @@ Las **listas de alumnos** del profesor: un documento por alumno y por instrument
 | `instrumento`                                 | string    |
 | `creadoEn`                                    | timestamp |
 
-Solo el profesor la crea (para un instrumento que él enseña y un usuario con rol alumno) o la borra.
-La leen el profesor y el alumno. **Este documento es lo que habilita las clases al alumno.**
+La crea solo la Cloud Function `agregarAlumno` (para un instrumento que el profesor enseña, un
+usuario con rol alumno, con su plan sin bloquear y dentro del límite de alumnos: ver _Planes de los
+profesores_); el profesor la borra. La leen el profesor y el alumno. **Este documento es lo que habilita las clases al alumno.**
 
 ### `clases/{id}`
 
@@ -352,6 +354,50 @@ tiempo.
 
 La escribe solo la Function `preguntarAsistente` y se lee solo en `/admin`. Las reglas niegan todo
 desde la app.
+
+### `suscripciones/{uid}`
+
+El plan del profesor (ver _Planes de los profesores_): uno por profesor, nunca se borra.
+
+| Campo                      | Tipo      | Notas                                                            |
+| -------------------------- | --------- | ---------------------------------------------------------------- |
+| `plan`                     | string    | `prueba`, `inicial`, `profesor` o `academia`                     |
+| `pruebaDesde`              | timestamp | Solo en la prueba: vence 30 días después                         |
+| `venceEn`, `actualizadoEn` | timestamp | Plan pagado o días de excepción (`activarPlan`, `habilitarDias`) |
+| `maxAlumnos`               | number    | Cantidad de alumnos a medida, en lugar de la del plan            |
+
+El profesor la crea solo al registrarse (mismo batch que su perfil, como prueba con la hora del
+servidor) y la lee; las demás escrituras son de las Functions del administrador.
+
+### `pagos/{id}`
+
+Cada pago que registró el administrador (`{profesorId}_{referencia}`: la referencia en el id impide
+registrar dos veces el mismo) y cada cortesía (`{profesorId}_cortesia-{hora}`).
+
+| Campo                           | Tipo      | Notas                                          |
+| ------------------------------- | --------- | ---------------------------------------------- |
+| `profesorId`                    | string    | `usuarios/{uid}`                               |
+| `plan`, `meses`, `monto`        | —         | Plan pagado, meses (1 a 12) y guaraníes        |
+| `referencia`                    | string    | Número de la transferencia o del comprobante   |
+| `tipo`                          | string    | `pago` o `cortesia` (días de excepción, Gs. 0) |
+| `motivo`                        | string    | Solo en una cortesía                           |
+| `alumnos`                       | number    | Cantidad de alumnos habilitada                 |
+| `desde`, `hasta`                | timestamp | El período que extendió                        |
+| `registradoEn`, `registradoPor` | —         | Hora del servidor y uid del administrador      |
+
+La escriben solo `activarPlan` y `habilitarDias`; el profesor lee los suyos en _Mi plan_.
+
+### `telefonos/{uid}`
+
+El celular del profesor, aparte de `usuarios` (que pueden leer todos los profesores).
+
+| Campo           | Tipo      | Notas                                |
+| --------------- | --------- | ------------------------------------ |
+| `telefono`      | string    | Celular de Paraguay: `+5959XXXXXXXX` |
+| `actualizadoEn` | timestamp | Hora del servidor                    |
+
+Lo crea y cambia solo su dueño (un profesor; nace en el batch del registro); lo lee solo él, y el
+administrador a través de `planesAdmin`. Nunca se borra.
 
 ### `Material`
 
@@ -647,7 +693,7 @@ preguntarAsistente ────────────────► valida la
   [diseño](diseno.md#pantallas), y _Progreso_ y _Herramientas de práctica_ de esta guía
   ([`asistente-envio.ts`](../src/lib/asistente-envio.ts)). Queda al día con cada publicación del
   sitio, sin volver a publicar la Function.
-- **Límites**: 50 preguntas por persona y por día (las que fallan no cuentan), 5 vueltas, 8
+- **Límites**: 30 preguntas por persona y por día (las que fallan no cuentan), 5 vueltas, 8
   búsquedas y 8000 tokens por pregunta, 10 mensajes de historial.
 - **Uso y costo**: `asistenteUso/{uid}` (uno por persona) guarda las preguntas del día y los tokens
   del mes.
@@ -660,10 +706,14 @@ preguntarAsistente ────────────────► valida la
 
 ## Administración
 
-`/admin` muestra **todo el backend en solo lectura** a una sola persona: la dueña del número de
-documento `4169298` (`ADMIN_DOCUMENTO`, en [`src/lib/admin.ts`](../src/lib/admin.ts) y en
-[`functions/src/admin.ts`](../functions/src/admin.ts)). Solo esa cuenta ve _Admin_ en la barra.
+`/admin` es para una sola persona: la dueña del número de documento `4169298` (`ADMIN_DOCUMENTO`,
+en [`src/lib/admin.ts`](../src/lib/admin.ts) y en [`functions/src/admin.ts`](../functions/src/admin.ts)).
+Solo esa cuenta ve _Admin_ en la barra.
 
+- **Planes** (la única parte que escribe): cada profesor con su plan, vencimiento, bloqueo,
+  alumnos usados y celular, con buscador por CI; _Registrar pago_ (con alumnos a medida),
+  _Habilitar días_ y _Darles la prueba gratis_ (ver
+  [Planes de los profesores](#planes-de-los-profesores)).
 - **Colecciones**: cada colección de Firestore con su cantidad de documentos; cada documento con
   su id, una pista (`nombre`, `titulo`…) y, al tocarlo, todos sus datos en JSON y sus fechas de
   creación y cambio. De a 50, con _Cargar más_ y búsqueda dentro de lo cargado.
@@ -672,23 +722,108 @@ documento `4169298` (`ADMIN_DOCUMENTO`, en [`src/lib/admin.ts`](../src/lib/admin
   [firebase.md](firebase.md)).
 - **Archivos**: los archivos de Storage con su ruta, tamaño, tipo y fecha.
 
-Los datos los trae la Cloud Function `verBackend` (`southamerica-east1`). Como el Admin SDK no pasa
-por las reglas, la función comprueba en cada llamada que quien pide es el uid de
-`documentos/4169298`; ese documento se crea con la cuenta y las reglas no dejan cambiarlo. Las
-reglas de Firestore y Storage no cambian, y la función nunca escribe ni borra. Para cambiar de
-administrador: el número en los dos archivos y publicar el sitio y las Functions.
+Colecciones, cuentas y archivos los trae la Cloud Function `verBackend` (`southamerica-east1`), que
+nunca escribe ni borra. Como el Admin SDK no pasa por las reglas, ella y las de planes
+(`planesAdmin`, `activarPlan`, `habilitarDias`) comprueban en cada llamada que quien pide es el uid de
+`documentos/4169298` (`exigirAdmin`); ese documento se crea con la cuenta y las reglas no dejan
+cambiarlo. Para cambiar de administrador: el número en los dos archivos y publicar el sitio y las
+Functions.
 
-## Próximamente: pagos
+## Planes de los profesores
 
-Cada profesor y cada alumno pagará para usar el sitio. Todavía no está construido; esta es la
-propuesta para que encaje sin romper lo actual:
+Paga **el profesor**, con una cuota mensual según cuántos alumnos tiene; **los alumnos no pagan**.
+Es quien decide usar Pulso y sin él el alumno no tiene clases, y el acceso se resuelve en un solo
+lugar: "¿el profesor de esta clase está al día?". La lógica vive en
+[`src/lib/planes.ts`](../src/lib/planes.ts) (lo que muestra la app),
+[`functions/src/planes.ts`](../functions/src/planes.ts) (agregar alumnos, pagos y excepciones) y
+las reglas (`venceDe` / `bloqueoDe` / `habilitado`): **las tres copias van juntas**.
 
-- **Proveedor**: a definir (opciones que operan en Paraguay, como Bancard o Pagopar).
-- **Backend**: una Cloud Function recibe la notificación del proveedor (webhook) y escribe
-  `suscripciones/{uid}` con `{ estado: "prueba" | "activa" | "vencida", plan, venceEn }`.
-  Ningún cliente puede escribir esa colección; el dueño solo la lee.
-- **Acceso**: `RequireAuth` muestra una pantalla de suscripción si el estado no es activo, y las
-  reglas de Firestore y Storage pueden exigir una suscripción activa para leer clases y subir
-  archivos.
-- La misma función puede encargarse del login y la recuperación por documento (ver el compromiso
-  conocido más arriba).
+| Plan         | Alumnos (por persona) | Por mes     |
+| ------------ | --------------------- | ----------- |
+| **Prueba**   | 60 (todo habilitado)  | Gratis      |
+| **Inicial**  | 5                     | Gs. 50.000  |
+| **Profesor** | 20                    | Gs. 150.000 |
+| **Academia** | 60 (un profesor, hoy) | Gs. 300.000 |
+
+- **Prueba**: 30 días desde el registro. Los profesores registrados antes del lanzamiento
+  (2 de noviembre de 2026) cuentan sus 30 días desde ese día.
+- **Alumnos por persona**: quien estudia guitarra y piano con el mismo profesor cuenta 1. El
+  administrador puede poner una **cantidad a medida** al registrar un pago (por ejemplo 35), que
+  reemplaza la del plan.
+- **Vencimiento**: después hay **5 días hábiles** para pagar (lunes a viernes, hora de Paraguay,
+  UTC-3; los feriados cuentan como hábiles): si vence un día de semana, el mismo día de la semana
+  siguiente; si vence sábado o domingo, el viernes siguiente.
+- **Bloqueado** (pasados los 5 días hábiles): no puede **crear** clases (tampoco duplicar ni
+  repetir), agregar alumnos, subir archivos ni editar las clases. Sí ve todo, borra, marca
+  asistencia, evalúa, comenta, escribe mensajes y quita materiales; sus alumnos siguen
+  practicando y entregando. **Nada se borra al vencer.**
+- **Días por excepción**: el administrador puede habilitar a un profesor **N días más** o **hasta
+  una fecha**, sin pago y con un motivo. Mantiene su plan y su cantidad de alumnos; queda en el
+  historial como **cortesía** (Gs. 0). Nunca acorta un plan: cuenta desde hoy si ya venció, o desde
+  su vencimiento si no.
+- **La cuenta del administrador** (documento 4169298, que es profesor) tiene **todo habilitado**:
+  sin vencimiento ni límite de alumnos, en las reglas y en `agregarAlumno`.
+- **Academia** con varios profesores bajo una misma cuenta: pendiente.
+
+### Cómo se paga hoy (etapa 1, manual)
+
+1. El profesor entra a **Mi plan** (en el menú, `/plan`): ve los planes y los datos de la cuenta
+   de ueno ([`src/lib/datos-de-pago.ts`](../src/lib/datos-de-pago.ts); vacío = "no configurado"),
+   y transfiere o paga con QR con el concepto `Pulso {su documento}`.
+2. El administrador ve el pago en ueno, busca al profesor **por su CI** en `/admin` → **Planes** y
+   toca _Registrar pago_: plan, meses, cantidad de alumnos (la del plan o a medida), monto y la
+   **referencia** de la transferencia (la misma referencia no se registra dos veces).
+3. `activarPlan`, en una transacción, crea `pagos/{profesorId}_{referencia}` y extiende
+   `suscripciones/{uid}`: si todavía no estaba bloqueado, los meses se suman al **vencimiento
+   anterior** (los días de gracia no son gratis); si ya estaba bloqueado, empiezan **hoy**.
+
+### Datos y controles
+
+- **`suscripciones/{uid}`**: `{ plan, pruebaDesde?, venceEn?, maxAlumnos?, actualizadoEn? }`. La
+  prueba vence 30 días después de `pruebaDesde`, salvo que tenga `venceEn` (un plan pagado o días
+  de excepción). Una por profesor, **nunca se borra**. El profesor la crea **solo al registrarse,
+  en el mismo batch que su perfil** (las reglas exigen que el perfil de un profesor nazca con ella
+  y que sea una prueba con la hora del servidor); después solo la leen él y escriben las funciones
+  del administrador. Los profesores de antes del lanzamiento la reciben con _Darles la prueba
+  gratis_ (`planesAdmin` → `crearPruebas`, que nunca pisa una existente). Sin ella, las reglas
+  bloquean.
+- **`pagos/{id}`**: pagos (`{profesorId}_{referencia}`, `tipo: "pago"`) y cortesías
+  (`{profesorId}_cortesia-{hora}`, `tipo: "cortesia"`, Gs. 0, con `motivo`). Cuelga de `usuarios`
+  (que nunca se borra); el profesor lee los suyos, **motivo incluido**; nadie la escribe desde la
+  app.
+- **`telefonos/{uid}`**: el celular del profesor (`+5959XXXXXXXX`). Va **aparte de `usuarios`**
+  porque todos los profesores pueden leer `usuarios`: este solo lo lee su dueño, y el
+  administrador lo ve con `planesAdmin`. Obligatorio para los profesores nuevos (nace en el batch
+  del registro, que lo exige); los de antes lo agregan en _Mi perfil_. Nunca se borra.
+- **`inscripciones`**: se crean **solo con la función `agregarAlumno`** (las reglas niegan crearlas
+  desde la app). En una transacción comprueba el rol, el instrumento, que el plan no esté
+  bloqueado y el límite por persona (salvo para el administrador), y copia los nombres de
+  `usuarios`.
+- **Reglas de Firestore**: crear `clases` exige `habilitado(me())`; con el plan bloqueado, una
+  clase solo cambia `asistencia` o achica `materiales`.
+- **Reglas de Storage**: subir a `clases/{id}/` lee la clase y la suscripción (el máximo de **2
+  documentos**). Por ese límite, el administrador se reconoce por su **uid escrito en
+  `storage.rules`** (el de `documentos/4169298`): si esa cuenta se recrea, hay que actualizarlo.
+  Las entregas de los alumnos no se tocan.
+- **Interfaz**: _Mi plan_ (en el menú del profesor, `/plan`) con el estado, los planes, cómo pagar
+  y _Tus pagos_ (con las cortesías); un aviso arriba en Inicio, Planificación y la clase (7 días
+  antes, en gracia y bloqueado); _Mi plan_ y el celular en el perfil; con el plan bloqueado
+  desaparecen _Nueva clase_, _Editar_, _Duplicar_ y _Subir_, y el plan de la clase se ve en solo
+  lectura.
+- **Pruebas**: el flujo completo (registro con prueba y celular, trampas, límite, alumnos a medida,
+  gracia, bloqueo, borde de los días hábiles, días por excepción, administrador sin límites y
+  pruebas faltantes: 69 casos) se probó contra los emuladores de Firebase antes de publicarlo.
+
+### Próximamente: cobro automático
+
+Con más de unos 15–20 profesores, **uPay** (de ueno, antes Pagopar) por API: Pulso crea el pedido,
+uPay muestra el QR y avisa el pago a una Cloud Function (webhook), que llama a la misma lógica de
+`activarPlan`. La clave privada iría en Secret Manager, como la del asistente. Bancard (vPOS)
+queda como opción para débito automático con tarjeta.
+
+### Antes de cobrar (no es código)
+
+- **RUC y factura electrónica (SIFEN)**: una suscripción es una venta de servicio y lleva factura;
+  confirmarlo con un contador.
+- **Términos y condiciones y política de reembolso**, visibles antes de pagar.
+- **Precios con IVA incluido**.

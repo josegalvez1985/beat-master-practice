@@ -1,23 +1,29 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { shellStyles } from "@/components/AppShell";
 import { EscenaMusical } from "@/components/ui/escena-musical";
+import type { Role } from "@/lib/auth";
+import { fraseDelDia } from "@/lib/frases";
 import type { InstrumentId } from "@/lib/instruments";
-import { radius, shared } from "@/lib/theme";
+import { colors, fonts, radius, shared } from "@/lib/theme";
 
 // Home header for profesores and alumnos: the greeting next to an animated scene with their own
-// instruments (the harp in the middle for whoever plays it, an equalizer for everyone else).
+// instruments (the harp in the middle for whoever plays it, an equalizer for everyone else), and a
+// motivational line for the role, one per day (src/lib/frases.md).
 export function Bienvenida({
   titulo,
   subtitulo,
   instrumentos,
+  rol,
   children,
 }: {
   titulo: string;
   subtitulo?: ReactNode;
   instrumentos: InstrumentId[];
+  rol: Role;
   children?: ReactNode;
 }) {
+  const [frase] = useState(() => fraseDelDia(rol));
   const { width } = useWindowDimensions();
   const ancho = width >= 768;
   return (
@@ -25,6 +31,7 @@ export function Bienvenida({
       <View style={styles.textos}>
         <Text style={shellStyles.pageTitle}>{titulo}</Text>
         {subtitulo ? <Text style={shellStyles.pageSubtitle}>{subtitulo}</Text> : null}
+        {frase ? <Text style={styles.frase}>“{frase}”</Text> : null}
         {children}
       </View>
       <View style={ancho ? styles.escena : undefined}>
@@ -49,6 +56,14 @@ const styles = StyleSheet.create({
   fila: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  frase: {
+    marginTop: 6,
+    marginBottom: 4,
+    fontFamily: fonts.medium,
+    fontSize: 15,
+    lineHeight: 21,
+    color: colors.mutedForeground,
   },
   textos: {
     flex: 1,

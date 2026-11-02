@@ -1,0 +1,211 @@
+# Frases motivadoras
+
+El inicio muestra una por día (la misma todo el día): las de _Alumnos_ a los alumnos y las de
+_Profesores_ a los profesores. Recorre todas sin repetir y después vuelve a empezar en otro orden. Cada frase es una línea que empieza con `- `; se pueden agregar,
+quitar o cambiar sin tocar el código ([`frases.ts`](frases.ts) las lee de aquí).
+
+## Alumnos
+
+- Cada minuto que practicas hoy suena mejor mañana.
+- No hace falta tocar perfecto: hace falta tocar hoy.
+- Lento y bien es el camino más rápido.
+- Tu instrumento te espera: diez minutos alcanzan para empezar.
+- El pasaje difícil de hoy es el fácil de la próxima semana.
+- Equivocarse es parte de la música; rendirse no.
+- Escucha tu grabación: ahí aprendes lo que mientras tocas no notas.
+- La constancia le gana al talento que no practica.
+- Un compás bien tocado vale más que una canción apurada.
+- Respira, cuenta y vuelve a empezar.
+- Hoy practica una sola cosa, pero practícala bien.
+- El metrónomo no es tu enemigo: es tu compañero de ensayo.
+- Cada día que practicas, tu racha y tus manos lo notan.
+- La música se aprende de a poco y se disfruta para siempre.
+- Tocar para ti también es tocar para alguien.
+- Si te cuesta, estás aprendiendo.
+- Pequeños avances todos los días hacen grandes músicos.
+- Afina primero, toca después: tus oídos te lo agradecerán.
+- No compares tu comienzo con el final de otro.
+- El silencio también es música: respétalo.
+- Lo que hoy repites, mañana te sale solo.
+- Ponle ganas al calentamiento: es la base de todo lo demás.
+- Tu profesor ve tu esfuerzo, aunque no salga perfecto.
+- Una grabación escuchada con atención vale más que mil intentos a ciegas.
+- Baja el tempo, sube la calidad.
+- Cada escala que tocas abre una puerta nueva.
+- La paciencia también se practica.
+- Hoy es un buen día para tocar esa obra que te gusta.
+- Los grandes músicos también empezaron leyendo nota por nota.
+- Disfruta el proceso: el escenario llega solo.
+- Practicar cansado no sirve; practicar con atención, sí.
+- El error que notas es el error que puedes corregir.
+- Toca con el corazón, cuenta con la cabeza.
+- Diez minutos de foco valen más que una hora distraído.
+- Tu sonido es único: cuídalo.
+- Vuelve a ese compás una vez más. Esta vez sale.
+- Cada nota afinada es una pequeña victoria.
+- La guarania se toca con calma; tu práctica también.
+- Las manos aprenden lo que la cabeza repite con paciencia.
+- No esperes las ganas: empieza y las ganas llegan.
+- Celebra lo que ya te sale.
+- Si hoy no tienes mucho tiempo, toca aunque sea un poco.
+- El ritmo está en tu cuerpo: escúchalo.
+- Lo difícil se vuelve posible cuando lo partes en pedacitos.
+- Hoy suenas mejor que hace un mes. Escúchate y compruébalo.
+- Practicar es un regalo que te haces a ti mismo.
+- Cada clase entregada es un paso más en tu camino.
+- La música no se apura: se construye.
+- Tu mejor obra todavía no la tocaste.
+- Sonríe mientras tocas: también se escucha.
+- Repite despacio hasta que sea fácil; después, acelera.
+- Un buen músico escucha más de lo que toca.
+- No hay mejor atajo que la práctica diaria.
+- Hoy toca como si nadie te estuviera escuchando.
+- Los dedos tienen memoria: dales buenos recuerdos.
+- Tu esfuerzo de hoy es el aplauso de mañana.
+- Cuando algo no sale, cambia el tempo, no la meta.
+- La música te espera siempre, pero tu progreso empieza hoy.
+- Cada día es una nueva oportunidad para sonar mejor.
+- Postura cómoda, hombros sueltos, y a tocar.
+- Escuchar música con atención también es practicar.
+- Tu instrumento no juzga: solo te devuelve lo que le das.
+- Aprender a tocar es aprender a tener paciencia contigo.
+- Lo importante no es cuánto tocas, sino cómo lo tocas.
+- Un pasaje limpio a 60 vale más que uno sucio a 120.
+- Deja que el error te enseñe y sigue adelante.
+- Cada tempo que superas es un récord tuyo.
+- La práctica constante convierte lo imposible en rutina.
+- Hoy suma un día más a tu racha.
+- Toca la obra que te hizo querer aprender.
+- Tus metas de la semana están más cerca de lo que crees.
+- La música que tocas cuenta tu historia.
+- Nadie nace sabiendo: todos aprendemos tocando.
+- Practica para disfrutar, no solo para cumplir.
+- El mejor momento para practicar es ahora.
+- Aprende la canción; después, hazla tuya.
+- Si se te traba, respira y cuenta de nuevo.
+- Cada clase te acerca al músico que quieres ser.
+- La disciplina de hoy es tu libertad de mañana con el instrumento.
+- Tu oído también se entrena: dale un ejercicio hoy.
+- Grabarte da miedo al principio y orgullo después.
+- Lo que hoy te lleva una semana, mañana te llevará un minuto.
+- Polca, guarania o rock: todo empieza con un buen pulso.
+- Toca con intención, aunque sea una sola nota.
+- Un músico es alguien que no dejó de practicar.
+- Tu progreso no siempre se ve, pero siempre se escucha.
+- Hoy no busques la perfección: busca mejorar un poquito.
+- Ponle nombre a lo que vas a practicar y hazlo.
+- Los aplausos se ganan en las horas que nadie ve.
+- Tu profesor cree en ti: demuéstrale que tiene razón.
+- Cuando la mano duda, el oído guía.
+- Practicar es sembrar; tocar en un recital es cosechar.
+- Cada día que tocas, la música se vuelve más tuya.
+- Una buena práctica termina con ganas de volver mañana.
+- No hay notas pequeñas: cada una cuenta.
+- Mira lo lejos que llegaste, no solo lo que falta.
+- Hoy dedica unos minutos a esa parte que siempre saltas.
+- La música es un idioma: cuanto más lo hablas, mejor lo entiendes.
+- Tu constancia es tu superpoder.
+- Toma tu instrumento: la música empieza cuando tú empiezas.
+
+## Profesores
+
+- Cada alumno que avanza lleva un poco de tu música.
+- Enseñar es sembrar canciones que vas a escuchar por años.
+- Una devolución a tiempo vale más que diez correcciones tardías.
+- Celebra el pequeño avance: es el que mantiene a tu alumno practicando.
+- Tu paciencia de hoy es la seguridad de tu alumno en el escenario.
+- Una clase bien planificada se nota en cada minuto.
+- Detrás de cada músico hubo un profesor que creyó en él.
+- Enseñar música es enseñar a escuchar.
+- Un comentario en el segundo justo puede cambiar toda una práctica.
+- Tus alumnos olvidarán algunos ejercicios, pero no la confianza que les diste.
+- Cada alumno tiene su tempo: acompáñalo.
+- Inspirar también es parte de la clase.
+- La mejor lección es la que el alumno quiere practicar en casa.
+- Hoy alguien va a tocar mejor gracias a ti.
+- Corregir con cariño hace que el alumno vuelva.
+- Una buena rutina vale más que una clase brillante y aislada.
+- Cada clase que das también te enseña algo a ti.
+- Tu entusiasmo se contagia más que cualquier técnica.
+- Una meta clara convierte la práctica en progreso.
+- Escuchar la grabación de tu alumno es escuchar su esfuerzo.
+- El repertorio correcto enciende las ganas de practicar.
+- Planifica la semana y la semana trabajará para ti.
+- Cada ruta de aprendizaje empieza con un primer objetivo marcado.
+- Los grandes cambios se construyen con pequeños pasos semanales.
+- Tu oído es la brújula de tus alumnos.
+- Una palabra de aliento puede salvar una racha.
+- Enseñar a practicar es tan importante como enseñar a tocar.
+- Hoy dale a cada alumno una cosa concreta para mejorar.
+- Lo que tú amas de la música es lo que tus alumnos aprenden a amar.
+- Una clase ordenada deja espacio para la inspiración.
+- Reconoce el esfuerzo, no solo el resultado.
+- Los recitales se ganan en las clases de todos los días.
+- Tu música sigue sonando en las manos de tus alumnos.
+- Ser profesor es acompañar el camino, no recorrerlo por ellos.
+- Cada alumno distinto te hace un mejor profesor.
+- Un buen calentamiento al inicio ordena toda la clase.
+- Tu conocimiento crece cada vez que lo compartes.
+- Hoy revisa una entrega con calma: tu alumno lo va a notar.
+- La constancia del alumno empieza con la constancia del profesor.
+- Enseñar guarania, polca o galopa es enseñar quiénes somos.
+- Un objetivo alcanzado merece ser celebrado.
+- La técnica se enseña; el amor por la música se contagia.
+- Cada pregunta de un alumno es una oportunidad.
+- Menos teoría suelta, más música con sentido.
+- Tu forma de corregir define cómo se escuchan tus alumnos.
+- Ten paciencia: los frutos de la música tardan, pero llegan.
+- Una clase es buena cuando el alumno sale con ganas de tocar.
+- Tu tiempo y tu dedicación dejan huella.
+- Enseñar es tocar a muchas manos.
+- Hoy es un buen día para proponer un desafío nuevo.
+- Los alumnos aprenden más de lo que ven que de lo que escuchan.
+- Un buen plan de clase te deja tiempo para lo importante: escuchar.
+- Detrás de cada insignia hay un alumno que no se rindió.
+- Tu experiencia es el atajo que tus alumnos necesitan.
+- La música une generaciones, y tú eres el puente.
+- Cada alumno que vuelve a la clase es un logro tuyo.
+- Ajusta la meta al alumno, no el alumno a la meta.
+- Hoy elige una cosa para elogiar en cada alumno.
+- Una devolución clara es un regalo.
+- Los mejores profesores siguen siendo alumnos.
+- Enseñar con orden es enseñar con respeto.
+- Lo que planificas hoy lo cosechas en el recital.
+- Tu voz en la clase es la que tus alumnos escuchan al practicar solos.
+- Escucha más, corrige mejor.
+- Una buena pregunta enseña más que una larga explicación.
+- Cada clase es una oportunidad de encender una chispa.
+- La música bien enseñada dura toda la vida.
+- No hay alumnos sin talento: hay ritmos de aprendizaje distintos.
+- Hoy agradece a la música por dejarte enseñarla.
+- Un alumno motivado practica el doble.
+- Tu dedicación forma músicos y también personas.
+- Planificar te devuelve tiempo para crear.
+- Cada entrega revisada es un alumno acompañado.
+- Tu entusiasmo es el mejor metrónomo de la clase.
+- Enseñar es confiar en lo que el alumno todavía no sabe que puede.
+- Las pequeñas correcciones semanales hacen grandes intérpretes.
+- Mostrar el progreso motiva más que señalar lo que falta.
+- Hoy alguien va a descubrir que puede tocar algo nuevo.
+- Tu aula es donde nace la música de mañana.
+- Inspira con el ejemplo: toca para tus alumnos.
+- La claridad de tu plan se refleja en la confianza de tu alumno.
+- Cada nivel superado es un mérito compartido.
+- Enseñar es un arte que también se practica.
+- Tus alumnos llevarán tu forma de tocar a otros escenarios.
+- Una meta semanal concreta vale más que una promesa lejana.
+- Cuida tu energía: tus alumnos la necesitan.
+- La música paraguaya vive en cada alumno que la aprende contigo.
+- Corrige el error, pero celebra el intento.
+- Un buen profesor deja huella; uno excelente deja música.
+- Hoy dale a un alumno la canción que lo haga soñar.
+- La escucha atenta es tu mejor herramienta para enseñar.
+- Cada recital es el fruto de muchas clases que nadie ve.
+- Lo que enseñas hoy, alguien lo enseñará mañana.
+- Ordena tu semana y disfruta más tus clases.
+- Enseñar música es uno de los trabajos más lindos del mundo.
+- Tus alumnos crecen al ritmo de tu paciencia.
+- Una sonrisa al empezar la clase afina el ambiente.
+- Comparte tu pasión: es lo que más se aprende.
+- Hoy, como siempre, tu música se multiplica.
+- Gracias por enseñar: el mundo suena mejor por ti.

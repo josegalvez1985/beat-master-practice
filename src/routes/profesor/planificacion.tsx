@@ -5,6 +5,7 @@ import { shellStyles } from "@/components/AppShell";
 import { ClaseFormDialog } from "@/components/ClaseFormDialog";
 import { ClaseItem } from "@/components/ClaseItem";
 import { PageMeta } from "@/components/PageMeta";
+import { AvisoPlan, usePlanProfesor } from "@/components/PlanAviso";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -77,6 +78,8 @@ export default function Planificacion() {
   const [ancla, setAncla] = useState(hoy());
   const [filtro, setFiltro] = useState<InstrumentId | null>(null);
   const [nueva, setNueva] = useState<string | null>(null);
+  // With the plan blocked the rules reject new classes: the buttons are not shown.
+  const puedeCrear = !usePlanProfesor(perfil.uid).bloqueado;
 
   const [inicio, fin] = rango(periodo, ancla);
   const visibles = clases.data.filter(
@@ -97,11 +100,15 @@ export default function Planificacion() {
             Arma tus clases por semana, mes o año. Tus alumnos las ven al instante.
           </Text>
         </View>
-        <Button size="lg" onPress={() => setNueva(periodo === "semana" ? ancla : inicio)}>
-          <Plus size={16} color={buttonForeground()} />
-          Nueva clase
-        </Button>
+        {puedeCrear ? (
+          <Button size="lg" onPress={() => setNueva(periodo === "semana" ? ancla : inicio)}>
+            <Plus size={16} color={buttonForeground()} />
+            Nueva clase
+          </Button>
+        ) : null}
       </View>
+
+      <AvisoPlan uid={perfil.uid} />
 
       <View style={[shared.panel, styles.toolbar]}>
         <Segmented value={periodo} options={periodos} onChange={setPeriodo} />
@@ -150,10 +157,12 @@ export default function Planificacion() {
           title="No hay clases este mes"
           description="Crea la primera y, si quieres, repítela cada semana."
           action={
-            <Button onPress={() => setNueva(inicio)}>
-              <Plus size={16} color={buttonForeground()} />
-              Nueva clase
-            </Button>
+            puedeCrear ? (
+              <Button onPress={() => setNueva(inicio)}>
+                <Plus size={16} color={buttonForeground()} />
+                Nueva clase
+              </Button>
+            ) : undefined
           }
         />
       ) : null}
@@ -169,7 +178,7 @@ export default function Planificacion() {
               <Text style={styles.groupCount}>
                 {grupo.clases.length} {grupo.clases.length === 1 ? "clase" : "clases"}
               </Text>
-              {periodo === "semana" ? (
+              {periodo === "semana" && puedeCrear ? (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Nueva clase el ${grupo.titulo}`}

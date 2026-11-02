@@ -2,6 +2,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } fr
 import { Outlet, useLocation } from "react-router";
 import {
   CalendarDays,
+  CreditCard,
   Database,
   Home,
   LogOut,
@@ -28,6 +29,7 @@ const nav: Record<"profesor" | "alumno", NavItem[]> = {
     { href: "/", label: "Inicio", icon: Home },
     { href: "/planificacion", label: "Planificación", icon: CalendarDays },
     { href: "/herramientas", label: "Herramientas", icon: Wrench },
+    { href: "/plan", label: "Mi plan", icon: CreditCard },
   ],
   alumno: [
     { href: "/", label: "Inicio", icon: Home },

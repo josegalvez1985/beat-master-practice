@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
+  Camera,
   ExternalLink,
   FileAudio,
   FileImage,
@@ -18,9 +19,11 @@ import { Button, buttonForeground } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   MAX_BYTES,
+  conCamara,
   elegirArchivos,
   formatearTamano,
   motivoDeSubida,
+  sacarFoto,
   subirYAnotar,
   useDownloadUrl,
   type Material,
@@ -202,8 +205,11 @@ export function UploadButton({
   const actualizar = (index: number, cambios: Partial<Subida>) =>
     setSubidas((actuales) => actuales.map((s, i) => (i === index ? { ...s, ...cambios } : s)));
 
-  const onPress = async () => {
-    const files = await elegirArchivos({ accept });
+  // On phones and tablets, a second button opens the camera for a photo (a written task, a score,
+  // the whiteboard), wherever images are accepted.
+  const camara = /(^|,)\s*image\//.test(accept) && conCamara();
+
+  const subir = async (files: File[]) => {
     if (files.length === 0) return;
     setSubidas(files.map((file) => ({ nombre: file.name, porcentaje: 0 })));
     for (const [index, file] of files.entries()) {
@@ -226,12 +232,26 @@ export function UploadButton({
     setSubidas((actuales) => actuales.filter((s) => s.error));
   };
 
+  const onPress = async () => subir(await elegirArchivos({ accept }));
+  const onFoto = async () => {
+    const foto = await sacarFoto();
+    if (foto) await subir([foto]);
+  };
+
   return (
     <View style={styles.uploader}>
-      <Button variant={variant} disabled={subiendo} onPress={onPress}>
-        <Upload size={16} color={buttonForeground(variant)} />
-        {subiendo ? "Subiendo..." : label}
-      </Button>
+      <View style={styles.botones}>
+        <Button variant={variant} disabled={subiendo} onPress={onPress}>
+          <Upload size={16} color={buttonForeground(variant)} />
+          {subiendo ? "Subiendo..." : label}
+        </Button>
+        {camara ? (
+          <Button variant="secondary" disabled={subiendo} onPress={onFoto}>
+            <Camera size={16} color={buttonForeground("secondary")} />
+            Sacar foto
+          </Button>
+        ) : null}
+      </View>
       {subidas.map((subida, index) => (
         <View key={index} style={styles.progressRow}>
           <View style={styles.progressText}>
@@ -302,6 +322,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   uploader: {
+    gap: 8,
+  },
+  botones: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   progressRow: {

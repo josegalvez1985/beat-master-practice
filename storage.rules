@@ -20,6 +20,23 @@ service firebase.storage {
       return firestore.exists(/databases/(default)/documents/inscripciones/$(clase(claseId).profesorId + '_' + request.auth.uid + '_' + clase(claseId).instrumento));
     }
 
+    // The profesor's plan is not blocked (same formula as venceDe / bloqueoDe in firestore.rules
+    // and src/lib/planes.ts). Only get(): Storage reads at most 2 documents per request, and
+    // uploading a material already reads the class. No plan record: get() fails and it is denied.
+    // The admin account has everything enabled. Storage cannot read a third document to look it
+    // up, so its uid is written here: the uid of documentos/4169298 (src/lib/admin.ts). If that
+    // account is ever recreated, update it.
+    function habilitado(uid) {
+      return uid == 'ZUf7fQGacZPYqbcv1Px2C928SHx1' || habilitadoPorPlan(uid);
+    }
+
+    function habilitadoPorPlan(uid) {
+      let s = firestore.get(/databases/(default)/documents/suscripciones/$(uid)).data;
+      let vence = 'venceEn' in s ? s.venceEn : s.pruebaDesde + duration.value(30, 'd');
+      let dia = (vence - duration.value(3, 'h')).dayOfWeek();
+      return request.time < vence + duration.value(dia == 6 ? 6 : (dia == 7 ? 5 : 7), 'd');
+    }
+
     // 200 MB per file; keep in sync with MAX_BYTES in src/lib/files.ts.
     function tamanoValido() {
       return request.resource.size < 200 * 1024 * 1024;
@@ -29,7 +46,8 @@ service firebase.storage {
     match /clases/{claseId}/{archivo} {
       allow read: if signedIn() && (esDelProfesor(claseId) || inscripto(claseId));
       allow create: if signedIn() && esDelProfesor(claseId) && tamanoValido()
-        && request.resource.contentType.matches('audio/.*|video/.*|image/.*|application/pdf|application/vnd[.]recordare[.].*|application/xml|text/xml|application/octet-stream');
+        && request.resource.contentType.matches('audio/.*|video/.*|image/.*|application/pdf|application/vnd[.]recordare[.].*|application/xml|text/xml|application/octet-stream')
+        && habilitado(request.auth.uid);
       allow delete: if signedIn() && esDelProfesor(claseId);
     }
 

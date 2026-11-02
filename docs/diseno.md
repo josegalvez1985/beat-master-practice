@@ -104,23 +104,24 @@ librerías de animación: pesan unos KB, no descargan nada y no gastan memoria d
 
 ## Componentes base
 
-| Componente                            | Archivo                 | Para qué                                                                                  |
-| ------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------- |
-| `Button`                              | `ui/button.tsx`         | Variantes `default` (ámbar), `secondary`, `outline`; tamaños `sm`, `lg`, `icon`           |
-| `Input`, `PasswordInput`, `DateInput` | `ui/`                   | Campos; la contraseña tiene botón para mostrarla                                          |
-| `Chip`                                | `ui/chip.tsx`           | Instrumentos y filtros; seleccionable                                                     |
-| `Segmented`                           | `ui/segmented.tsx`      | Pestañas tipo píldora (Semana / Mes / Año, Soy alumno / Soy profesor)                     |
-| `Dialog`                              | `ui/dialog.tsx`         | Modal centrado; se cierra con la X, clic afuera o Escape                                  |
-| `Section`, `Badge`                    | `ui/section.tsx`        | Tarjeta con título y acciones; insignias de estado                                        |
-| `Stat`                                | `ui/stat.tsx`           | Indicadores grandes del inicio del profesor                                               |
-| `Progress`                            | `ui/progress.tsx`       | Barra de progreso                                                                         |
-| `EmptyState`                          | `ui/empty-state.tsx`    | Lista vacía con ícono, explicación y acción                                               |
-| `MaterialList`, `UploadButton`        | `Materials.tsx`         | Archivos con reproductor de audio/video y subida con barra de avance                      |
-| `ClaseItem`, `Avatar`                 | `ClaseItem.tsx`         | Fila de clase con fecha en chip; iniciales de la persona                                  |
-| `EscenaMusical`                       | `ui/escena-musical.tsx` | Ilustración animada: arpa o ecualizador, instrumentos flotando, notas y la línea de pulso |
-| `Bienvenida`                          | `Bienvenida.tsx`        | Saludo del inicio con la escena de los instrumentos de la persona                         |
-| `Anillo`                              | `ui/anillo.tsx`         | Progreso circular con el porcentaje al centro; se llena al aparecer                       |
-| `Pastilla`                            | `ui/pastilla.tsx`       | Etiqueta redonda con ícono y un dato ("Guitarra · 12 alumnos")                            |
+| Componente                            | Archivo                 | Para qué                                                                                                                                                                                  |
+| ------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`                              | `ui/button.tsx`         | Variantes `default` (ámbar), `secondary`, `outline` y `destructive` (rojo, solo para confirmar algo que no se deshace); tamaños `sm`, `lg`, `icon`                                        |
+| `Input`, `PasswordInput`, `DateInput` | `ui/`                   | Campos; la contraseña tiene botón para mostrarla                                                                                                                                          |
+| `Chip`                                | `ui/chip.tsx`           | Instrumentos y filtros; seleccionable                                                                                                                                                     |
+| `Segmented`                           | `ui/segmented.tsx`      | Pestañas tipo píldora (Semana / Mes / Año, Soy alumno / Soy profesor)                                                                                                                     |
+| `Dialog`                              | `ui/dialog.tsx`         | Modal centrado; se cierra con la X, clic afuera o Escape                                                                                                                                  |
+| `confirmar()` + `Confirmaciones`      | `ui/confirmar.tsx`      | En lugar de `window.confirm` (ESLint lo prohíbe): ícono, título con la pregunta, qué pasa y qué se borra en una lista, y el botón con la acción ("Eliminar clase"); rojo si no se deshace |
+| `Section`, `Badge`                    | `ui/section.tsx`        | Tarjeta con título y acciones; insignias de estado                                                                                                                                        |
+| `Stat`                                | `ui/stat.tsx`           | Indicadores grandes del inicio del profesor                                                                                                                                               |
+| `Progress`                            | `ui/progress.tsx`       | Barra de progreso                                                                                                                                                                         |
+| `EmptyState`                          | `ui/empty-state.tsx`    | Lista vacía con ícono, explicación y acción                                                                                                                                               |
+| `MaterialList`, `UploadButton`        | `Materials.tsx`         | Archivos con reproductor de audio/video y subida con barra de avance                                                                                                                      |
+| `ClaseItem`, `Avatar`                 | `ClaseItem.tsx`         | Fila de clase con fecha en chip; iniciales de la persona                                                                                                                                  |
+| `EscenaMusical`                       | `ui/escena-musical.tsx` | Ilustración animada: arpa o ecualizador, instrumentos flotando, notas y la línea de pulso                                                                                                 |
+| `Bienvenida`                          | `Bienvenida.tsx`        | Saludo del inicio con la escena de los instrumentos de la persona                                                                                                                         |
+| `Anillo`                              | `ui/anillo.tsx`         | Progreso circular con el porcentaje al centro; se llena al aparecer                                                                                                                       |
+| `Pastilla`                            | `ui/pastilla.tsx`       | Etiqueta redonda con ícono y un dato ("Guitarra · 12 alumnos")                                                                                                                            |
 
 Los íconos son de [Lucide](https://lucide.dev).
 
@@ -149,7 +150,8 @@ Los íconos son de [Lucide](https://lucide.dev).
 **Modal Crear cuenta** (`?modal=registro`)
 
 1. Tarjetas grandes **Alumno** / **Profesor** ("¿Eres alumno o profesor?").
-2. Nombre y apellido, Nro. de documento (con aclaración de para qué sirve), correo y contraseña.
+2. Nombre y apellido, Nro. de documento (con aclaración de para qué sirve), **celular** (solo profesores,
+   obligatorio: "Solo lo ve el equipo de Pulso"), correo y contraseña.
 3. Instrumentos con chips seleccionables; la pregunta cambia según el rol.
 4. Errores concretos: documento ya registrado, correo en uso, falta instrumento…
 
@@ -175,14 +177,14 @@ registrarse de nuevo con el mismo correo.
 ### Navegación
 
 - **Celular (< 640 px)**: barra inferior con íconos y texto (profesor: Inicio, Planificación,
-  Herramientas, Perfil; alumno: Inicio, **Practicar**, Herramientas, Perfil). _Practicar_ lleva directo al modo práctica de la
+  Herramientas, Mi plan, Perfil; alumno: Inicio, **Practicar**, Herramientas, Perfil). _Practicar_ lleva directo al modo práctica de la
   próxima clase (`/practicar`).
 - **Avisos** breves abajo de la pantalla para lo que pasó ("Foto actualizada", errores al guardar)
   y para deshacer ("Bloque eliminado · **Deshacer**").
 
 ### Barra superior (con sesión)
 
-Logo a la izquierda (lleva al inicio); navegación del rol (profesor: _Inicio_, _Planificación_, _Herramientas_; alumno: _Inicio_,
+Logo a la izquierda (lleva al inicio); navegación del rol (profesor: _Inicio_, _Planificación_, _Herramientas_, _Mi plan_; alumno: _Inicio_,
 _Practicar_, _Herramientas_); a la
 derecha el selector de tema, el nombre, el rol y la foto (llevan a **Mi perfil**) y **Salir**. En
 celular la navegación muestra solo íconos, la cuenta solo la foto y el tema se cambia desde el
@@ -193,15 +195,22 @@ y en la inferior.
 
 - **Foto de perfil**: foto grande (o iniciales), **Subir foto** / **Cambiar foto** y **Quitar foto**.
   La imagen se recorta en cuadrado y se achica a 512 px en el navegador antes de subirla.
-- **Mis datos**: nombre, número de documento, correo, rol e instrumentos.
+- **Mis datos**: nombre, número de documento, correo, rol e instrumentos; el profesor, además, su
+  **celular** ("solo lo ve el equipo de Pulso") con _Cambiar_, o un recuadro ámbar para agregarlo si
+  se registró antes de que fuera obligatorio.
 - **Instrumentos que enseñas / estudias**: los actuales y botones "+ Piano"… para agregar más
   (con confirmación). No se quitan desde la app.
 - **Apariencia**: Sistema, Claro u Oscuro.
+- **Mi plan** (solo profesores): el estado en una línea ("Prueba gratis hasta el …", "Profesor,
+  activo hasta el …", "Vencido…") y _Ver mi plan y cómo pagar_.
+- **Manual de uso**: _Abrir el manual_ abre un diálogo con los temas del rol (profesor o alumno)
+  plegables, uno abierto a la vez (borde `primary` y fondo `selected`), con pasos numerados. El
+  contenido está en [`manual.ts`](../src/lib/manual.ts): actualízalo junto con _Primeros pasos_.
 - **Ayuda y contacto**: _Escribir a Pulso_ abre el formulario de contacto con sus datos cargados.
 
 ### Profesor · Inicio (`/`)
 
-- **Bienvenida**: saludo e instrumentos que enseña, con una pastilla por instrumento y **cuántos
+- **Bienvenida**: saludo, una **frase motivadora** del día (`src/lib/frases.md`: una por día, las 100 sin repetir) e instrumentos que enseña, con una pastilla por instrumento y **cuántos
   alumnos** tiene en esa lista ("Guitarra · 12 alumnos"), junto a la escena musical con **sus**
   instrumentos flotando (el arpa al centro si la enseña; si no, el ecualizador).
 - Indicadores: **Alumnos**, **Clases este mes**, **Entregas esta semana**.
@@ -222,6 +231,25 @@ y en la inferior.
   **modalidad** (presencial o virtual con el **enlace** de la videollamada), objetivos y tarea,
   **Es un recital o muestra** (lugar y programa: quién toca qué) y **Repetir cada semana hasta…**
   (muestra cuántas clases se van a crear, máximo 60).
+
+### Profesor · Mi plan (`/plan`)
+
+- **Tu plan**: insignia con el plan, el estado en una frase (prueba, activo, en gracia con la fecha
+  límite, o vencido), "N de M alumnos" con barra (en rojo si pasa el límite) y la regla de los 5
+  días hábiles.
+- **Planes**: tres tarjetas (Inicial, Profesor, Academia) con el precio en `fonts.display`, "por
+  mes" y lo que incluye; la del plan actual con `colors.selected` + borde `primary` y _Tu plan_; "este
+  plan no alcanza" en rojo si tiene más alumnos.
+- **Cómo pagar**: pasos numerados con los datos de ueno (banco, titular, alias o cuenta,
+  seleccionables para copiar), el concepto `Pulso {documento}` y, si hay WhatsApp configurado,
+  _Enviar comprobante_. Sin datos configurados, un aviso para escribir desde _Ayuda y contacto_.
+- **Tus pagos**: plan, meses, "hasta el …", referencia y monto; las cortesías como "Días de
+  cortesía" con su motivo. La cuenta del administrador dice que tiene todo habilitado.
+- **Aviso del plan** (`AvisoPlan`) arriba de Inicio, Planificación y la clase del profesor: con
+  7 días o menos, en gracia (borde ámbar, _Ver mi plan_) o bloqueado (borde rojo, _Renovar mi
+  plan_). Con el plan bloqueado no aparecen _Nueva clase_, _Editar_, _Duplicar_ ni _Subir_; en su
+  lugar, "Con tu plan vencido no puedes …" con _Mi plan_. _Agregar alumno_ muestra "Tienes N de M
+  alumnos" y el motivo exacto si la función lo rechaza (límite o plan vencido).
 
 ### Profesor · Alumno (`/alumnos/:id`)
 
@@ -295,7 +323,7 @@ instrumento, su meta semanal total como dato aparte y las últimas anotaciones).
   materiales, del alumno en sus archivos de la entrega) quita el archivo con **Deshacer** (6 s), y
   si el borrado falla lo vuelve a mostrar con un aviso de error.
 - **Profesor**: Editar, Eliminar (pide confirmación y avisa que también se borran los materiales y
-  las entregas de los alumnos), Subir materiales (con barra de avance por archivo) y **Alumnos de la
+  las entregas de los alumnos), Subir materiales (con barra de avance por archivo; en celular y tablet, también **Sacar foto**, que abre la cámara) y **Alumnos de la
   clase** ("1 de 3 entregaron · 2 asistieron"): por alumno, **asistencia** (Presente, Llegó tarde,
   Ausente; tocar la marcada la borra), sus archivos con el **análisis** de la grabación (notas
   afinadas, estabilidad del tiempo, BPM), comentarios, **Evaluar con rúbrica** (1 a 5 por criterio
@@ -304,12 +332,12 @@ instrumento, su meta semanal total como dato aparte y las últimas anotaciones).
   criterio y su devolución), **Grabar audio / video** ahí mismo (_Sin click_ / _Con click_ con el
   tempo, y el aviso de usar auriculares; al terminar, **Analizando afinación y tiempo…** y el
   resultado, que se envía con la grabación; se escucha, se puede repetir o descargar, y **Enviar a
-  mi profesor**), _Subir audio, video, foto o PDF_ como alternativa (fotos y PDF hasta 20 MB: una tarea escrita, una partitura copiada), sus archivos, un comentario para el profesor
+  mi profesor**), _Subir audio, video, foto o PDF_ como alternativa (fotos y PDF hasta 20 MB: una tarea escrita, una partitura copiada) y, en celular y tablet, **Sacar foto** con la cámara, sus archivos, un comentario para el profesor
   y **Mensajes con tu profesor** (una charla por clase; cada uno borra los suyos).
 
 ### Alumno · Inicio (`/`)
 
-- **Bienvenida**: saludo, **sus instrumentos** en pastillas y **su semana** en un anillo de
+- **Bienvenida**: saludo, una **frase motivadora** del día (`src/lib/frases.md`: una por día, las 100 sin repetir), **sus instrumentos** en pastillas y **su semana** en un anillo de
   progreso que se llena al aparecer (verde al 100 %): meta semanal o, sin meta, clases de la semana
   entregadas (ver _Progreso_ en [arquitectura](arquitectura.md#progreso)); al lado, la escena con sus
   instrumentos. El número de documento sigue en el aviso para quien aún no está en una lista y en
@@ -416,14 +444,24 @@ instrumento, su meta semanal total como dato aparte y las últimas anotaciones).
   "¿Cómo se usa _esta pantalla_?"; burbujas (la persona a la derecha con el tinte `selected`, el
   asistente a la izquierda con Markdown simple); "Pensando…" mientras responde; un error se
   muestra con _Reintentar_.
-- Pie: "Hoy: N de 50 · Puede equivocarse: revisa lo importante. Solo ve tus datos y no cambia
+- Pie: "Hoy: N de 30 · Puede equivocarse: revisa lo importante. Solo ve tus datos y no cambia
   nada." Enter envía; Shift+Enter, nueva línea.
 
 ### Administración (`/admin`, solo el administrador)
 
-- Título _Administración_ y "Todo el backend de Pulso: Firestore, cuentas y archivos. Solo
-  lectura.", con **Recargar** a la derecha. Debajo, dos `Stat`: _Colecciones_ y _Documentos_.
-- `Segmented` con _Colecciones_ | _Cuentas_ | _Archivos_:
+- Título _Administración_ y "Los planes de los profesores y todo el backend de Pulso (Firestore,
+  cuentas y archivos, solo lectura).", con **Recargar** a la derecha. Debajo, dos `Stat`: _Colecciones_ y _Documentos_.
+- `Segmented` con _Planes_ | _Colecciones_ | _Cuentas_ | _Archivos_:
+  - **Planes** (la vista inicial): un aviso en rojo si hay profesores sin plan, con _Darles la
+    prueba gratis_ (confirmación con sus nombres); el buscador **por CI o nombre**; una fila por
+    profesor (nombre, CI, celular, plan, vence, bloqueo, "N de M alumnos (a medida)" y _Prueba_ /
+    _Activo_ o, en rojo, _En gracia_ / _Bloqueado_ / _Sin plan_) con WhatsApp, _Habilitar días_ y
+    _Registrar pago_. La cuenta del administrador dice _Todo habilitado_ y no tiene esos botones.
+  - _Registrar pago_ pide plan (`Segmented`), meses y **cantidad de alumnos** (`Stepper`: la del
+    plan o una a medida), monto (precio × meses, editable) y referencia, y confirma con
+    `confirmar()`. _Habilitar días_ elige **cantidad de días** o **hasta una fecha** (`DateInput`)
+    y un motivo, muestra "Quedará habilitado hasta el …" y confirma. Debajo, _Últimos pagos y
+    cortesías_ (las cortesías con su motivo y Gs. 0).
   - **Colecciones**: una tarjeta con las colecciones como opciones chicas (`nombre (cantidad)`),
     el buscador "Buscar en lo cargado" y una fila por documento (id en negrita, una pista como el
     `nombre` o el `titulo`, y la fecha del último cambio). Al tocar la fila se despliegan los datos
@@ -445,11 +483,11 @@ instrumento, su meta semanal total como dato aparte y las últimas anotaciones).
 
 ## Ideas para las próximas versiones
 
-| Pantalla      | Mejora sugerida                                                                                               |
-| ------------- | ------------------------------------------------------------------------------------------------------------- |
-| Planificación | Cuadrícula de calendario en la vista Mes y arrastrar clases para cambiarlas de día                            |
-| Clase         | Marcar cada entrega como _Revisada_ y dejar devoluciones en audio, además de las escritas con marca de tiempo |
-| Batería       | Medidor de tiempo sobre un groove completo (bombo y caja por separado) y exportar el groove a partitura       |
-| Herramientas  | Guardar el puntaje de oído y lectura para ver el avance semana a semana                                       |
-| General       | Notificaciones (nueva clase, nueva entrega, nueva devolución) y esqueletos de carga                           |
-| Pagos         | Pantalla de suscripción y estado del plan (ver [arquitectura](arquitectura.md#próximamente-pagos))            |
+| Pantalla      | Mejora sugerida                                                                                                                                                       |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Planificación | Cuadrícula de calendario en la vista Mes y arrastrar clases para cambiarlas de día                                                                                    |
+| Clase         | Marcar cada entrega como _Revisada_ y dejar devoluciones en audio, además de las escritas con marca de tiempo                                                         |
+| Batería       | Medidor de tiempo sobre un groove completo (bombo y caja por separado) y exportar el groove a partitura                                                               |
+| Herramientas  | Guardar el puntaje de oído y lectura para ver el avance semana a semana                                                                                               |
+| General       | Notificaciones (nueva clase, nueva entrega, nueva devolución) y esqueletos de carga                                                                                   |
+| Pagos         | Cobro automático con uPay (QR por pedido y aviso del pago) en lugar de registrar cada pago a mano (ver [arquitectura](arquitectura.md#próximamente-cobro-automático)) |

@@ -13,9 +13,11 @@ import { HttpsError, onCall } from "firebase-functions/v2/https";
 // Authentication accounts and the Storage files) for one person only. The Admin SDK skips the
 // security rules, so the check lives here: documentos/{nro} is created with its account and the
 // rules never let it change, so its uid is the admin. Keep ADMIN_DOCUMENTO in sync with
-// src/lib/admin.ts. Nothing is written or deleted from here.
+// src/lib/admin.ts. Nothing is written or deleted from here (planes.ts reuses exigirAdmin to
+// activate plans).
 
-const ADMIN_DOCUMENTO = "4169298";
+// Also in src/lib/admin.ts and firestore.rules (and its uid in storage.rules).
+export const ADMIN_DOCUMENTO = "4169298";
 const POR_PAGINA = 50;
 const CUENTAS_POR_PAGINA = 100;
 const ARCHIVOS_POR_PAGINA = 100;
@@ -24,11 +26,13 @@ const db = () => getFirestore();
 
 type Entrada = { que?: unknown; coleccion?: unknown; despues?: unknown; pagina?: unknown };
 
-async function exigirAdmin(uid: string | undefined) {
+export const refAdmin = () => db().doc(`documentos/${ADMIN_DOCUMENTO}`);
+
+export async function exigirAdmin(uid: string | undefined) {
   if (!uid) throw new HttpsError("unauthenticated", "Entra a tu cuenta.");
-  const admin = (await db().doc(`documentos/${ADMIN_DOCUMENTO}`).get()).data();
+  const admin = (await refAdmin().get()).data();
   if (admin?.uid !== uid)
-    throw new HttpsError("permission-denied", "Solo el administrador puede ver esta página.");
+    throw new HttpsError("permission-denied", "Solo el administrador puede hacer esto.");
 }
 
 // Firestore values as plain JSON: dates as ISO text, references as their path.
@@ -58,16 +62,25 @@ async function resumen() {
 }
 
 // One page of a collection, by document id from last to first (time-based ids, like
-// asistenteConsultas, show the newest first).
+// asistenteConsultas, show the newest first). That order needs a descending index on the id
+// (firestore.indexes.json); a collection without one is listed from first to last instead, so
+// a new collection never breaks the page. Every page of a collection takes the same path.
 async function coleccion(nombre: string | undefined, despues: string | undefined) {
   if (!nombre || nombre.includes("/"))
     throw new HttpsError("invalid-argument", "Elige una colección.");
-  let consulta = db()
-    .collection(nombre)
-    .orderBy(FieldPath.documentId(), "desc")
-    .limit(POR_PAGINA + 1);
-  if (despues) consulta = consulta.startAfter(despues);
-  const snap = await consulta.get();
+  const pagina = (orden: "asc" | "desc") => {
+    let consulta = db()
+      .collection(nombre)
+      .orderBy(FieldPath.documentId(), orden)
+      .limit(POR_PAGINA + 1);
+    if (despues) consulta = consulta.startAfter(despues);
+    return consulta.get();
+  };
+  const sinIndice = (error: unknown) => (error as { code?: number }).code === 9;
+  const snap = await pagina("desc").catch((error) => {
+    if (!sinIndice(error)) throw error;
+    return pagina("asc");
+  });
   const docs = snap.docs.slice(0, POR_PAGINA);
   return {
     documentos: docs.map((d) => ({

@@ -7,6 +7,7 @@ import { Chip } from "@/components/ui/chip";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { normalizarTelefono } from "@/lib/telefono";
 import { PasswordInput } from "@/components/ui/password-input";
 import { mensajeDeError, register, type Role } from "@/lib/auth";
 import { documentoValido, normalizarDocumento } from "@/lib/documento";
@@ -37,7 +38,13 @@ function RegisterForm({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [role, setRole] = useState<Role>("alumno");
   const [selected, setSelected] = useState<InstrumentId[]>([]);
-  const [form, setForm] = useState({ name: "", documento: "", email: "", password: "" });
+  const [form, setForm] = useState({
+    name: "",
+    documento: "",
+    email: "",
+    password: "",
+    telefono: "",
+  });
 
   const toggleInstrument = (id: InstrumentId) =>
     setSelected((current) =>
@@ -58,6 +65,12 @@ function RegisterForm({ onClose }: { onClose: () => void }) {
       setError("Revisa tu correo y usa una contraseña de al menos 6 caracteres.");
       return;
     }
+    // Profesores only: a Paraguayan mobile, seen only by them and the admin.
+    const telefono = role === "profesor" ? normalizarTelefono(form.telefono) : undefined;
+    if (role === "profesor" && !telefono) {
+      setError("Escribe tu celular de Paraguay (por ejemplo, 0981 123 456).");
+      return;
+    }
     if (selected.length === 0) {
       setError("Elige al menos un instrumento.");
       return;
@@ -73,6 +86,7 @@ function RegisterForm({ onClose }: { onClose: () => void }) {
         email: form.email.trim(),
         password: form.password,
         instrumentos: selected,
+        telefono: telefono ?? undefined,
       });
     } catch (e) {
       setError(mensajeDeError(e));
@@ -132,6 +146,23 @@ function RegisterForm({ onClose }: { onClose: () => void }) {
               : "Con este número entras a Pulso."}
           </Text>
         </View>
+
+        {role === "profesor" ? (
+          <View style={authStyles.field}>
+            <Label>Celular</Label>
+            <Input
+              accessibilityLabel="Celular"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="Ej. 0981 123 456"
+              value={form.telefono}
+              onChangeText={(telefono) => setForm({ ...form, telefono })}
+            />
+            <Text style={styles.hint}>
+              Solo lo ve el equipo de Pulso, para avisarte sobre tu plan.
+            </Text>
+          </View>
+        ) : null}
 
         <View style={authStyles.field}>
           <Label>Correo</Label>

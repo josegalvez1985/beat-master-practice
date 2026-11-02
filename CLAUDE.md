@@ -30,6 +30,9 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
   Nada de hex o rgba sueltos en las pantallas, salvo los tintes ámbar translúcidos.
 - Ámbar sólido solo para la acción principal, el progreso y lo que suena; una opción seleccionada usa
   `colors.selected` + borde `colors.primary` (ver `docs/diseno.md`).
+- Nunca `window.confirm` / `alert` / `prompt` (ESLint los prohíbe): preguntar con `confirmar()`
+  (`src/components/ui/confirmar.tsx`, botón rojo `destructive` si no se deshace) y avisar con
+  `avisar()`.
 - Títulos con `fonts.heading` / `fonts.headingBold` en minúsculas; `fonts.display` (Bebas, solo
   mayúsculas) únicamente para la marca y números grandes.
 - El logo (`src/components/ui/logo.tsx`) copia el dibujo de `public/favicon.svg`; al cambiarlo,
@@ -38,7 +41,8 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
   videos ni librerías de animación; reutilizar `EscenaMusical` (`src/components/ui/escena-musical.tsx`)
   y respetar `prefers-reduced-motion` (ver `docs/diseno.md`, _Ilustraciones y animación_).
 - Al agregar algo visible para alumnos o profesores, actualizar _Primeros pasos_
-  (`src/components/PrimerosPasosDialog.tsx`) y las guías.
+  (`src/components/PrimerosPasosDialog.tsx`), el _Manual de uso_ del perfil (`src/lib/manual.ts`)
+  y las guías.
 - Textos para Google: `SITE_TITLE` / `SITE_DESCRIPTION` en `src/lib/site.ts` e iguales en
   `index.html`. Dicen exactamente qué es Pulso (exclusiva para profesores de música y sus alumnos),
   nunca "clases de … en …": no es un directorio de profesores (ver `docs/despliegue.md`).
@@ -69,8 +73,23 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
   `VITE_FIREBASE_VAPID_KEY` en `.env`.
 - Administración (`/admin`, `src/routes/admin.tsx`): solo lectura de todo el backend con la Cloud
   Function `verBackend` (`functions/src/admin.ts`), que comprueba en cada llamada que el uid sea el
-  de `documentos/{ADMIN_DOCUMENTO}`. Es la única función que no filtra por el uid de quien pregunta;
-  nunca escribe ni borra. El número está copiado en `src/lib/admin.ts`.
+  de `documentos/{ADMIN_DOCUMENTO}` (`exigirAdmin`). Ella, `planesAdmin` y `activarPlan` son las
+  únicas funciones que no filtran por el uid de quien pregunta; `verBackend` nunca escribe ni borra.
+  El número está copiado en `src/lib/admin.ts`.
+- Planes de los profesores (`docs/arquitectura.md`, _Planes de los profesores_): la lógica está
+  copiada en `src/lib/planes.ts`, `functions/src/planes.ts`, `firestore.rules` y `storage.rules`
+  (30 días de prueba, 5 días hábiles de gracia, precios y límites): cambiar uno es cambiar todos.
+  `suscripciones` nace en el batch del registro del profesor y nunca se borra; `pagos` y los planes
+  pagados solo los escribe `activarPlan` en una transacción; las `inscripciones` solo las crea la
+  función `agregarAlumno` (límite por persona). Al vencer nada se borra: solo se bloquea crear. Lo
+  sensible se prueba contra los emuladores (Java 21 está instalado) antes de publicar.
+- La cuenta del administrador (documento 4169298, profesor) tiene todo habilitado: en
+  `firestore.rules` se reconoce por `documentos/4169298`, en `agregarAlumno` igual, y en
+  `storage.rules` por su **uid escrito a mano** (Storage no puede leer un tercer documento): si esa
+  cuenta se recrea, actualizarlo. `habilitarDias` da días por excepción (cortesía de Gs. 0 en `pagos`).
+- `telefonos/{uid}`: el celular del profesor, aparte de `usuarios` (que leen todos los profesores);
+  solo lo leen su dueño y el admin (vía `planesAdmin`). Nunca guardar datos privados en `usuarios`.
+- Frases del inicio (`src/lib/frases.md`): una por día, las 100 sin repetir (`fraseDelDia`).
 - `asistenteConsultas`: cada pregunta al asistente con su respuesta o error, escrita solo por
   `preguntarAsistente`; las reglas niegan todo desde la app y se ve solo en `/admin`.
 - Polca, guarania y galopa son formas por grados (`src/lib/progresiones.ts`): sin canciones ni letras.

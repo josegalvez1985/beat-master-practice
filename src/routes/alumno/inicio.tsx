@@ -77,6 +77,7 @@ export default function AlumnoInicio() {
       <Bienvenida
         titulo={`Hola, ${perfil.nombre.split(" ")[0]}`}
         instrumentos={instrumentosDe(perfil.instrumentos, inscripciones.data)}
+        rol="alumno"
       >
         <AvanceSemana
           perfil={perfil}

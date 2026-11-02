@@ -56,24 +56,48 @@ function contentTypeDe(file: File) {
   return "application/octet-stream";
 }
 
+// Phones and tablets: a touch screen as the main pointer. Only there "Sacar foto" opens a camera.
+export const conCamara = () =>
+  typeof window !== "undefined" && !!window.matchMedia?.("(pointer: coarse)").matches;
+
+// Takes a photo with the camera app. Cameras name every shot alike ("image.jpg"), so it gets the
+// date and time instead: "Foto 2026-11-02 11.30.jpg".
+export async function sacarFoto() {
+  const [file] = await elegirArchivos({
+    accept: "image/*",
+    multiple: false,
+    capture: "environment",
+  });
+  if (!file) return null;
+  const ahora = new Date();
+  const dos = (n: number) => String(n).padStart(2, "0");
+  const extension = file.name.match(/\.[a-z0-9]+$/i)?.[0] ?? ".jpg";
+  const nombre = `Foto ${ahora.getFullYear()}-${dos(ahora.getMonth() + 1)}-${dos(ahora.getDate())} ${dos(ahora.getHours())}.${dos(ahora.getMinutes())}${extension}`;
+  return new File([file], nombre, { type: file.type || "image/jpeg" });
+}
+
 export function formatearTamano(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 // Opens the browser file picker; resolves with the chosen files (empty if cancelled).
+// `capture` opens the camera instead on phones and tablets (desktop browsers ignore it).
 export function elegirArchivos({
   accept,
   multiple = true,
+  capture,
 }: {
   accept: string;
   multiple?: boolean;
+  capture?: "environment" | "user";
 }) {
   return new Promise<File[]>((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = accept;
     input.multiple = multiple;
+    if (capture) input.setAttribute("capture", capture);
     input.onchange = () => resolve([...(input.files ?? [])]);
     input.oncancel = () => resolve([]);
     input.click();

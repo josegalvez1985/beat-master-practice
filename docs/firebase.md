@@ -89,9 +89,14 @@ Con eso la app ya funciona en `npm run dev` contra el proyecto real.
 ## 2. Índices
 
 Las consultas de la app usan filtros de igualdad y `array-contains`, que Firestore resuelve con sus
-índices automáticos; [`firestore.indexes.json`](../firestore.indexes.json) está vacío a propósito.
-Si en el futuro una consulta nueva necesita un índice compuesto, Firestore muestra en la consola
-del navegador un error con un enlace para crearlo: ábrelo y luego copia el índice a ese archivo.
+índices automáticos. [`firestore.indexes.json`](../firestore.indexes.json) tiene un solo índice: el
+id de `asistenteConsultas` en orden descendente, para que `/admin` muestre primero las preguntas
+más nuevas (la base `(default)` no lo trae solo). Las demás colecciones se listan en `/admin` del
+primer id al último. Se publica con `npm run deploy:reglas` (que incluye los índices).
+
+Si una consulta nueva necesita un índice, Firestore muestra en la consola del navegador (o en el
+registro de la Function) un error `FAILED_PRECONDITION` con un enlace para crearlo: copia ese índice
+a `firestore.indexes.json` y publícalo.
 
 ## 3. Probar sin tocar el proyecto real: emuladores
 
@@ -180,7 +185,10 @@ siguen en Authentication y al registrarse de nuevo aparece "Ese correo ya está 
 | Registro: "Ese correo ya está registrado en otra cuenta."                          | Quedó una cuenta en Authentication sin perfil, o el correo es de otra persona. Revisa la sección 5.                                                                                                                                                                         |
 | "Tu cuenta no terminó de crearse"                                                  | Cuenta de Authentication sin perfil. **Salir** la borra; después, registrarse de nuevo.                                                                                                                                                                                     |
 | Subir un material o una entrega: "Firebase no lo permitió (permission-denied)"     | El archivo subió, pero Firestore rechazó guardarlo en la clase o la entrega (y la app lo borró para que no quede huérfano): las reglas publicadas son más viejas que el código. Publica las reglas (paso 5).                                                                |
-| Las subidas fallan con `storage/unauthorized`                                      | Storage no está activado, sus reglas no están publicadas, o la app usa una base que no es `(default)` (Storage solo puede leer esa): pasos 1, 3 y 5.                                                                                                                        |
+| Las subidas fallan con `storage/unauthorized`                                      | Storage no está activado, sus reglas no están publicadas, o la app usa una base que no es `(default)` (Storage solo puede leer esa): pasos 1, 3 y 5. Si solo falla en las clases de un profesor, su plan está bloqueado o no tiene plan (`/admin` → _Planes_).              |
+| Un profesor no puede crear clases ni agregar alumnos (`permission-denied`)         | Su plan está **bloqueado** (pasaron los 5 días hábiles) o **no tiene plan** (se registró antes de los planes). En `/admin` → _Planes_: _Registrar pago_ o _Darles la prueba gratis_. Ver [arquitectura.md](arquitectura.md#planes-de-los-profesores).                       |
+| Agregar alumno: "Tu plan permite hasta N alumnos…"                                 | Es el límite de su plan, contado por persona. Se resuelve registrando un plan mayor en `/admin` → _Planes_.                                                                                                                                                                 |
+| Registrar un pago: "Ese pago ya está registrado"                                   | Esa referencia ya se usó para ese profesor: el plan ya se extendió una vez. Si es otro pago, usa su propia referencia.                                                                                                                                                      |
 | Publicar las Functions: `User code failed to load ... Timeout after 10000`         | Firebase le da 10 s a cargar `functions/` y desde una carpeta de OneDrive la primera carga tarda más. Usa `npm run deploy:funciones` (le da 60 s); con `npx firebase deploy` directo, antes `$env:FUNCTIONS_DISCOVERY_TIMEOUT=60` en PowerShell.                            |
 | Subir un archivo da **error de CORS** (`preflight … does not have HTTP ok status`) | No es CORS: **el bucket de Storage no existe** (Google responde 404). Activa Storage (paso 3) y publica las reglas (paso 5). Se comprueba con `curl https://firebasestorage.googleapis.com/v0/b/beat-master-practice.firebasestorage.app/o`: 404 = no existe, 403 = existe. |
 | "Sin conexión" al entrar o registrarse                                             | Sin internet, o Firestore todavía no existe (paso 1).                                                                                                                                                                                                                       |

@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { colors, fonts, radius } from "@/lib/theme";
 
-type ButtonVariant = "default" | "secondary" | "outline";
+type ButtonVariant = "default" | "secondary" | "outline" | "destructive";
 type ButtonSize = "default" | "sm" | "lg" | "icon";
 
 export type ButtonProps = Omit<PressableProps, "children" | "style"> & {
@@ -23,6 +23,7 @@ const foregrounds: Record<ButtonVariant, string> = {
   default: colors.primaryForeground,
   secondary: colors.secondaryForeground,
   outline: colors.foreground,
+  destructive: colors.destructiveForeground,
 };
 
 // Color for icons rendered inside a button of the given variant.
@@ -101,6 +102,10 @@ const variants = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.input,
     backgroundColor: colors.background,
+  },
+  // Only for confirming something that cannot be undone (deleting a class, removing an alumno).
+  destructive: {
+    backgroundColor: colors.destructive,
   },
 });
 

@@ -4,5 +4,6 @@ import { initializeApp } from "firebase-admin/app";
 initializeApp();
 
 export { verBackend } from "./admin.js";
+export { activarPlan, agregarAlumno, habilitarDias, planesAdmin } from "./planes.js";
 export { preguntarAsistente } from "./asistente.js";
 export { avisarClaseNueva, avisarEntrega, avisarMensaje, recordarPractica } from "./avisos.js";

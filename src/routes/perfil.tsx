@@ -1,22 +1,35 @@
 import { useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { Camera, Mail, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Camera, CreditCard, Mail, Plus, Trash2 } from "lucide-react";
 import { shellStyles } from "@/components/AppShell";
 import { AvisosConfig } from "@/components/AvisosConfig";
 import { ContactoDialog } from "@/components/ContactoDialog";
+import { Link } from "@/components/Link";
+import { ManualDialog } from "@/components/ManualDialog";
+import { usePlanProfesor } from "@/components/PlanAviso";
 import { PageMeta } from "@/components/PageMeta";
 import { TemaSelector } from "@/components/TemaSelector";
 import { Avatar } from "@/components/ui/avatar";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
+import { Input } from "@/components/ui/input";
+import { confirmar } from "@/components/ui/confirmar";
 import { Section } from "@/components/ui/section";
 import { avisar } from "@/components/ui/toast";
 import { usePerfil, useSession } from "@/lib/auth";
-import { agregarInstrumento, cambiarFoto, quitarFoto } from "@/lib/data";
+import {
+  agregarInstrumento,
+  cambiarFoto,
+  guardarTelefono,
+  quitarFoto,
+  useTelefono,
+} from "@/lib/data";
 import { formatearDocumento } from "@/lib/documento";
 import { ACCEPT_FOTO, elegirArchivos } from "@/lib/files";
 import { instrumento, instruments, type InstrumentId } from "@/lib/instruments";
-import { colors, fonts } from "@/lib/theme";
+import { formatoFechaPlan } from "@/lib/planes";
+import { formatearTelefono, normalizarTelefono } from "@/lib/telefono";
+import { colors, fonts, radius } from "@/lib/theme";
 
 // Photos up to 15 MB are accepted: they are scaled down to 512 px before uploading.
 const MAX_FOTO = 15 * 1024 * 1024;
@@ -76,18 +89,23 @@ export default function PerfilPage() {
   const profesor = perfil.rol === "profesor";
   const [agregando, setAgregando] = useState<InstrumentId | null>(null);
   const [contacto, setContacto] = useState(false);
+  const [manualAbierto, setManualAbierto] = useState(false);
   const faltan = instruments.filter((i) => !perfil.instrumentos.includes(i.id));
 
   const onAgregar = async (id: InstrumentId) => {
     const nombre = instrumento(id).name;
-    if (
-      !window.confirm(
-        profesor
-          ? `¿Agregar ${nombre} a los instrumentos que enseñas? Podrás armar listas y clases de ${nombre}.`
-          : `¿Agregar ${nombre} a los instrumentos que estudias? Verás sus herramientas de práctica.`,
-      )
-    )
-      return;
+    const ok = await confirmar({
+      titulo: `¿Agregar ${nombre}?`,
+      mensaje: profesor
+        ? `Se suma a los instrumentos que enseñas (después no se puede quitar). Con ${nombre} podrás:`
+        : `Se suma a los instrumentos que estudias (después no se puede quitar). Con ${nombre} tendrás:`,
+      detalle: profesor
+        ? ["Armar tu lista de alumnos", "Planificar sus clases", "Sus herramientas de práctica"]
+        : ["Sus herramientas de práctica", "Clases cuando un profesor te agregue a su lista"],
+      aceptar: `Agregar ${nombre}`,
+      icono: instrumento(id).icon,
+    });
+    if (!ok) return;
     setAgregando(id);
     try {
       await agregarInstrumento(perfil.uid, id);
@@ -149,6 +167,7 @@ export default function PerfilPage() {
         <Dato label="Nro. de documento" value={formatearDocumento(perfil.nro_documento)} />
         {email ? <Dato label="Correo" value={email} /> : null}
         <Dato label="Rol" value={profesor ? "Profesor" : "Alumno"} />
+        {profesor ? <Celular uid={perfil.uid} /> : null}
       </Section>
 
       <Section
@@ -197,6 +216,22 @@ export default function PerfilPage() {
         <TemaSelector conTexto />
       </Section>
 
+      {profesor ? <TuPlan uid={perfil.uid} /> : null}
+
+      <Section
+        title="Manual de uso"
+        subtitle={
+          profesor
+            ? "Cómo agregar alumnos, planificar y armar clases, revisar entregas y seguir el avance."
+            : "Cómo practicar tus clases, grabarte y entregar, ver tu avance y usar las herramientas."
+        }
+      >
+        <Button variant="secondary" style={styles.contacto} onPress={() => setManualAbierto(true)}>
+          <BookOpen size={16} color={buttonForeground("secondary")} />
+          Abrir el manual
+        </Button>
+      </Section>
+
       <Section
         title="Ayuda y contacto"
         subtitle="¿Una duda, un problema o una idea? Escríbenos y te respondemos por correo."
@@ -206,6 +241,12 @@ export default function PerfilPage() {
           Escribir a Pulso
         </Button>
       </Section>
+
+      <ManualDialog
+        visible={manualAbierto}
+        onClose={() => setManualAbierto(false)}
+        rol={perfil.rol}
+      />
 
       <ContactoDialog
         visible={contacto}
@@ -221,6 +262,110 @@ export default function PerfilPage() {
   );
 }
 
+// The profesor's mobile (telefonos/{uid}): only they and the admin see it. Profesores from before
+// the phones get a prompt to add it.
+function Celular({ uid }: { uid: string }) {
+  const telefono = useTelefono(uid);
+  const actual = telefono.data?.telefono ?? null;
+  const [editando, setEditando] = useState(false);
+  const [texto, setTexto] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
+  if (telefono.loading) return null;
+
+  const guardar = async () => {
+    const normalizado = normalizarTelefono(texto);
+    if (!normalizado) return setError("Escribe un celular de Paraguay, por ejemplo 0981 123 456.");
+    setError(null);
+    setGuardando(true);
+    try {
+      await guardarTelefono(uid, normalizado);
+      avisar({ texto: actual ? "Celular actualizado." : "Celular guardado." });
+      setEditando(false);
+    } catch {
+      setError("No se pudo guardar. Revisa tu conexión y vuelve a probar.");
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  if (!editando && actual)
+    return (
+      <View style={styles.dato}>
+        <Text style={styles.datoLabel}>Celular (solo lo ve el equipo de Pulso)</Text>
+        <View style={styles.celularFila}>
+          <Text style={[styles.datoValue, styles.flex]}>{formatearTelefono(actual)}</Text>
+          <Button
+            variant="secondary"
+            size="sm"
+            onPress={() => {
+              setTexto(formatearTelefono(actual));
+              setEditando(true);
+            }}
+          >
+            Cambiar
+          </Button>
+        </View>
+      </View>
+    );
+
+  return (
+    <View style={[styles.dato, !actual && styles.celularFalta]}>
+      <Text style={styles.datoLabel}>
+        {actual
+          ? "Celular"
+          : "Agrega tu celular: lo usamos para avisarte sobre tu plan (solo lo ve el equipo de Pulso)."}
+      </Text>
+      <View style={styles.celularFila}>
+        <View style={styles.flex}>
+          <Input
+            accessibilityLabel="Celular"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="Ej. 0981 123 456"
+            value={texto}
+            onChangeText={setTexto}
+            onSubmitEditing={guardar}
+          />
+        </View>
+        <Button disabled={guardando} onPress={guardar}>
+          {guardando ? "Guardando…" : "Guardar"}
+        </Button>
+        {actual ? (
+          <Button variant="secondary" onPress={() => setEditando(false)}>
+            Cancelar
+          </Button>
+        ) : null}
+      </View>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+    </View>
+  );
+}
+
+function TuPlan({ uid }: { uid: string }) {
+  const plan = usePlanProfesor(uid);
+  const vence = plan.vence ? formatoFechaPlan(plan.vence) : null;
+  const texto = plan.ilimitado
+    ? "Todo habilitado (cuenta del administrador)."
+    : plan.estado === "prueba"
+      ? `Prueba gratis hasta el ${vence}.`
+      : plan.estado === "activo"
+        ? `${plan.nombre}, activo hasta el ${vence}.`
+        : plan.estado === "gracia"
+          ? `Venció el ${vence}: tienes unos días para pagar.`
+          : "Vencido: no puedes crear clases, agregar alumnos ni subir archivos.";
+  return (
+    <Section title="Mi plan" subtitle={plan.loading ? undefined : texto}>
+      <Link href="/plan">
+        <Button variant="secondary" style={styles.contacto}>
+          <CreditCard size={16} color={buttonForeground("secondary")} />
+          Ver mi plan y cómo pagar
+        </Button>
+      </Link>
+    </Section>
+  );
+}
+
 function Dato({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.dato}>
@@ -231,6 +376,24 @@ function Dato({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+    minWidth: 160,
+  },
+  celularFila: {
+    marginTop: 4,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
+  },
+  celularFalta: {
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.md,
+    backgroundColor: "rgba(249, 161, 41, 0.10)",
+  },
   contacto: {
     alignSelf: "flex-start",
   },

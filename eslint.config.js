@@ -17,6 +17,28 @@ export default defineConfig([
     },
   },
   {
+    // The browser's own dialogs: use confirmar (src/components/ui/confirmar.tsx) and avisar.
+    files: ["src/**"],
+    rules: {
+      "no-restricted-globals": [
+        "error",
+        { name: "confirm", message: "Usa confirmar() de @/components/ui/confirmar." },
+        { name: "alert", message: "Usa avisar() de @/components/ui/toast." },
+        { name: "prompt", message: "Usa un Dialog con un Input." },
+      ],
+      "no-restricted-properties": [
+        "error",
+        {
+          object: "window",
+          property: "confirm",
+          message: "Usa confirmar() de @/components/ui/confirmar.",
+        },
+        { object: "window", property: "alert", message: "Usa avisar() de @/components/ui/toast." },
+        { object: "window", property: "prompt", message: "Usa un Dialog con un Input." },
+      ],
+    },
+  },
+  {
     files: ["scripts/**", "functions/**"],
     languageOptions: {
       globals: globals.node,

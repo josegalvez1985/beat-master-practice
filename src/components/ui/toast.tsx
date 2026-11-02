@@ -123,7 +123,7 @@ export function Avisos() {
   if (!lista.length) return null;
 
   return (
-    <View style={styles.zona} pointerEvents="box-none">
+    <View style={styles.zona}>
       {lista.map((aviso) => {
         const Icono = aviso.tipo === "error" ? AlertCircle : CheckCircle2;
         return (
@@ -171,6 +171,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     zIndex: 50,
+    // Taps go through the empty area to the page; the notices themselves stay tappable.
+    pointerEvents: "box-none",
   },
   aviso: {
     width: "100%",

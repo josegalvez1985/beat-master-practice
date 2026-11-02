@@ -161,7 +161,10 @@ export async function register(datos: {
   email: string;
   password: string;
   instrumentos: InstrumentId[];
+  // Profesores only: mobile already normalized (src/lib/telefono.ts).
+  telefono?: string;
 }) {
+  if (datos.rol === "profesor" && !datos.telefono) throw new AuthError("telefono-requerido");
   if (await emailDeDocumento(datos.nro_documento)) throw new AuthError("documento-en-uso");
   const { user } = await createUserWithEmailAndPassword(auth, datos.email, datos.password);
   try {
@@ -175,6 +178,18 @@ export async function register(datos: {
       terminos: terminosDeBusqueda(datos.nombre),
       creadoEn: serverTimestamp(),
     });
+    // A profesor starts with the 30-day trial of their plan (src/lib/planes.ts) and their phone,
+    // in the same batch: the rules require both and only allow the trial now.
+    if (datos.rol === "profesor") {
+      batch.set(doc(db, "suscripciones", user.uid), {
+        plan: "prueba",
+        pruebaDesde: serverTimestamp(),
+      });
+      batch.set(doc(db, "telefonos", user.uid), {
+        telefono: datos.telefono,
+        actualizadoEn: serverTimestamp(),
+      });
+    }
     await batch.commit();
   } catch (error) {
     // Do not leave an account without profile behind.
@@ -241,6 +256,8 @@ export function mensajeDeError(error: unknown) {
       return "La cuenta de ese número de documento ya no existe. Vuelve a registrarte.";
     case "documento-en-uso":
       return "Ya existe una cuenta con ese número de documento.";
+    case "telefono-requerido":
+      return "Escribe tu celular (por ejemplo, 0981 123 456).";
     case "sin-cuenta":
       return "No hay ninguna cuenta con ese número de documento.";
     case "correo-no-coincide":

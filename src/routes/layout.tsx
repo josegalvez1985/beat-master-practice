@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Outlet, useRouteError } from "react-router";
 import { Link } from "@/components/Link";
 import { Button } from "@/components/ui/button";
+import { Confirmaciones } from "@/components/ui/confirmar";
 import { Avisos } from "@/components/ui/toast";
 import { colors, fonts } from "@/lib/theme";
 
@@ -28,6 +29,7 @@ export default function RootLayout() {
     <View style={styles.screen}>
       <Outlet />
       <Avisos />
+      <Confirmaciones />
     </View>
   );
 }

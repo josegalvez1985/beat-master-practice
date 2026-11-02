@@ -4,6 +4,7 @@ import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-quer
 import { ChevronDown, ChevronRight, Database, FileText, RotateCcw, Users } from "lucide-react";
 import { shellStyles } from "@/components/AppShell";
 import { PageMeta } from "@/components/PageMeta";
+import { PlanesAdmin } from "@/components/PlanesAdmin";
 import { Opciones } from "@/components/plan/comunes";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -22,9 +23,10 @@ import {
 } from "@/lib/admin";
 import { colors, fonts, radius } from "@/lib/theme";
 
-type Vista = "firestore" | "cuentas" | "archivos";
+type Vista = "planes" | "firestore" | "cuentas" | "archivos";
 
 const VISTAS = [
+  { value: "planes", label: "Planes" },
   { value: "firestore", label: "Colecciones" },
   { value: "cuentas", label: "Cuentas" },
   { value: "archivos", label: "Archivos" },
@@ -45,10 +47,11 @@ const tamano = (bytes: number) =>
 const mensaje = (error: unknown) =>
   error instanceof Error ? error.message : "No se pudo leer el backend.";
 
-// Admin panel: the whole backend, read-only (the data comes from the verBackend Cloud Function,
+// Admin panel: the profesor plans (PlanesAdmin, the only part that writes) and the whole backend,
+// read-only (the data comes from the verBackend Cloud Function,
 // which checks that whoever asks is the admin). Only reachable through RequireAdmin.
 export default function Admin() {
-  const [vista, setVista] = useState<Vista>("firestore");
+  const [vista, setVista] = useState<Vista>("planes");
   const queryClient = useQueryClient();
   const resumen = useQuery({ queryKey: ["admin", "resumen"], queryFn: verResumen });
   const colecciones = resumen.data?.colecciones ?? [];
@@ -61,7 +64,8 @@ export default function Admin() {
         <View style={styles.flex}>
           <Text style={shellStyles.pageTitle}>Administración</Text>
           <Text style={shellStyles.pageSubtitle}>
-            Todo el backend de Pulso: Firestore, cuentas y archivos. Solo lectura.
+            Los planes de los profesores y todo el backend de Pulso (Firestore, cuentas y archivos,
+            solo lectura).
           </Text>
         </View>
         <Button
@@ -93,7 +97,9 @@ export default function Admin() {
 
       <Segmented value={vista} options={VISTAS} onChange={setVista} />
 
-      {vista === "firestore" ? (
+      {vista === "planes" ? (
+        <PlanesAdmin />
+      ) : vista === "firestore" ? (
         <Colecciones colecciones={colecciones} cargando={resumen.isPending} />
       ) : vista === "cuentas" ? (
         <Cuentas />

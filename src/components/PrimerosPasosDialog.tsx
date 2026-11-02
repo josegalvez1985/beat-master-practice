@@ -14,7 +14,7 @@ const registro: Paso[] = [
   {
     titulo: "Completa tus datos",
     detalle:
-      "Nombre y apellido, número de documento (solo números), correo y una contraseña de al menos 6 caracteres.",
+      "Nombre y apellido, número de documento (solo números), correo y una contraseña de al menos 6 caracteres. Si eres profesor, también tu celular.",
   },
   {
     titulo: "Elige tus instrumentos",
@@ -28,6 +28,11 @@ const despues: Record<Role, Paso[]> = {
       titulo: "Entra con tu documento",
       detalle:
         "Usa tu número de documento y tu contraseña. Si la olvidas, la recuperas con tu documento y tu correo.",
+    },
+    {
+      titulo: "30 días gratis",
+      detalle:
+        "Pruebas Pulso completo durante 30 días. Después eliges un plan según cuántos alumnos tienes (para ellos es gratis); lo ves y lo pagas en Mi plan, en el menú.",
     },
     {
       titulo: "Arma tus listas de alumnos",
@@ -62,7 +67,7 @@ const despues: Record<Role, Paso[]> = {
     {
       titulo: "¿Dudas?",
       detalle:
-        "Escríbenos desde «¿Necesitas ayuda?» en el inicio de sesión o desde Mi perfil: te respondemos por correo.",
+        "En Mi perfil tienes el Manual de uso, paso a paso. Y si algo no queda claro, escríbenos desde «¿Necesitas ayuda?» en el inicio de sesión o desde Mi perfil: te respondemos por correo.",
     },
   ],
   alumno: [
@@ -84,7 +89,7 @@ const despues: Record<Role, Paso[]> = {
     {
       titulo: "Grábate y entrega",
       detalle:
-        "En la clase, graba tu práctica en audio o video (con click en los auriculares si quieres) o sube un archivo (también fotos o PDF de una tarea escrita), y envíala. Pulso mide tu afinación y tu tiempo; tu profesor la ve al instante, la comenta y la evalúa. Si tienes una duda, escríbele en Mensajes. Responde cada comentario con Entendido o Ya lo corregí, y si no puedes ir a una clase, toca No puedo ir.",
+        "En la clase, graba tu práctica en audio o video (con click en los auriculares si quieres) o sube un archivo (también fotos o PDF de una tarea escrita; en el celular, «Sacar foto» abre la cámara), y envíala. Pulso mide tu afinación y tu tiempo; tu profesor la ve al instante, la comenta y la evalúa. Si tienes una duda, escríbele en Mensajes. Responde cada comentario con Entendido o Ya lo corregí, y si no puedes ir a una clase, toca No puedo ir.",
     },
     {
       titulo: "Usa tus herramientas",
@@ -104,7 +109,7 @@ const despues: Record<Role, Paso[]> = {
     {
       titulo: "¿Dudas?",
       detalle:
-        "Escríbenos desde «¿Necesitas ayuda?» en el inicio de sesión o desde Mi perfil: te respondemos por correo.",
+        "En Mi perfil tienes el Manual de uso, paso a paso. Y si algo no queda claro, escríbenos desde «¿Necesitas ayuda?» en el inicio de sesión o desde Mi perfil: te respondemos por correo.",
     },
   ],
 };

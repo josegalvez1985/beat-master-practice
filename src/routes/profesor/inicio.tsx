@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { CalendarDays, ChevronRight, Inbox, Plus, Search, Trash2, Users } from "lucide-react";
 import { Bienvenida } from "@/components/Bienvenida";
+import { AvisoPlan, BloqueadoPorPlan, usePlanProfesor } from "@/components/PlanAviso";
 import { Pastilla, pastillaStyles } from "@/components/ui/pastilla";
 import { ClaseItem } from "@/components/ClaseItem";
 import { Avatar } from "@/components/ui/avatar";
@@ -19,8 +20,10 @@ import { Chip } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { confirmar } from "@/components/ui/confirmar";
 import { Section } from "@/components/ui/section";
 import { Stat } from "@/components/ui/stat";
+import { avisar } from "@/components/ui/toast";
 import { usePerfil, type Perfil } from "@/lib/auth";
 import {
   agregarAlumno,
@@ -67,6 +70,7 @@ export default function ProfesorInicio() {
         titulo={`Hola, ${perfil.nombre.split(" ")[0]}`}
         subtitulo={`Enseñas ${perfil.instrumentos.map((id) => instrumento(id).name).join(", ")}.`}
         instrumentos={perfil.instrumentos}
+        rol="profesor"
       >
         <View style={[pastillaStyles.fila, styles.porInstrumento]}>
           {perfil.instrumentos.map((id) => {
@@ -83,6 +87,8 @@ export default function ProfesorInicio() {
           })}
         </View>
       </Bienvenida>
+
+      <AvisoPlan uid={perfil.uid} />
 
       <View style={styles.stats}>
         <Stat icon={Users} label="Alumnos" value={String(alumnos)} />
@@ -120,7 +126,10 @@ function AgregarAlumno({
   const [buscando, setBuscando] = useState(false);
   const [resultados, setResultados] = useState<Perfil[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [agregando, setAgregando] = useState<string | null>(null);
   const inscriptos = new Set(inscripciones.map((i) => i.id));
+  const plan = usePlanProfesor(perfil.uid);
+  const alumnos = new Set(inscripciones.map((i) => i.alumnoId)).size;
 
   const buscar = async () => {
     if (texto.trim().length < 2) {
@@ -139,15 +148,34 @@ function AgregarAlumno({
   };
 
   const agregar = async (alumno: Perfil, id: InstrumentId) => {
+    setError(null);
+    setAgregando(`${alumno.uid}_${id}`);
     try {
-      await agregarAlumno(perfil, alumno, id);
-    } catch {
-      setError(`No se pudo agregar a ${alumno.nombre}.`);
+      await agregarAlumno(alumno, id);
+      avisar({ texto: `Agregaste a ${alumno.nombre} a ${instrumento(id).name}.` });
+    } catch (e) {
+      // The function explains the plan's limit or a blocked plan; anything else is generic.
+      const { code, message } = (e ?? {}) as { code?: string; message?: string };
+      setError(
+        code && code !== "functions/internal" && code !== "functions/unavailable" && message
+          ? message
+          : `No se pudo agregar a ${alumno.nombre}. Revisa tu conexión.`,
+      );
+    } finally {
+      setAgregando(null);
     }
   };
 
   return (
-    <Section title="Agregar alumno" subtitle="Busca por número de documento o por nombre.">
+    <Section
+      title="Agregar alumno"
+      subtitle={
+        plan.limite
+          ? `Busca por número de documento o por nombre. Tienes ${alumnos} de ${plan.limite} alumnos de tu plan.`
+          : "Busca por número de documento o por nombre."
+      }
+    >
+      {plan.bloqueado ? <BloqueadoPorPlan que="agregar alumnos" /> : null}
       <View style={styles.searchRow}>
         <View style={styles.searchInput}>
           <Input
@@ -186,12 +214,21 @@ function AgregarAlumno({
             <View style={styles.chips}>
               {perfil.instrumentos.map((id) => {
                 const agregado = inscriptos.has(inscripcionId(perfil.uid, alumno.uid, id));
+                const ocupado = agregando === `${alumno.uid}_${id}`;
                 return (
                   <Chip
                     key={id}
-                    label={agregado ? `${instrumento(id).name} ✓` : `+ ${instrumento(id).name}`}
+                    label={
+                      agregado
+                        ? `${instrumento(id).name} ✓`
+                        : ocupado
+                          ? `Agregando ${instrumento(id).name}…`
+                          : `+ ${instrumento(id).name}`
+                    }
                     selected={agregado}
-                    onPress={agregado ? () => {} : () => agregar(alumno, id)}
+                    onPress={
+                      agregado || plan.bloqueado || agregando ? () => {} : () => agregar(alumno, id)
+                    }
                   />
                 );
               })}
@@ -219,10 +256,21 @@ function MisAlumnos({
   const [filtro, setFiltro] = useState<InstrumentId | null>(null);
   const visibles = inscripciones.filter((i) => !filtro || i.instrumento === filtro);
 
-  const quitar = (inscripcion: Inscripcion) => {
+  const quitar = async (inscripcion: Inscripcion) => {
     const nombre = instrumento(inscripcion.instrumento).name;
-    if (window.confirm(`¿Quitar a ${inscripcion.alumnoNombre} de tu lista de ${nombre}?`)) {
-      void quitarInscripcion(inscripcion);
+    const ok = await confirmar({
+      titulo: `¿Quitar a ${inscripcion.alumnoNombre}?`,
+      mensaje: `Sale de tu lista de ${nombre} y deja de ver tus clases de ${nombre}. Se borra lo que tenía en esta lista:`,
+      detalle: ["Su ruta de aprendizaje", "Sus metas de la semana", "Su repertorio"],
+      aceptar: "Quitar de la lista",
+      peligro: true,
+    });
+    if (!ok) return;
+    try {
+      await quitarInscripcion(inscripcion);
+      avisar({ texto: `${inscripcion.alumnoNombre} ya no está en tu lista de ${nombre}.` });
+    } catch {
+      avisar({ texto: "No se pudo quitar al alumno. Revisa tu conexión.", tipo: "error" });
     }
   };
 

@@ -4,7 +4,7 @@ import { functions } from "@/lib/firebase";
 
 // The admin panel (/admin) is for the owner of this document number only. This check just
 // shows or hides the page: the real one is in the Cloud Function (functions/src/admin.ts, same
-// number), which reads documentos/{nro} on every call. Read-only.
+// number), which reads documentos/{nro} on every call. Read-only, except the plans below.
 export const ADMIN_DOCUMENTO = "4169298";
 
 export const esAdmin = (perfil: Perfil) => perfil.nro_documento === ADMIN_DOCUMENTO;
@@ -50,3 +50,72 @@ export const verCuentas = (pagina?: string) =>
 
 export const verArchivos = (pagina?: string) =>
   pedir<Pagina<"archivos", ArchivoBackend>>({ que: "archivos", pagina });
+
+// --- Profesor plans (functions/src/planes.ts). These write: activarPlan records a payment and
+// extends the plan (optionally with its own number of alumnos); habilitarDias grants days as an
+// exception; crearPruebas gives the 30-day trial to profesores from before the plans.
+
+export type PlanProfesorAdmin = {
+  uid: string;
+  nombre: string;
+  documento: string;
+  telefono: string | null;
+  // The admin account: everything enabled, whatever its plan.
+  admin: boolean;
+  plan: "prueba" | "inicial" | "profesor" | "academia" | null;
+  vence: string | null;
+  bloqueo: string | null;
+  alumnos: number;
+  limite: number;
+  // A number of alumnos set by hand instead of the plan's.
+  aMedida: boolean;
+};
+export type PagoAdmin = {
+  id: string;
+  tipo: "pago" | "cortesia";
+  motivo: string | null;
+  alumnos: number | null;
+  profesor: string;
+  plan: string;
+  meses: number;
+  monto: number;
+  referencia: string;
+  hasta: string;
+  registradoEn: string | null;
+};
+
+const planesAdmin = httpsCallable<{ que: "listar" | "crearPruebas" }, unknown>(
+  functions,
+  "planesAdmin",
+  { timeout: 70_000 },
+);
+
+export const verPlanes = async () =>
+  (await planesAdmin({ que: "listar" })).data as {
+    profesores: PlanProfesorAdmin[];
+    pagos: PagoAdmin[];
+  };
+
+export const crearPruebasFaltantes = async () =>
+  (await planesAdmin({ que: "crearPruebas" })).data as { creadas: number };
+
+export const activarPlan = async (datos: {
+  profesorId: string;
+  plan: "inicial" | "profesor" | "academia";
+  meses: number;
+  monto: number;
+  referencia: string;
+  // Own number of alumnos; null = the plan's.
+  alumnos: number | null;
+}) =>
+  (await httpsCallable(functions, "activarPlan", { timeout: 70_000 })(datos)).data as {
+    desde: string;
+    hasta: string;
+  };
+
+export const habilitarDias = async (
+  datos: { profesorId: string; motivo: string } & ({ dias: number } | { hasta: string }),
+) =>
+  (await httpsCallable(functions, "habilitarDias", { timeout: 70_000 })(datos)).data as {
+    hasta: string;
+  };

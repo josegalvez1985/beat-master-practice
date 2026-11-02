@@ -29,6 +29,8 @@ import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Badge, Section } from "@/components/ui/section";
+import { AvisoPlan, BloqueadoPorPlan, usePlanProfesor } from "@/components/PlanAviso";
+import { confirmar } from "@/components/ui/confirmar";
 import { avisar, useBorrarConDeshacer } from "@/components/ui/toast";
 import { usePerfil, type Perfil } from "@/lib/auth";
 import { archivoIcs, enlaceGoogle } from "@/lib/calendario";
@@ -101,16 +103,32 @@ function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
   const [editando, setEditando] = useState(false);
   const [duplicando, setDuplicando] = useState(false);
   const esDueno = perfil.uid === clase.profesorId;
+  // The owner with the plan blocked: sees and deletes, marks attendance and reviews deliveries,
+  // but cannot edit, duplicate or add files (the rules reject it too).
+  const plan = usePlanProfesor(esDueno ? perfil.uid : null);
+  const puedeEditar = esDueno && !plan.bloqueado;
 
   const eliminar = async () => {
-    if (
-      !window.confirm(
-        `¿Eliminar la clase "${clase.titulo}"? También se borran sus materiales y las entregas de los alumnos.`,
-      )
-    )
-      return;
-    await eliminarClase(clase);
-    navigate("/planificacion", { replace: true });
+    const ok = await confirmar({
+      titulo: `¿Eliminar "${clase.titulo}"?`,
+      mensaje:
+        "La clase desaparece para ti y para tus alumnos. También se borra, y no se puede deshacer:",
+      detalle: [
+        "El plan y sus materiales",
+        "Las entregas y grabaciones de los alumnos",
+        "Los mensajes de la clase",
+      ],
+      aceptar: "Eliminar clase",
+      peligro: true,
+    });
+    if (!ok) return;
+    try {
+      await eliminarClase(clase);
+      avisar({ texto: `Eliminaste "${clase.titulo}".` });
+      navigate("/planificacion", { replace: true });
+    } catch {
+      avisar({ texto: "No se pudo eliminar la clase. Revisa tu conexión.", tipo: "error" });
+    }
   };
 
   // With "Deshacer"; then the file first: if deleting it fails, the class keeps pointing at it.
@@ -149,20 +167,26 @@ function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
         </View>
         {esDueno ? (
           <View style={styles.actions}>
-            <Button variant="secondary" onPress={() => setEditando(true)}>
-              <Pencil size={14} color={buttonForeground("secondary")} />
-              Editar
-            </Button>
-            <Button variant="secondary" onPress={() => setDuplicando(true)}>
-              <Copy size={14} color={buttonForeground("secondary")} />
-              Duplicar
-            </Button>
+            {puedeEditar ? (
+              <>
+                <Button variant="secondary" onPress={() => setEditando(true)}>
+                  <Pencil size={14} color={buttonForeground("secondary")} />
+                  Editar
+                </Button>
+                <Button variant="secondary" onPress={() => setDuplicando(true)}>
+                  <Copy size={14} color={buttonForeground("secondary")} />
+                  Duplicar
+                </Button>
+              </>
+            ) : null}
             <Button variant="outline" accessibilityLabel="Eliminar clase" onPress={eliminar}>
               <Trash2 size={14} color={buttonForeground("outline")} />
             </Button>
           </View>
         ) : null}
       </View>
+
+      {esDueno ? <AvisoPlan uid={perfil.uid} /> : null}
 
       {clase.evento ? (
         <Section title="Recital" subtitle={clase.evento.lugar || undefined}>
@@ -188,7 +212,12 @@ function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
         </Section>
       ) : null}
 
-      <PlanClase clase={clase} esDueno={esDueno} alumnoId={perfil.uid} />
+      <PlanClase
+        clase={clase}
+        esDueno={esDueno}
+        soloLectura={esDueno && !puedeEditar}
+        alumnoId={perfil.uid}
+      />
 
       {/* With a plan, an alumno does not need an empty "no materials" card. */}
       {esDueno || clase.materiales.length > 0 || !clase.bloques?.length ? (
@@ -207,13 +236,15 @@ function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
           ) : (
             <MaterialList materiales={materiales} onRemove={esDueno ? quitar : undefined} />
           )}
-          {esDueno ? (
+          {puedeEditar ? (
             <UploadButton
               label="Subir materiales"
               carpeta={`clases/${clase.id}`}
               accept={ACCEPT_MATERIAL}
               onUploaded={(material) => agregarMaterial(clase.id, material)}
             />
+          ) : esDueno ? (
+            <BloqueadoPorPlan que="subir archivos ni editar la clase" />
           ) : null}
         </Section>
       ) : null}
@@ -224,11 +255,11 @@ function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
         <MiEntrega clase={clase} perfil={perfil} />
       )}
 
-      {esDueno && duplicando ? (
+      {puedeEditar && duplicando ? (
         <DuplicarDialog clase={clase} perfil={perfil} onClose={() => setDuplicando(false)} />
       ) : null}
 
-      {esDueno ? (
+      {puedeEditar ? (
         <ClaseFormDialog
           visible={editando}
           onClose={() => setEditando(false)}

@@ -22,12 +22,14 @@ import {
   type Query,
   type Timestamp,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "@/lib/firebase";
 import type { Perfil } from "@/lib/auth";
 import { hoy } from "@/lib/dates";
 import { normalizarDocumento, normalizarTexto } from "@/lib/documento";
 import type { InstrumentId } from "@/lib/instruments";
 import { archivosDelPlan, type Bloque, type Ficha, type Plan } from "@/lib/plan";
+import type { PlanId, Suscripcion } from "@/lib/planes";
 import { borrarArchivo, fotoRuta, prepararFoto, subirFoto, type Material } from "@/lib/files";
 
 // --- Types (one per Firestore collection; see docs/arquitectura.md) ---
@@ -518,16 +520,62 @@ export async function buscarAlumnos(texto: string): Promise<Perfil[]> {
   return resultados.filter((p) => p.rol === "alumno");
 }
 
-export function agregarAlumno(profesor: Perfil, alumno: Perfil, instrumento: InstrumentId) {
-  return setDoc(doc(db, "inscripciones", inscripcionId(profesor.uid, alumno.uid, instrumento)), {
-    profesorId: profesor.uid,
-    profesorNombre: profesor.nombre,
-    alumnoId: alumno.uid,
-    alumnoNombre: alumno.nombre,
-    alumnoDocumento: alumno.nro_documento,
-    instrumento,
-    creadoEn: serverTimestamp(),
-  });
+// Only through the agregarAlumno Cloud Function (functions/src/planes.ts): it checks the
+// profesor's plan and its limit of alumnos, which the rules alone cannot count.
+const llamarAgregarAlumno = httpsCallable<
+  { alumnoId: string; instrumento: InstrumentId },
+  { agregado: boolean }
+>(functions, "agregarAlumno");
+
+export async function agregarAlumno(alumno: Perfil, instrumento: InstrumentId) {
+  return (await llamarAgregarAlumno({ alumnoId: alumno.uid, instrumento })).data;
+}
+
+// --- Profesor plan (src/lib/planes.ts) ---
+
+export type Pago = {
+  id: string;
+  // "cortesia": days the admin granted as an exception (Gs. 0, with a reason).
+  tipo?: "pago" | "cortesia";
+  motivo?: string;
+  alumnos?: number;
+  profesorId: string;
+  plan: PlanId;
+  meses: number;
+  monto: number;
+  referencia: string;
+  desde: Timestamp;
+  hasta: Timestamp;
+  registradoEn: Timestamp | null;
+};
+
+// null: nothing to read (an alumno looking at a class).
+export function useSuscripcion(uid: string | null) {
+  return useLiveDoc<Suscripcion & { id: string }>(uid ? `suscripcion:${uid}` : null, () =>
+    doc(db, "suscripciones", uid ?? "-"),
+  );
+}
+
+// telefonos/{uid}: the profesor's mobile, readable only by its owner (and the admin through a
+// Cloud Function), apart from usuarios which every profesor can read.
+export function useTelefono(uid: string | null) {
+  return useLiveDoc<{ id: string; telefono: string }>(uid ? `telefono:${uid}` : null, () =>
+    doc(db, "telefonos", uid ?? "-"),
+  );
+}
+
+export function guardarTelefono(uid: string, telefono: string) {
+  return setDoc(doc(db, "telefonos", uid), { telefono, actualizadoEn: serverTimestamp() });
+}
+
+export function usePagos(profesorId: string) {
+  const live = useLiveQuery<Pago>(`pagos:${profesorId}`, () =>
+    query(collection(db, "pagos"), where("profesorId", "==", profesorId)),
+  );
+  return {
+    ...live,
+    data: [...live.data].sort((a, b) => b.hasta.toMillis() - a.hasta.toMillis()),
+  };
 }
 
 // What hangs from that list goes with it: the learning path (same id), the repertoire and the

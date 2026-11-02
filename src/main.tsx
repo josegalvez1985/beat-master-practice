@@ -15,6 +15,7 @@ import RootLayout, { ErrorBoundary } from "@/routes/layout";
 import NotFoundScreen from "@/routes/not-found";
 import PerfilPage from "@/routes/perfil";
 import AlumnoDetalle from "@/routes/profesor/alumno";
+import MiPlan from "@/routes/profesor/plan";
 import Planificacion from "@/routes/profesor/planificacion";
 
 const router = createBrowserRouter(
@@ -47,6 +48,7 @@ const router = createBrowserRouter(
                   children: [
                     { path: "planificacion", element: <Planificacion /> },
                     { path: "alumnos/:alumnoId", element: <AlumnoDetalle /> },
+                    { path: "plan", element: <MiPlan /> },
                   ],
                 },
               ],
@@ -71,6 +73,23 @@ if (import.meta.env.PROD && "serviceWorker" in navigator)
   window.addEventListener("load", () => {
     navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {});
   });
+
+// Service workers that are not ours (an old one from another app on the same address, like
+// localhost:5173, or Firebase's default /firebase-messaging-sw.js): their script does not exist
+// here, so the browser keeps getting the HTML page for it ("unsupported MIME type
+// ('text/html')"). They are unregistered on load; ours (sw.js) stays.
+if ("serviceWorker" in navigator)
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((registros) =>
+      registros.forEach((registro) => {
+        const script = (registro.active ?? registro.waiting ?? registro.installing)?.scriptURL;
+        if (script?.endsWith(`${import.meta.env.BASE_URL}sw.js`)) return;
+        console.info("Service worker ajeno dado de baja:", script ?? registro.scope);
+        void registro.unregister();
+      }),
+    )
+    .catch(() => {});
 
 loadFonts().then(() => {
   createRoot(document.getElementById("root")!).render(

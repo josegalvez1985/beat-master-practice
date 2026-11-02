@@ -187,3 +187,24 @@ npm run deploy:funciones                                               # 4. func
    base vieja: si alguien guardó algo, corre otra vez el paso 3 justo antes.
 6. Subir un archivo a una clase para comprobarlo. Si funciona, borrar la base vieja:
    `npx firebase firestore:databases:delete default` (no se puede deshacer).
+
+## Publicar los planes de los profesores (una vez)
+
+Los planes ([arquitectura.md](arquitectura.md#planes-de-los-profesores)) cambian las reglas, las
+Functions y el sitio a la vez. Durante los minutos que van del paso 2 al 4, registrar profesores y
+crear clases puede fallar, así que conviene hacerlo en un momento sin uso y sin pausas:
+
+```sh
+npm run deploy:funciones   # 1. agregarAlumno, activarPlan, habilitarDias y planesAdmin
+npm run deploy:reglas      # 2. suscripciones, pagos, telefonos, inscripciones solo por función
+git push                   # 3. el sitio nuevo (GitHub Actions)
+```
+
+4. Apenas el sitio nuevo esté arriba: `/admin` → **Planes** → **Darles la prueba gratis**. Los
+   profesores registrados antes no tienen plan y, hasta este paso, las reglas no les dejan crear
+   clases, agregar alumnos ni subir archivos.
+5. Los profesores ya registrados no tienen celular: al entrar a _Mi perfil_ ven un recuadro para
+   agregarlo (no les bloquea nada). Los nuevos no pueden registrarse sin él.
+6. Los datos de pago (titular, alias y cuenta de ueno, y el WhatsApp para el comprobante) están en
+   [`src/lib/datos-de-pago.ts`](../src/lib/datos-de-pago.ts): si cambian, se editan ahí y se publica
+   el sitio. Vacíos, _Mi plan_ dice que no están configurados.
