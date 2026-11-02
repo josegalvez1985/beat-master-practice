@@ -20,6 +20,7 @@ import {
   MAX_BYTES,
   elegirArchivos,
   formatearTamano,
+  motivoDeSubida,
   subirYAnotar,
   useDownloadUrl,
   type Material,
@@ -218,8 +219,8 @@ export function UploadButton({
           onUploaded,
         );
         actualizar(index, { porcentaje: 100 });
-      } catch {
-        actualizar(index, { error: "No se pudo subir" });
+      } catch (error) {
+        actualizar(index, { error: motivoDeSubida(error) });
       }
     }
     setSubidas((actuales) => actuales.filter((s) => s.error));

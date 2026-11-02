@@ -52,7 +52,7 @@ const despues: Record<Role, Paso[]> = {
     {
       titulo: "Sigue el progreso",
       detalle:
-        "En Mis alumnos ves el avance de cada uno, su diario de práctica, sus habilidades y, en batería, sus récords. Marca los objetivos de su ruta de aprendizaje por nivel y envía el informe a su familia por WhatsApp. En Herramientas tienes afinador, metrónomo, polca y guarania y más.",
+        "En Mis alumnos ves el avance de cada uno, su diario de práctica, sus habilidades y, en batería, sus récords. Marca los objetivos de su ruta de aprendizaje por nivel. En Herramientas tienes afinador, metrónomo, polca y guarania y más.",
     },
     {
       titulo: "Pregúntale al asistente",
@@ -94,7 +94,7 @@ const despues: Record<Role, Paso[]> = {
     {
       titulo: "Mira tu avance",
       detalle:
-        "Cada entrega suma al progreso de tu instrumento, y el anillo del inicio muestra tu semana. Ahí ves también tu ruta de aprendizaje, tus metas de la semana, tu repertorio, tus habilidades, tus insignias, Mi evolución y el informe para tu familia. En Mi perfil activa los avisos y tu recordatorio de práctica.",
+        "Cada entrega suma al progreso de tu instrumento, y el anillo del inicio muestra tu semana. Ahí ves también tu ruta de aprendizaje, tus metas de la semana, tu repertorio, tus habilidades, tus insignias y Mi evolución. En Mi perfil activa los avisos y tu recordatorio de práctica.",
     },
     {
       titulo: "Pregúntale al asistente",

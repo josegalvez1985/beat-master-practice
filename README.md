@@ -12,8 +12,7 @@ con el número de documento.
   práctica de cada alumno. Guardan bloques en su **biblioteca** para reusarlos, ponen hora y
   modalidad a la clase (presencial o virtual con enlace, con _Agregar al calendario_), marcan la
   **asistencia**, organizan **recitales** con su programa, evalúan cada entrega con una **rúbrica**
-  por instrumento, marcan la **ruta de aprendizaje** por niveles, escriben **mensajes** por clase y
-  envían un **informe para la familia** por WhatsApp.
+  por instrumento, marcan la **ruta de aprendizaje** por niveles y escriben **mensajes** por clase.
 - **Alumnos**: se registran con su número de documento y sus instrumentos. Cuando un profesor los
   agrega a su lista, ven sus clases, se graban (o suben) sus prácticas en audio o video, o fotos y PDF de tareas escritas (con click
   en los auriculares si quieren; la app mide su **afinación y su tiempo** antes de enviar), siguen

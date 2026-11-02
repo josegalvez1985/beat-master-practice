@@ -13,8 +13,9 @@ import {
 // The AI assistant: a callable Cloud Function. The Claude API key lives in Secret Manager
 // (ANTHROPIC_API_KEY) and never reaches the browser. Read-only: the model only has the fixed
 // searches of herramientas.ts, scoped to whoever asks. One usage document per user
-// (asistenteUso/{uid}) holds the daily count and the month's tokens; questions and answers are
-// not stored.
+// (asistenteUso/{uid}) holds the daily count and the month's tokens, and every question that
+// reaches the model is logged with its answer or its error in asistenteConsultas (only the admin
+// sees them, in /admin).
 
 const CLAVE = defineSecret("ANTHROPIC_API_KEY");
 
@@ -99,6 +100,22 @@ function mensajeDeError(error: unknown): HttpsError {
   return new HttpsError("internal", "Algo falló al responder. Prueba de nuevo.");
 }
 
+// The error as it came from the API (status and body), e.g. `401 {"type":"error",...}`.
+const describirError = (error: unknown) =>
+  (error instanceof Error ? error.message : String(error)).slice(0, 2000);
+
+// asistenteConsultas/{fecha}_{uid}: the id sorts by time. Written only here (Admin SDK); a failed
+// log never breaks the answer.
+async function registrarConsulta(uid: string, datos: Record<string, unknown>) {
+  try {
+    await db()
+      .doc(`asistenteConsultas/${new Date().toISOString()}_${uid}`)
+      .create({ uid, ...datos, modelo: MODELO, fecha: FieldValue.serverTimestamp() });
+  } catch (error) {
+    console.error("asistenteConsultas", error);
+  }
+}
+
 export const preguntarAsistente = onCall(
   {
     region: "southamerica-east1",
@@ -159,6 +176,12 @@ export const preguntarAsistente = onCall(
     const tokens = { entrada: 0, salida: 0, cacheLeidos: 0, cacheEscritos: 0 };
     let busquedas = 0;
     let respuesta = "";
+    const consulta = {
+      nombre: perfil.nombre ?? "",
+      rol,
+      pregunta,
+      pantalla: texto(datos.pantalla, 200),
+    };
 
     try {
       for (let vuelta = 1; vuelta <= MAX_VUELTAS && !respuesta; vuelta++) {
@@ -227,7 +250,16 @@ export const preguntarAsistente = onCall(
       }
     } catch (error) {
       console.error("asistente", error);
-      throw mensajeDeError(error);
+      const falla = mensajeDeError(error);
+      await registrarConsulta(uid, {
+        ...consulta,
+        respuesta: null,
+        error: describirError(error),
+        mensaje: falla.message,
+        busquedas,
+        tokens,
+      });
+      throw falla;
     }
 
     if (!respuesta) respuesta = "No llegué a una respuesta. Prueba preguntarlo de otra forma.";
@@ -258,6 +290,8 @@ export const preguntarAsistente = onCall(
         { merge: true },
       );
     });
+
+    await registrarConsulta(uid, { ...consulta, respuesta, error: null, busquedas, tokens });
 
     return { respuesta, usadasHoy: usadasHoy + 1, limite: LIMITE_DIARIO };
   },

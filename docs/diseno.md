@@ -229,8 +229,7 @@ Encabezado con nombre y documento; una tarjeta por instrumento con el porcentaje
 la lista de clases con su estado _Entregada_ / _Pendiente_, cuántas veces asistió, su **ruta de
 aprendizaje** (nivel inicial, básico, intermedio o avanzado con sus objetivos: el profesor elige el
 nivel y marca cada objetivo de un toque), sus **habilidades** (el promedio de cada criterio de la
-rúbrica, con flecha si subió), **Informe para la familia** (texto para enviar por WhatsApp, copiar
-o imprimir) y su **diario de práctica** de ese instrumento (minutos de la semana en ese
+rúbrica, con flecha si subió) y su **diario de práctica** de ese instrumento (minutos de la semana en ese
 instrumento, su meta semanal total como dato aparte y las últimas anotaciones).
 
 ### Clase (`/clases/:id`)
@@ -326,8 +325,8 @@ instrumento, su meta semanal total como dato aparte y las últimas anotaciones).
   (con su hora, _Recital_ o _Virtual_), ordenadas primero las atrasadas sin entregar, luego las
   próximas y al final las entregadas; debajo, su **ruta de aprendizaje** (nivel y objetivos que
   marcó el profesor), **Metas de la semana** (casillas, agregar y "Semanas anteriores: 5 de 7
-  cumplidas"), **Repertorio** (cada obra con su estado y _Repasé hoy_), sus **habilidades** e
-  **Informe para la familia**. Después, **Mi evolución**: la primera grabación al lado de la
+  cumplidas"), **Repertorio** (cada obra con su estado y _Repasé hoy_) y sus **habilidades**.
+  Después, **Mi evolución**: la primera grabación al lado de la
   última y los gráficos de notas afinadas y desvío del tiempo (tocar un punto muestra fecha y valor).
 - En la columna lateral: **Diario de práctica** (minutos de la semana contra la meta, _Anotar
   práctica_), **Tus insignias** (las ganadas primero; las otras, con lo que falta: "3 de 7 días"), el **afinador** (solo si estudia un instrumento que lo usa), el metrónomo y **Más

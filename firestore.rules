@@ -226,6 +226,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // asistenteConsultas/{fecha}_{uid}: each question to the assistant with its answer or error.
+    // Written only by the Cloud Function and read only through the admin panel (verBackend, Admin
+    // SDK): nobody reads or writes it from the app. It hangs from usuarios, never deleted.
+    match /asistenteConsultas/{id} {
+      allow read, write: if false;
+    }
+
     // The profesor's rubric of a delivery: 1-5 per criterion and a short comment.
     function evaluacionValida(e) {
       return e is map && e.keys().hasOnly(['criterios', 'comentario', 'fecha'])

@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "emulators": "firebase emulators:start --project demo-pulso --only auth,firestore,storage,functions",
     "deploy:reglas": "firebase deploy --only firestore,storage",
-    "deploy:funciones": "firebase deploy --only functions",
+    "deploy:funciones": "node scripts/deploy-funciones.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",

@@ -57,13 +57,14 @@ async function resumen() {
   return { colecciones: conteos.sort((a, b) => a.nombre.localeCompare(b.nombre)) };
 }
 
-// One page of a collection, by document id.
+// One page of a collection, by document id from last to first (time-based ids, like
+// asistenteConsultas, show the newest first).
 async function coleccion(nombre: string | undefined, despues: string | undefined) {
   if (!nombre || nombre.includes("/"))
     throw new HttpsError("invalid-argument", "Elige una colección.");
   let consulta = db()
     .collection(nombre)
-    .orderBy(FieldPath.documentId())
+    .orderBy(FieldPath.documentId(), "desc")
     .limit(POR_PAGINA + 1);
   if (despues) consulta = consulta.startAfter(despues);
   const snap = await consulta.get();

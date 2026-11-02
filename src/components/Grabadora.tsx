@@ -13,7 +13,13 @@ import {
   resumenAnalisis,
   type Analisis,
 } from "@/lib/analisis";
-import { MAX_BYTES, formatearTamano, subirYAnotar, type Material } from "@/lib/files";
+import {
+  MAX_BYTES,
+  formatearTamano,
+  motivoDeSubida,
+  subirYAnotar,
+  type Material,
+} from "@/lib/files";
 import { MAX_SEGUNDOS, useGrabadora, type ModoGrabacion } from "@/lib/grabadora";
 import type { InstrumentId } from "@/lib/instruments";
 import { useMetronomo } from "@/lib/metronomo";
@@ -89,8 +95,8 @@ export function Grabadora({
       );
       avisar({ texto: "Grabación enviada a tu profesor." });
       descartar();
-    } catch {
-      setErrorEnvio("No se pudo enviar. Revisa tu conexión y vuelve a intentar.");
+    } catch (error) {
+      setErrorEnvio(`${motivoDeSubida(error)}. Vuelve a intentar.`);
     } finally {
       setSubida(null);
     }

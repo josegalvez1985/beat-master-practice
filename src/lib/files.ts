@@ -128,6 +128,18 @@ export async function subirYAnotar(
   return material;
 }
 
+// Why an upload failed, with Firebase's code so it can be looked up in docs/firebase.md
+// (Problemas comunes). The full error goes to the console.
+export function motivoDeSubida(error: unknown) {
+  console.error("subida", error);
+  const codigo = (error as { code?: string } | null)?.code;
+  if (codigo === "permission-denied" || codigo === "storage/unauthorized")
+    return `Firebase no lo permitió (${codigo})`;
+  if (codigo === "unavailable" || codigo === "storage/retry-limit-exceeded")
+    return "Sin conexión: vuelve a intentar";
+  return codigo ? `No se pudo subir (${codigo})` : "No se pudo subir";
+}
+
 // Already gone counts as deleted; any other failure is thrown, so callers can keep the
 // Firestore reference instead of leaving the file orphaned in Storage.
 export async function borrarArchivo(ruta: string) {

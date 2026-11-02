@@ -168,7 +168,16 @@ function Colecciones({
 // One document: its id and a hint of what it is; the whole data, on tap.
 function Documento({ documento }: { documento: DocumentoBackend }) {
   const [abierto, setAbierto] = useState(false);
-  const pista = ["nombre", "titulo", "alumnoNombre", "profesorNombre", "email", "fecha"]
+  const pista = [
+    "nombre",
+    "titulo",
+    "pregunta",
+    "alumnoNombre",
+    "profesorNombre",
+    "email",
+    "fecha",
+    "error",
+  ]
     .map((k) => documento.datos[k])
     .filter((v): v is string => typeof v === "string" && !!v)
     .slice(0, 2)
@@ -187,7 +196,11 @@ function Documento({ documento }: { documento: DocumentoBackend }) {
           <Text selectable style={styles.id}>
             {documento.id}
           </Text>
-          {pista ? <Text style={styles.detalle}>{pista}</Text> : null}
+          {pista ? (
+            <Text numberOfLines={2} style={styles.detalle}>
+              {pista}
+            </Text>
+          ) : null}
         </View>
         <Text style={styles.detalle}>{fecha(documento.actualizado)}</Text>
       </Pressable>

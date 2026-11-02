@@ -7,7 +7,6 @@ import { Bienvenida } from "@/components/Bienvenida";
 import { ClaseItem } from "@/components/ClaseItem";
 import { ResumenDiario } from "@/components/herramientas/Diario";
 import { BienvenidaAlumno, vioBienvenida } from "@/components/BienvenidaAlumno";
-import { InformeFamilia } from "@/components/InformeFamilia";
 import { MetasSemana } from "@/components/MetasSemana";
 import { MiEvolucion } from "@/components/MiEvolucion";
 import { PracticaDeHoy } from "@/components/PracticaDeHoy";
@@ -228,12 +227,6 @@ function InscripcionCard({
       <Habilidades
         instrumento={inscripcion.instrumento}
         entregas={entregas.filter((e) => e.profesorId === inscripcion.profesorId)}
-      />
-      <InformeFamilia
-        inscripcion={inscripcion}
-        clases={clases.data}
-        entregas={entregas}
-        logros={logros}
       />
     </Section>
   );

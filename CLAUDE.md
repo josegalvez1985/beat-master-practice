@@ -71,6 +71,8 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
   Function `verBackend` (`functions/src/admin.ts`), que comprueba en cada llamada que el uid sea el
   de `documentos/{ADMIN_DOCUMENTO}`. Es la única función que no filtra por el uid de quien pregunta;
   nunca escribe ni borra. El número está copiado en `src/lib/admin.ts`.
+- `asistenteConsultas`: cada pregunta al asistente con su respuesta o error, escrita solo por
+  `preguntarAsistente`; las reglas niegan todo desde la app y se ve solo en `/admin`.
 - Polca, guarania y galopa son formas por grados (`src/lib/progresiones.ts`): sin canciones ni letras.
 
 ## Herramientas y batería

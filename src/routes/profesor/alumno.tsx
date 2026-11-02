@@ -5,7 +5,6 @@ import { shellStyles } from "@/components/AppShell";
 import { ClaseItem } from "@/components/ClaseItem";
 import { DiarioDelAlumno } from "@/components/herramientas/Diario";
 import { RecordsDelAlumno } from "@/components/bateria/RecordsDelAlumno";
-import { InformeFamilia } from "@/components/InformeFamilia";
 import { MetasSemana } from "@/components/MetasSemana";
 import { Repertorio } from "@/components/Repertorio";
 import { Habilidades } from "@/components/Rubrica";
@@ -104,12 +103,6 @@ export default function AlumnoDetalle() {
                 <MetasSemana inscripcion={inscripcion} metas={metas.data} />
                 <Repertorio inscripcion={inscripcion} obras={obras.data} />
                 <Habilidades instrumento={inscripcion.instrumento} entregas={suyas} />
-                <InformeFamilia
-                  inscripcion={inscripcion}
-                  clases={clases.data}
-                  entregas={entregas.data}
-                  logros={logros.data.find((l) => l.id === inscripcion.id)}
-                />
                 {lista.length === 0 ? (
                   <Text style={styles.muted}>
                     Todavía no planificaste clases de este instrumento.

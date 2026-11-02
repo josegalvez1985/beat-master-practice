@@ -330,6 +330,29 @@ FCM como id. Lo crea el dueño al activar los avisos en _Mi perfil_; se borra al
 tocar **Salir** y desde la Function cuando FCM dice que el token ya no sirve. Solo la Function lo
 lee para enviar.
 
+### `asistenteConsultas/{fecha}_{uid}`
+
+Cada pregunta al asistente que llega al modelo. El id empieza con la fecha ISO, así se ordena por
+tiempo.
+
+| Campo       | Tipo           | Notas                                                                     |
+| ----------- | -------------- | ------------------------------------------------------------------------- |
+| `uid`       | string         | Quién preguntó (`usuarios/{uid}`)                                         |
+| `nombre`    | string         | Copia del nombre al preguntar (no se actualiza: es un registro histórico) |
+| `rol`       | string         | `alumno` o `profesor`                                                     |
+| `pregunta`  | string         | Hasta 1500 caracteres                                                     |
+| `pantalla`  | string         | Dónde estaba (por ejemplo, "Una clase")                                   |
+| `respuesta` | string \| null | La respuesta; `null` si falló                                             |
+| `error`     | string \| null | El error de la API tal como vino (estado y cuerpo); `null` si respondió   |
+| `mensaje`   | string         | Solo si falló: lo que vio la persona                                      |
+| `busquedas` | number         | Búsquedas en sus datos que hizo el modelo                                 |
+| `tokens`    | map            | `{ entrada, salida, cacheLeidos, cacheEscritos }` de esa pregunta         |
+| `modelo`    | string         | `MODELO` al responder                                                     |
+| `fecha`     | timestamp      | Hora del servidor                                                         |
+
+La escribe solo la Function `preguntarAsistente` y se lee solo en `/admin`. Las reglas niegan todo
+desde la app.
+
 ### `Material`
 
 `{ id, nombre, tipo, ruta, tamano, contentType, analisis? }`, donde `tipo` es `audio`, `video`, `pdf`,
@@ -503,9 +526,6 @@ instrumentos del alumno y compararla con una parte daría un número falso.
 - **Asistencia**: el profesor marca presente, tarde o ausente en la clase (`clases.asistencia`).
 - **Insignias** ([`insignias.ts`](../src/lib/insignias.ts)): se calculan en el navegador con lo que
   ya está guardado (entregas, diario, récords, análisis, rúbricas y ruta); no se guarda nada nuevo.
-- **Informe para la familia** ([`InformeFamilia.tsx`](../src/components/InformeFamilia.tsx)): texto
-  con el progreso, la asistencia, la práctica de los últimos 30 días, el nivel y las habilidades,
-  para enviar por WhatsApp, copiar o imprimir. No se guarda ni da acceso a nadie más.
 
 ## La experiencia del alumno
 
@@ -608,6 +628,7 @@ preguntarAsistente ────────────────► valida la
                                                          ◄── respuesta
 ◄──────────────────────────────────── {respuesta, usadasHoy, limite}
                                      suma el uso en asistenteUso/{uid}
+                                     guarda la consulta en asistenteConsultas
 ```
 
 - **Backend en Firebase**: la Cloud Function `preguntarAsistente`
@@ -629,8 +650,13 @@ preguntarAsistente ────────────────► valida la
 - **Límites**: 50 preguntas por persona y por día (las que fallan no cuentan), 5 vueltas, 8
   búsquedas y 8000 tokens por pregunta, 10 mensajes de historial.
 - **Uso y costo**: `asistenteUso/{uid}` (uno por persona) guarda las preguntas del día y los tokens
-  del mes. **No se guardan las preguntas ni las respuestas**; la conversación vive solo en memoria
-  del navegador y se pierde al cerrar.
+  del mes.
+- **Registro de consultas**: cada pregunta que llega al modelo se guarda en `asistenteConsultas`
+  (ver _Modelo de datos_) con la respuesta o, si falló, el error de la API tal como vino (por
+  ejemplo `401 {"type":"error","error":{"type":"authentication_error",…}}`) y el mensaje que vio
+  la persona. Se revisan en `/admin` → _Colecciones_ → `asistenteConsultas`, de la más nueva a la
+  más vieja. No se registran las que no llegan al modelo (sin sesión, sin perfil o pasado el límite
+  del día). En el navegador la conversación vive solo en memoria y se pierde al cerrar.
 
 ## Administración
 
