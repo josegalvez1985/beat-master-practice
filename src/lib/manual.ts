@@ -64,7 +64,7 @@ const asistente: TemaManual = {
 const ayuda: TemaManual = {
   titulo: "¿Necesitas ayuda?",
   pasos: [
-    "En Mi perfil → Ayuda y contacto, «Escribir a Pulso» nos manda tu consulta y te respondemos por correo.",
+    "En Mi perfil → Ayuda y contacto, «Escribir a Pulso» abre WhatsApp con tu consulta lista para enviar y te respondemos por ahí.",
   ],
 };
 

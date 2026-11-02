@@ -118,8 +118,8 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
   (`ANTHROPIC_API_KEY`, nunca en archivos). Solo lectura y solo los datos de quien pregunta: cada
   búsqueda nueva en `functions/src/herramientas.ts` filtra por su uid (el Admin SDK no pasa por las
   reglas). Publicar con `npm run deploy:funciones`.
-- Contacto: correo por Web3Forms (`src/lib/contacto.ts`, clave pública `VITE_WEB3FORMS_KEY` en
-  `.env`); no guarda nada en Firebase.
+- Contacto: abre WhatsApp al 0986 103 839 con el mensaje escrito (`WHATSAPP_CONTACTO` en
+  `src/lib/contacto.ts`); no guarda nada en Firebase.
 - `index.html` define `global = globalThis` (lo necesita `Animated` de react-native-web).
 
 ## Comandos

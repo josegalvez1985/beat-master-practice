@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { MailCheck, Send } from "lucide-react";
+import { Linking, StyleSheet, Text, View } from "react-native";
+import { MessageCircle } from "lucide-react";
 import { authStyles } from "@/components/AuthLayout";
 import { Opciones } from "@/components/plan/comunes";
 import { Button, buttonForeground } from "@/components/ui/button";
@@ -9,17 +9,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   MOTIVOS,
-  correoValido,
-  enviarContacto,
+  WHATSAPP_CONTACTO,
+  enlaceContacto,
   type MensajeContacto,
   type Motivo,
 } from "@/lib/contacto";
 import { documentoValido, normalizarDocumento } from "@/lib/documento";
+import { formatearTelefono } from "@/lib/telefono";
 import { colors, fonts } from "@/lib/theme";
 
-type Inicial = Partial<Pick<MensajeContacto, "nombre" | "correo" | "documento">> & {
+type Inicial = Partial<Pick<MensajeContacto, "nombre" | "documento">> & {
   rol: MensajeContacto["rol"];
 };
+
+const numero = formatearTelefono(`+${WHATSAPP_CONTACTO}`);
 
 // Contact form (login and profile). With a session the person's data comes filled in; from the
 // login the document number is optional (whoever writes may not have an account yet).
@@ -37,7 +40,7 @@ export function ContactoDialog({
       visible={visible}
       onClose={onClose}
       title="Contacto"
-      description="Escríbenos tu consulta: te respondemos al correo que indiques."
+      description="Escríbenos tu consulta: se abre WhatsApp con el mensaje listo para enviar."
     >
       {/* Inside the dialog so the form starts fresh every time it opens. */}
       {visible ? <ContactoForm inicial={inicial} onClose={onClose} /> : null}
@@ -48,51 +51,33 @@ export function ContactoDialog({
 function ContactoForm({ inicial, onClose }: { inicial: Inicial; onClose: () => void }) {
   const conCuenta = inicial.rol !== "sin cuenta";
   const [nombre, setNombre] = useState(inicial.nombre ?? "");
-  const [correo, setCorreo] = useState(inicial.correo ?? "");
   const [documento, setDocumento] = useState(inicial.documento ?? "");
   const [motivo, setMotivo] = useState<Motivo>("consulta");
   const [mensaje, setMensaje] = useState("");
-  // Honeypot: people never see it; bots that fill every field do.
-  const [trampa, setTrampa] = useState("");
-  const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [enviado, setEnviado] = useState(false);
+  const [abierto, setAbierto] = useState(false);
 
-  const enviar = async () => {
+  const abrir = () => {
     const nro = normalizarDocumento(documento);
     if (nombre.trim().length < 2) return setError("Escribe tu nombre.");
-    if (!correoValido(correo)) return setError("Escribe un correo válido para poder responderte.");
     if (documento.trim() && !documentoValido(nro))
       return setError("El número de documento lleva solo números.");
     if (mensaje.trim().length < 10) return setError("Cuéntanos tu consulta (al menos 10 letras).");
     setError(null);
-    if (trampa) return setEnviado(true);
-    setEnviando(true);
-    try {
-      await enviarContacto({
-        nombre,
-        correo,
-        documento: nro,
-        rol: inicial.rol,
-        motivo,
-        mensaje,
-      });
-      setEnviado(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo enviar el mensaje.");
-    } finally {
-      setEnviando(false);
-    }
+    void Linking.openURL(
+      enlaceContacto({ nombre, documento: nro, rol: inicial.rol, motivo, mensaje }),
+    );
+    setAbierto(true);
   };
 
-  if (enviado)
+  if (abierto)
     return (
       <View style={styles.form}>
-        <View style={styles.enviado}>
-          <MailCheck size={20} color={colors.primary} />
-          <Text style={styles.enviadoTexto}>
-            ¡Gracias, {nombre.trim().split(" ")[0]}! Recibimos tu mensaje y te responderemos a{" "}
-            {correo.trim()}.
+        <View style={styles.abierto}>
+          <MessageCircle size={20} color={colors.primary} />
+          <Text style={styles.abiertoTexto}>
+            ¡Gracias, {nombre.trim().split(" ")[0]}! Se abrió WhatsApp con tu mensaje: tócalo en
+            Enviar para que nos llegue. Si no se abrió, escríbenos al {numero}.
           </Text>
         </View>
         <Button size="lg" onPress={onClose}>
@@ -115,20 +100,6 @@ function ContactoForm({ inicial, onClose }: { inicial: Inicial; onClose: () => v
           value={nombre}
           onChangeText={setNombre}
           maxLength={80}
-        />
-      </View>
-      <View style={authStyles.field}>
-        <Label>Correo</Label>
-        <Input
-          accessibilityLabel="Correo"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-          autoComplete="email"
-          placeholder="tu@correo.com"
-          value={correo}
-          onChangeText={setCorreo}
-          maxLength={120}
         />
       </View>
       <View style={authStyles.field}>
@@ -155,24 +126,14 @@ function ContactoForm({ inicial, onClose }: { inicial: Inicial; onClose: () => v
           style={styles.textarea}
         />
       </View>
-      <input
-        type="text"
-        name="botcheck"
-        tabIndex={-1}
-        autoComplete="off"
-        aria-hidden="true"
-        value={trampa}
-        onChange={(e) => setTrampa(e.target.value)}
-        style={{ display: "none" }}
-      />
       {error ? <Text style={authStyles.error}>{error}</Text> : null}
-      <Button size="lg" disabled={enviando} onPress={enviar}>
-        <Send size={16} color={buttonForeground()} />
-        {enviando ? "Enviando…" : "Enviar"}
+      <Button size="lg" onPress={abrir}>
+        <MessageCircle size={16} color={buttonForeground()} />
+        Enviar por WhatsApp
       </Button>
       <Text style={styles.privacidad}>
-        Tus datos (nombre, correo, documento y consulta) se usan solo para responderte. El mensaje
-        se envía por correo a través de Web3Forms; no se guarda en Pulso.
+        Te respondemos por WhatsApp desde el {numero}. Tus datos (nombre, documento y consulta) se
+        usan solo para responderte; no se guardan en Pulso.
       </Text>
     </View>
   );
@@ -188,12 +149,12 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     textAlignVertical: "top",
   },
-  enviado: {
+  abierto: {
     flexDirection: "row",
     gap: 10,
     alignItems: "flex-start",
   },
-  enviadoTexto: {
+  abiertoTexto: {
     flex: 1,
     fontFamily: fonts.medium,
     fontSize: 15,

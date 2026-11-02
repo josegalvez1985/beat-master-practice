@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { BookOpen, Camera, CreditCard, Mail, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Camera, CreditCard, MessageCircle, Plus, Trash2 } from "lucide-react";
 import { shellStyles } from "@/components/AppShell";
 import { AvisosConfig } from "@/components/AvisosConfig";
 import { ContactoDialog } from "@/components/ContactoDialog";
@@ -234,10 +234,10 @@ export default function PerfilPage() {
 
       <Section
         title="Ayuda y contacto"
-        subtitle="¿Una duda, un problema o una idea? Escríbenos y te respondemos por correo."
+        subtitle="¿Una duda, un problema o una idea? Escríbenos y te respondemos por WhatsApp."
       >
         <Button variant="secondary" style={styles.contacto} onPress={() => setContacto(true)}>
-          <Mail size={16} color={buttonForeground("secondary")} />
+          <MessageCircle size={16} color={buttonForeground("secondary")} />
           Escribir a Pulso
         </Button>
       </Section>
@@ -254,7 +254,6 @@ export default function PerfilPage() {
         inicial={{
           rol: perfil.rol,
           nombre: perfil.nombre,
-          correo: email ?? "",
           documento: perfil.nro_documento,
         }}
       />

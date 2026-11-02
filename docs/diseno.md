@@ -160,9 +160,10 @@ coinciden, confirma a qué correo se envió el enlace. Después de crear la cont
 página de Firebase, **Continuar** vuelve al login.
 
 **Modal Contacto** (`?modal=contacto`, también en _Mi perfil_): motivo (Consulta, Problema con mi
-cuenta, Algo no funciona, Sugerencia), nombre, correo, número de documento (opcional sin cuenta) y
-la consulta; al enviar, "¡Gracias! Te responderemos a …". Aclara que los datos solo se usan para
-responder y que el mensaje va por correo, sin guardarse en Pulso.
+cuenta, Algo no funciona, Sugerencia), nombre, número de documento (opcional sin cuenta) y la
+consulta; **Enviar por WhatsApp** abre el chat con el 0986 103 839 con el mensaje ya escrito y el
+modal dice "¡Gracias! Se abrió WhatsApp con tu mensaje…" (con el número por si no se abrió).
+Aclara que los datos solo se usan para responder y que no se guardan en Pulso.
 
 **Modal Primeros pasos** (`?modal=primeros-pasos`): pestañas _Soy alumno_ / _Soy profesor_ con
 pasos numerados para registrarse y para la primera vez que se entra (plan de la clase, entregas

@@ -121,12 +121,8 @@ npm run dev:emulators   # terminal 2: la app apuntando a los emuladores
 | `.env.emulators` | Modo `emulators` (`npm run dev:emulators`). Se versiona.                    |
 | `.env.local`     | Opcional, para sobrescribir valores solo en tu máquina. **No** se versiona. |
 
-Además de la configuración de Firebase, `.env` tiene `VITE_WEB3FORMS_KEY`: la clave pública de
-[Web3Forms](https://web3forms.com) para el formulario de contacto. Se crea en web3forms.com con el
-correo que recibe los mensajes (jose.jgalvez@gmail.com) y se pega ahí; sin ella el formulario
-avisa que no está configurado.
-
-Y `VITE_FIREBASE_VAPID_KEY`: la clave pública de los avisos push (sección 9).
+Además de la configuración de Firebase, `.env` tiene `VITE_FIREBASE_VAPID_KEY`: la clave pública
+de los avisos push (sección 9).
 
 ## 5. Revisar y limpiar los datos
 

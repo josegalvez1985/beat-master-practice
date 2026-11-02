@@ -47,8 +47,8 @@ con el número de documento.
 - **Administración** (`/admin`, solo la cuenta del administrador): los planes de los profesores
   (buscar por CI, registrar pagos, habilitar días, celulares) y todo el backend en solo lectura: cada colección de Firestore con sus documentos, las cuentas de Authentication y los
   archivos de Storage ([docs/arquitectura.md](docs/arquitectura.md#administración)).
-- **Contacto**: formulario en el login y en el perfil que envía la consulta por correo (Web3Forms;
-  configurar `VITE_WEB3FORMS_KEY` en `.env`).
+- **Contacto**: formulario en el login y en el perfil que abre WhatsApp (0986 103 839) con la
+  consulta ya escrita.
 - **Herramientas** (alumnos y profesores), solo las que sirven para cada instrumento: afinador con
   el micrófono, metrónomo con subdivisiones y tempo que sube solo, grabadora, diccionario de
   acordes, entrenamiento auditivo, lectura de notas y **a primera vista** (melodías nuevas cada vez)
@@ -162,9 +162,7 @@ Lo que ya está en el código pero todavía no en el sitio ni en Firebase:
    ([docs/despliegue.md](docs/despliegue.md#publicar-los-planes-de-los-profesores-una-vez)):
    `npm run deploy:funciones`, `npm run deploy:reglas`, push del sitio y enseguida `/admin` →
    _Planes_ → _Darles la prueba gratis_.
-2. **Formulario de contacto**: la clave `VITE_WEB3FORMS_KEY` del `.env` está vacía (se crea en
-   web3forms.com).
-3. **Base vieja `default`**: borrarla cuando todo funcione con `(default)`
+2. **Base vieja `default`**: borrarla cuando todo funcione con `(default)`
    (`npx firebase firestore:databases:delete default`).
 
 ## Próximamente
