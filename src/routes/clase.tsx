@@ -29,7 +29,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Badge, Section } from "@/components/ui/section";
-import { avisar } from "@/components/ui/toast";
+import { avisar, useBorrarConDeshacer } from "@/components/ui/toast";
 import { usePerfil, type Perfil } from "@/lib/auth";
 import { archivoIcs, enlaceGoogle } from "@/lib/calendario";
 import {
@@ -113,11 +113,14 @@ function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
     navigate("/planificacion", { replace: true });
   };
 
-  // File first: if deleting it fails, the class keeps pointing at it.
-  const quitar = async (material: Material) => {
-    await borrarArchivo(material.ruta);
-    await quitarMaterial(clase.id, material);
-  };
+  // With "Deshacer"; then the file first: if deleting it fails, the class keeps pointing at it.
+  const { ocultos, borrar } = useBorrarConDeshacer();
+  const materiales = clase.materiales.filter((m) => !ocultos.has(m.id));
+  const quitar = (material: Material) =>
+    borrar(material.id, `"${material.nombre}" quitado`, async () => {
+      await borrarArchivo(material.ruta);
+      await quitarMaterial(clase.id, material);
+    });
 
   return (
     <>
@@ -195,14 +198,14 @@ function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
             esDueno ? "Audio, video, PDF, imágenes y partituras (MusicXML, Guitar Pro)." : undefined
           }
         >
-          {clase.materiales.length === 0 ? (
+          {materiales.length === 0 ? (
             <Text style={styles.muted}>
               {esDueno
                 ? "Sube lo que tus alumnos necesitan para esta clase."
                 : "Esta clase no tiene materiales."}
             </Text>
           ) : (
-            <MaterialList materiales={clase.materiales} onRemove={esDueno ? quitar : undefined} />
+            <MaterialList materiales={materiales} onRemove={esDueno ? quitar : undefined} />
           )}
           {esDueno ? (
             <UploadButton
@@ -421,7 +424,8 @@ function EntregaForm({
 }) {
   const [comentario, setComentario] = useState(entrega?.comentario ?? "");
   const [guardado, setGuardado] = useState(false);
-  const archivos = entrega?.archivos ?? [];
+  const { ocultos, borrar } = useBorrarConDeshacer();
+  const archivos = (entrega?.archivos ?? []).filter((m) => !ocultos.has(m.id));
 
   // Comments left on a file that is no longer here (see limpiarDevoluciones).
   useEffect(() => {
@@ -434,10 +438,13 @@ function EntregaForm({
     setGuardado(true);
   };
 
-  const quitar = async (material: Material) => {
+  // With "Deshacer"; then the file first, as with the class materials.
+  const quitar = (material: Material) => {
     if (!entrega) return;
-    await borrarArchivo(material.ruta);
-    await quitarArchivoEntrega(entrega, material);
+    borrar(material.id, `"${material.nombre}" quitado de tu entrega`, async () => {
+      await borrarArchivo(material.ruta);
+      await quitarArchivoEntrega(entrega.id, material);
+    });
   };
 
   return (

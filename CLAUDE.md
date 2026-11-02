@@ -17,9 +17,9 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
   (archivos de Storage primero, después un batch con los documentos).
 - Datos duplicados (`alumnoNombre`, `profesorNombre`…): si cambia el original, se actualizan las
   copias en el mismo batch.
-- Borrar con "Deshacer" (`avisar` en `src/components/ui/toast.tsx`): durante el plazo solo se
-  oculta; el borrado real (archivos primero) ocurre al vencer. Nunca quitar la referencia antes que
-  el archivo.
+- Borrar con "Deshacer" (`useBorrarConDeshacer` / `avisar` en `src/components/ui/toast.tsx`):
+  durante el plazo solo se oculta; el borrado real (archivos primero) ocurre al vencer y parte del
+  documento actual, no del que se veía. Nunca quitar la referencia antes que el archivo.
 - Al agregar una colección, documenta su fila en _Relaciones actuales_ de `docs/backend.md` y su
   modelo en `docs/arquitectura.md`.
 

@@ -12,6 +12,7 @@ import {
   limit,
   onSnapshot,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -704,17 +705,27 @@ export function agregarArchivoEntrega(alumno: Perfil, clase: Clase, material: Ma
   );
 }
 
-// Removing the last file removes the delivery (the class counts as pending again).
-// The profesor's comments on that file go in the same write, so none points at a missing file.
-export function quitarArchivoEntrega(entrega: Entrega, material: Material) {
-  const ref = doc(db, "entregas", entrega.id);
-  if (entrega.archivos.length <= 1) return deleteDoc(ref);
-  const suyas = (entrega.devoluciones ?? []).filter((d) => d.archivoId === material.id);
-  return updateDoc(ref, {
-    archivos: arrayRemove(material),
-    ...(suyas.length ? { devoluciones: arrayRemove(...suyas) } : {}),
-    ...sinRespuestas(entrega, suyas),
-    actualizadoEn: serverTimestamp(),
+// Removing the last file removes the delivery (the class counts as pending again; the rules
+// never allow one without files). The profesor's comments on that file go in the same write, so
+// none points at a missing file. Read inside a transaction: with "Deshacer" the delete runs
+// seconds later, and other files of the delivery may have been removed in the meantime.
+export function quitarArchivoEntrega(entregaId: string, material: Material) {
+  const ref = doc(db, "entregas", entregaId);
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return;
+    const entrega = { ...(snap.data() as Entrega), id: snap.id };
+    if (entrega.archivos.every((m) => m.id === material.id)) {
+      tx.delete(ref);
+      return;
+    }
+    const suyas = (entrega.devoluciones ?? []).filter((d) => d.archivoId === material.id);
+    tx.update(ref, {
+      archivos: entrega.archivos.filter((m) => m.id !== material.id),
+      ...(suyas.length ? { devoluciones: arrayRemove(...suyas) } : {}),
+      ...sinRespuestas(entrega, suyas),
+      actualizadoEn: serverTimestamp(),
+    });
   });
 }
 

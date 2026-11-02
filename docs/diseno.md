@@ -291,7 +291,9 @@ instrumento, su meta semanal total como dato aparte y las últimas anotaciones).
     "Anotamos N min en tu diario: tu avance de la semana ya se actualizó" (se anota solo). `?practicar=1` lo abre directo.
 - **Materiales** (u **Otros materiales** si hay plan): lista con tipo y tamaño; audio y video se
   reproducen ahí mismo con **velocidad** (50, 75, 90, 100 %, sin cambiar el tono) y **repetir de A
-  a B** para un pasaje, PDF y partituras se abren en otra pestaña.
+  a B** para un pasaje, PDF y partituras se abren en otra pestaña. La papelera (del profesor en los
+  materiales, del alumno en sus archivos de la entrega) quita el archivo con **Deshacer** (6 s), y
+  si el borrado falla lo vuelve a mostrar con un aviso de error.
 - **Profesor**: Editar, Eliminar (pide confirmación y avisa que también se borran los materiales y
   las entregas de los alumnos), Subir materiales (con barra de avance por archivo) y **Alumnos de la
   clase** ("1 de 3 entregaron · 2 asistieron"): por alumno, **asistencia** (Presente, Llegó tarde,

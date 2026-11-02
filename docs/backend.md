@@ -90,12 +90,19 @@ usuarios (profesor) ──1:N── biblioteca (bloques sin archivos)
 
 ### Borrar con "Deshacer" sin dejar huérfanos
 
-El editor del plan y el perfil no piden confirmación: muestran un aviso con **Deshacer** durante
-6 segundos. Mientras tanto el bloque, el archivo o la foto solo se **ocultan**: siguen en el
-documento guardado y en Storage. Recién al vencer el plazo se borra (archivos primero, después el
-documento). Si la persona cierra la pestaña antes, no se borró nada y todo sigue relacionado; si
-navega a otra pantalla, los borrados pendientes se completan en ese momento. Nunca se quita la
-referencia antes que el archivo.
+El editor del plan, el perfil, los materiales de la clase y los archivos de la entrega no piden
+confirmación: muestran un aviso con **Deshacer** durante 6 segundos. Mientras tanto el bloque, el
+archivo o la foto solo se **ocultan**: siguen en el documento guardado y en Storage. Recién al
+vencer el plazo se borra (archivos primero, después el documento). Si la persona cierra la pestaña
+antes, no se borró nada y todo sigue relacionado; si navega a otra pantalla, los borrados
+pendientes se completan en ese momento. Nunca se quita la referencia antes que el archivo. Si el
+borrado falla, lo oculto vuelve a aparecer con un aviso de error.
+
+Para una lista nueva, usar `useBorrarConDeshacer` de
+[`toast.tsx`](../src/components/ui/toast.tsx). Como el borrado real llega segundos después, la
+escritura en Firestore tiene que partir del documento **actual**, no del que se veía al tocar la
+papelera: `quitarArchivoEntrega` lo lee en una transacción y, si era el último archivo, borra la
+entrega (las reglas no admiten una entrega sin archivos).
 
 ## Datos duplicados (desnormalización)
 

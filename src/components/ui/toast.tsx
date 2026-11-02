@@ -1,10 +1,11 @@
-import { useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { AlertCircle, CheckCircle2, X } from "lucide-react";
 import { colors, fonts, radius } from "@/lib/theme";
 
 // Short notices at the bottom of the screen, optionally with one action ("Deshacer").
-// Call `avisar` from anywhere; <Avisos /> is mounted once in the layout.
+// Call `avisar` from anywhere; <Avisos /> is mounted once in the layout. Undoable deletes of a
+// list: useBorrarConDeshacer.
 
 type Aviso = {
   id: number;
@@ -34,6 +35,75 @@ export function avisar({
   emitir();
   window.setTimeout(() => cerrar(id), duracion);
   return id;
+}
+
+const DESHACER_MS = 6000;
+
+// Deletes with "Deshacer": `borrar` only hides the item (`ocultos`) for a few seconds; the real
+// delete (`ejecutar`: files first, then the reference) runs when the time is up, or right away if
+// the screen closes. If it fails, the item shows again with an error notice.
+export function useBorrarConDeshacer() {
+  const [ocultos, setOcultos] = useState<Set<string>>(new Set());
+  const pendientes = useRef(new Map<string, { timer: number; ejecutar: () => Promise<void> }>());
+
+  const mostrar = useCallback(
+    (id: string) =>
+      setOcultos((actual) => {
+        const nuevos = new Set(actual);
+        nuevos.delete(id);
+        return nuevos;
+      }),
+    [],
+  );
+
+  const confirmar = useCallback(
+    (id: string) => {
+      const pendiente = pendientes.current.get(id);
+      if (!pendiente) return;
+      pendientes.current.delete(id);
+      window.clearTimeout(pendiente.timer);
+      void pendiente.ejecutar().then(
+        () => mostrar(id),
+        (error) => {
+          console.error("borrar", error);
+          mostrar(id);
+          avisar({
+            texto: "No se pudo eliminar. Revisa tu conexión y vuelve a probar.",
+            tipo: "error",
+          });
+        },
+      );
+    },
+    [mostrar],
+  );
+
+  useEffect(() => {
+    const mapa = pendientes.current;
+    return () => [...mapa.keys()].forEach(confirmar);
+  }, [confirmar]);
+
+  const borrar = (id: string, texto: string, ejecutar: () => Promise<void>) => {
+    if (pendientes.current.has(id)) return;
+    setOcultos((actual) => new Set(actual).add(id));
+    const timer = window.setTimeout(() => confirmar(id), DESHACER_MS);
+    pendientes.current.set(id, { timer, ejecutar });
+    avisar({
+      texto,
+      duracion: DESHACER_MS,
+      accion: {
+        label: "Deshacer",
+        onPress: () => {
+          const pendiente = pendientes.current.get(id);
+          if (!pendiente) return;
+          window.clearTimeout(pendiente.timer);
+          pendientes.current.delete(id);
+          mostrar(id);
+        },
+      },
+    });
+  };
+
+  return { ocultos, borrar };
 }
 
 export function cerrar(id: number) {
