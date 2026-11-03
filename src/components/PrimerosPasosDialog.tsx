@@ -37,7 +37,7 @@ const despues: Record<Role, Paso[]> = {
     {
       titulo: "Arma tus listas de alumnos",
       detalle:
-        "En Inicio, busca a cada alumno por número de documento o nombre y agrégalo al instrumento que le enseñas.",
+        "En Inicio, carga el número de documento de cada alumno (su nombre aparece al lado) y agrégalo al instrumento que le enseñas.",
     },
     {
       titulo: "Planifica tus clases",

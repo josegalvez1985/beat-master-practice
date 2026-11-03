@@ -25,7 +25,7 @@ const ALUMNOS_EN_PRUEBA = 60;
 const DIAS_DE_PRUEBA = 30;
 // Profesores registered before the plans were published get their 30 days from that day:
 // 2 November 2026, 00:00 in Paraguay.
-const LANZAMIENTO = new Date("2026-11-02T03:00:00Z");
+export const LANZAMIENTO = new Date("2026-11-02T03:00:00Z");
 
 const REGION = "southamerica-east1";
 const PY_MS = 3 * 60 * 60 * 1000; // Paraguay is UTC-3 all year.
@@ -40,6 +40,8 @@ type Suscripcion = {
   pruebaDesde?: Timestamp;
   venceEn?: Timestamp;
   maxAlumnos?: number;
+  // The profesor deleted their account (functions/src/cuenta.ts): the plan stays as history.
+  baja?: { nombre: string; nro_documento: string };
 };
 const MAX_ALUMNOS = 500;
 
@@ -359,7 +361,11 @@ async function listar() {
       tipo: (d.get("tipo") as string | undefined) ?? "pago",
       motivo: (d.get("motivo") as string | undefined) ?? null,
       alumnos: (d.get("alumnos") as number | undefined) ?? null,
-      profesor: nombres.get(d.get("profesorId")) ?? d.get("profesorId"),
+      profesor:
+        nombres.get(d.get("profesorId")) ??
+        (planDe.get(d.get("profesorId"))?.baja
+          ? `${planDe.get(d.get("profesorId"))!.baja!.nombre} (cuenta eliminada)`
+          : d.get("profesorId")),
       plan: d.get("plan") as string,
       meses: d.get("meses") as number,
       monto: d.get("monto") as number,

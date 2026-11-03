@@ -1,5 +1,13 @@
 import { useSyncExternalStore } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { AlertTriangle, HelpCircle, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { colors, fonts, radius, shared } from "@/lib/theme";
@@ -51,12 +59,13 @@ export function Confirmaciones() {
     },
     () => pedido,
   );
+  const angosto = useWindowDimensions().width < 520;
   if (!actual) return null;
   const Icono = actual.icono ?? (actual.peligro ? AlertTriangle : HelpCircle);
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={() => responder(false)}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, angosto && styles.overlayAngosto]}>
         <Pressable
           accessibilityLabel={actual.cancelar ?? "Cancelar"}
           focusable={false}
@@ -65,15 +74,22 @@ export function Confirmaciones() {
         />
         <View
           accessibilityRole="alert"
-          style={[shared.panel, styles.panel, actual.peligro && styles.panelPeligro]}
+          style={[
+            shared.panel,
+            styles.panel,
+            angosto && styles.panelAngosto,
+            actual.peligro && styles.panelPeligro,
+          ]}
         >
           <View style={[styles.icono, actual.peligro ? styles.iconoPeligro : styles.iconoNormal]}>
             <Icono size={22} color={actual.peligro ? colors.destructive : colors.primary} />
           </View>
-          <Text style={styles.titulo}>{actual.titulo}</Text>
+          <Text style={[styles.titulo, angosto && styles.tituloAngosto]}>{actual.titulo}</Text>
           {actual.mensaje ? <Text style={styles.mensaje}>{actual.mensaje}</Text> : null}
           {actual.detalle?.length ? (
-            <View style={styles.detalle}>
+            // A long list (e.g. every profesor without a plan) scrolls inside, so the buttons
+            // always stay on screen.
+            <ScrollView style={styles.detalleScroll} contentContainerStyle={styles.detalle}>
               {actual.detalle.map((linea) => (
                 <View key={linea} style={styles.linea}>
                   <View
@@ -85,7 +101,7 @@ export function Confirmaciones() {
                   <Text style={styles.lineaTexto}>{linea}</Text>
                 </View>
               ))}
-            </View>
+            </ScrollView>
           ) : null}
           <View style={styles.botones}>
             <Button variant="secondary" style={styles.boton} onPress={() => responder(false)}>
@@ -112,6 +128,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 16,
   },
+  overlayAngosto: {
+    padding: 8,
+  },
   backdrop: {
     backgroundColor: colors.backdrop,
   },
@@ -121,6 +140,9 @@ const styles = StyleSheet.create({
     padding: 24,
     borderRadius: radius["2xl"],
     backgroundColor: colors.card,
+  },
+  panelAngosto: {
+    padding: 18,
   },
   panelPeligro: {
     borderColor: colors.destructive,
@@ -147,6 +169,10 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     color: colors.foreground,
   },
+  tituloAngosto: {
+    fontSize: 21,
+    lineHeight: 27,
+  },
   mensaje: {
     marginTop: 6,
     fontFamily: fonts.sans,
@@ -154,8 +180,13 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     color: colors.mutedForeground,
   },
-  detalle: {
+  detalleScroll: {
     marginTop: 14,
+    maxHeight: 260,
+    flexGrow: 0,
+    borderRadius: radius.md,
+  },
+  detalle: {
     gap: 8,
     padding: 12,
     borderRadius: radius.md,

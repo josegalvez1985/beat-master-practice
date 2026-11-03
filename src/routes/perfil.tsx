@@ -4,6 +4,7 @@ import { BookOpen, Camera, CreditCard, MessageCircle, Plus, Trash2 } from "lucid
 import { shellStyles } from "@/components/AppShell";
 import { AvisosConfig } from "@/components/AvisosConfig";
 import { ContactoDialog } from "@/components/ContactoDialog";
+import { EliminarCuentaDialog } from "@/components/EliminarCuentaDialog";
 import { Link } from "@/components/Link";
 import { ManualDialog } from "@/components/ManualDialog";
 import { usePlanProfesor } from "@/components/PlanAviso";
@@ -16,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { confirmar } from "@/components/ui/confirmar";
 import { Section } from "@/components/ui/section";
 import { avisar } from "@/components/ui/toast";
+import { esAdmin as esCuentaAdmin } from "@/lib/admin";
 import { usePerfil, useSession } from "@/lib/auth";
 import {
   agregarInstrumento,
@@ -90,6 +92,9 @@ export default function PerfilPage() {
   const [agregando, setAgregando] = useState<InstrumentId | null>(null);
   const [contacto, setContacto] = useState(false);
   const [manualAbierto, setManualAbierto] = useState(false);
+  const [eliminarAbierto, setEliminarAbierto] = useState(false);
+  // The admin account cannot be deleted (eliminarCuenta refuses it too).
+  const esAdmin = esCuentaAdmin(perfil);
   const faltan = instruments.filter((i) => !perfil.instrumentos.includes(i.id));
 
   const onAgregar = async (id: InstrumentId) => {
@@ -241,6 +246,32 @@ export default function PerfilPage() {
           Escribir a Pulso
         </Button>
       </Section>
+
+      {esAdmin ? null : (
+        <Section
+          title="Eliminar mi cuenta"
+          subtitle={
+            profesor
+              ? "Borra para siempre tu cuenta, tus clases con sus archivos y las entregas de tus alumnos. Se conservan solo tus pagos, como historial."
+              : "Borra para siempre tu cuenta, tus entregas (audios, videos, fotos y PDF), tu diario y todo tu avance."
+          }
+        >
+          <Button
+            variant="outline"
+            style={styles.contacto}
+            onPress={() => setEliminarAbierto(true)}
+          >
+            <Trash2 size={16} color={colors.destructive} />
+            <Text style={styles.eliminarTexto}>Eliminar mi cuenta</Text>
+          </Button>
+        </Section>
+      )}
+
+      <EliminarCuentaDialog
+        visible={eliminarAbierto}
+        onClose={() => setEliminarAbierto(false)}
+        rol={perfil.rol}
+      />
 
       <ManualDialog
         visible={manualAbierto}
@@ -395,6 +426,11 @@ const styles = StyleSheet.create({
   },
   contacto: {
     alignSelf: "flex-start",
+  },
+  eliminarTexto: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.destructive,
   },
   photoRow: {
     flexDirection: "row",

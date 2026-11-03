@@ -118,7 +118,7 @@ Hace único al número de documento. Se crea al registrarse y nunca cambia.
 | `nombre`         | string                     | Nombre y apellido                                                                                           |
 | `nro_documento`  | string                     | Solo dígitos. No cambia                                                                                     |
 | `instrumentos`   | string[]                   | Ids de [`instruments.ts`](../src/lib/instruments.ts)                                                        |
-| `terminos`       | string[]                   | Prefijos del nombre sin acentos, para buscar por nombre                                                     |
+| `terminos`       | string[]                   | Prefijos del nombre sin acentos (ya no se usa para asignar alumnos)                                         |
 | `foto`           | `{ ruta, actualizadoEn }`  | Opcional. `ruta` siempre es `usuarios/{uid}/foto.jpg`                                                       |
 | `metaSemanal`    | number                     | Opcional. Alumno: meta de minutos por semana (1–3000)                                                       |
 | `recordatorio`   | number                     | Opcional. Alumno: hora (0–23, Paraguay) del recordatorio diario de práctica                                 |
@@ -357,7 +357,8 @@ desde la app.
 
 ### `suscripciones/{uid}`
 
-El plan del profesor (ver _Planes de los profesores_): uno por profesor, nunca se borra.
+El plan del profesor (ver _Planes de los profesores_): uno por profesor, nunca se borra (tampoco al
+eliminar la cuenta: queda con `baja`, como historial de sus pagos).
 
 | Campo                      | Tipo      | Notas                                                            |
 | -------------------------- | --------- | ---------------------------------------------------------------- |
@@ -365,9 +366,11 @@ El plan del profesor (ver _Planes de los profesores_): uno por profesor, nunca s
 | `pruebaDesde`              | timestamp | Solo en la prueba: vence 30 días después                         |
 | `venceEn`, `actualizadoEn` | timestamp | Plan pagado o días de excepción (`activarPlan`, `habilitarDias`) |
 | `maxAlumnos`               | number    | Cantidad de alumnos a medida, en lugar de la del plan            |
+| `baja`                     | map       | `{ nombre, nro_documento, eliminadaEn }`: el profesor se fue     |
 
 El profesor la crea solo al registrarse (mismo batch que su perfil, como prueba con la hora del
-servidor) y la lee; las demás escrituras son de las Functions del administrador.
+servidor, o desde la prueba anterior si ese documento está en `bajas`) y la lee; las demás
+escrituras son de las Functions del administrador y de `eliminarCuenta`.
 
 ### `pagos/{id}`
 
@@ -397,7 +400,23 @@ El celular del profesor, aparte de `usuarios` (que pueden leer todos los profeso
 | `actualizadoEn` | timestamp | Hora del servidor                    |
 
 Lo crea y cambia solo su dueño (un profesor; nace en el batch del registro); lo lee solo él, y el
-administrador a través de `planesAdmin`. Nunca se borra.
+administrador a través de `planesAdmin`. Se borra solo con la cuenta.
+
+### `bajas/{nro_documento}`
+
+Un número de documento cuya cuenta de **profesor** se eliminó (_Eliminar mi cuenta_).
+
+| Campo         | Tipo      | Notas                          |
+| ------------- | --------- | ------------------------------ |
+| `rol`         | string    | `profesor`                     |
+| `pruebaDesde` | timestamp | Cuándo empezó su prueba gratis |
+| `eliminadaEn` | timestamp | Hora del servidor              |
+
+La escribe solo `eliminarCuenta` y nunca se borra. Si esa persona vuelve a registrarse como
+profesor, su prueba sigue contando desde `pruebaDesde` (la regla de `suscripciones` lo exige):
+eliminar la cuenta no da otros 30 días gratis. Un plan pagado que todavía corría no pasa a la
+cuenta nueva: el administrador lo resuelve con _Habilitar días_. Se lee de a una (`get`) con
+sesión, nunca se lista.
 
 ### `Material`
 
@@ -531,6 +550,18 @@ Firestore es NoSQL: no tiene claves foráneas ni borrado en cascada. Cómo se re
 colecciones, cómo se evita que queden registros huérfanos, qué datos están duplicados y qué
 revisar al agregar una colección está en la **[guía de backend](backend.md)**.
 
+### Eliminar la cuenta
+
+En _Mi perfil_, alumnos y profesores tienen **Eliminar mi cuenta** (no la cuenta del
+administrador). Con la contraseña (`reauthenticateWithCredential` en
+[`auth.ts`](../src/lib/auth.ts)), la Cloud Function `eliminarCuenta`
+([`functions/src/cuenta.ts`](../functions/src/cuenta.ts), `southamerica-east1`) borra los
+archivos, todos los documentos de la persona, su perfil, su documento y la cuenta de
+Authentication; después la app cierra la sesión, borra la copia local y abre el login con
+`?cuenta=eliminada`. Del profesor se conservan `suscripciones` (con `baja`) y `pagos`, y nace
+`bajas/{nro}`. Al borrar sus clases se borran también las entregas de sus alumnos en ellas. El
+orden exacto está en [backend.md](backend.md#eliminar-una-cuenta-cascada-completa).
+
 ## Progreso
 
 Por alumno y por instrumento:
@@ -614,13 +645,14 @@ instrumentos del alumno y compararla con una parte daría un número falso.
 
 ## Búsqueda de alumnos
 
-El profesor escribe un **número de documento** (con o sin puntos) o un **nombre**:
+El profesor asigna alumnos **solo por número de documento** (con o sin puntos), nunca por nombre:
+el documento es único y el nombre no. [`buscarPorDocumento`](../src/lib/data.ts) busca por
+igualdad sobre `usuarios.nro_documento`, y el nombre se muestra aparte, en un campo de solo
+lectura, para que el profesor confirme que es la persona. Si el número es de un profesor, la
+pantalla lo avisa y no deja agregarlo (`agregarAlumno` también lo rechaza).
 
-- Documento: igualdad sobre `usuarios.nro_documento`.
-- Nombre: `array-contains` sobre `usuarios.terminos` con la primera palabra, y el resto de las
-  palabras se filtra en el navegador. No distingue acentos ni mayúsculas.
-
-En ambos casos solo se muestran usuarios con rol alumno.
+`usuarios.terminos` (prefijos del nombre) se sigue guardando, pero ya no se usa para asignar
+alumnos.
 
 ## Tiempo real
 

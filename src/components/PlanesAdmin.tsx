@@ -114,7 +114,7 @@ export function PlanesAdmin() {
 
         {sinPlan.length ? (
           <View style={styles.aviso}>
-            <Text style={[styles.avisoTexto, styles.flex]}>
+            <Text style={[styles.avisoTexto, styles.info]}>
               {sinPlan.length} {sinPlan.length === 1 ? "profesor no tiene" : "profesores no tienen"}{" "}
               plan y no pueden crear clases ni agregar alumnos.
             </Text>
@@ -140,7 +140,7 @@ export function PlanesAdmin() {
           const e = estado(p);
           return (
             <View key={p.uid} style={styles.fila}>
-              <View style={styles.flex}>
+              <View style={styles.info}>
                 <Text selectable style={styles.nombre}>
                   {p.nombre}
                 </Text>
@@ -225,7 +225,7 @@ export function PlanesAdmin() {
           return (
             <View key={pago.id} style={styles.fila}>
               <Icono size={16} color={cortesia ? colors.primary : colors.success} />
-              <View style={styles.flex}>
+              <View style={styles.info}>
                 <Text style={styles.nombre}>
                   {pago.profesor} ·{" "}
                   {cortesia
@@ -542,8 +542,12 @@ function HabilitarDias({
 }
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
+  // The text of a row: takes the free width, and on a phone (under ~220 px left) the status and
+  // the buttons go below it instead of squeezing it into a thin column.
+  info: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 220,
     minWidth: 0,
   },
   aviso: {
@@ -587,7 +591,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.mutedForeground,
-  },
+    wordBreak: "break-word",
+  } as object,
   alerta: {
     fontFamily: fonts.semibold,
     fontSize: 12,

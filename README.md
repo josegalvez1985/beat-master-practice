@@ -6,7 +6,7 @@ percusión, voz, bajo, violín, violonchelo, contrabajo, ukelele, saxofón, trom
 con el número de documento.
 
 - **Profesores**: se registran con su número de documento y los instrumentos que enseñan, arman sus
-  listas de alumnos (buscándolos por documento o nombre), planifican clases por semana, mes o año,
+  listas de alumnos (cargando su número de documento), planifican clases por semana, mes o año,
   arman cada clase por bloques (tablaturas y partituras con sonido, acordes, rasgueos, tempo con
   metrónomo, YouTube, imágenes, PDF, audio, video y Guitar Pro) y ven el progreso y el diario de
   práctica de cada alumno. Guardan bloques en su **biblioteca** para reusarlos, ponen hora y
@@ -29,7 +29,9 @@ con el número de documento.
   por familia.
 - **Cuenta**: cualquiera puede sumar instrumentos (para enseñar o para aprender) desde su perfil, y
   recuperar la contraseña con su documento y su correo. En el perfil, un **manual de uso** para
-  profesores y otro para alumnos, por temas y paso a paso.
+  profesores y otro para alumnos, por temas y paso a paso, y **Eliminar mi cuenta**: con la
+  contraseña, borra para siempre la cuenta, sus datos y sus archivos (videos, audios, PDF, fotos);
+  del profesor quedan solo sus pagos y su plan, como historial contable.
 - **Asistente con IA** (botón ✦ flotante, que se arrastra a cualquier parte de la pantalla; alumnos
   y profesores): explica cómo se usa cada pantalla y consulta las clases, el avance y los alumnos
   de quien pregunta, solo lectura. Corre en una Cloud Function de Firebase con la API de Claude
@@ -161,7 +163,9 @@ Lo que ya está en el código pero todavía no en el sitio ni en Firebase:
 1. **Publicar los planes**, en orden y sin pausas
    ([docs/despliegue.md](docs/despliegue.md#publicar-los-planes-de-los-profesores-una-vez)):
    `npm run deploy:funciones`, `npm run deploy:reglas`, push del sitio y enseguida `/admin` →
-   _Planes_ → _Darles la prueba gratis_.
+   _Planes_ → _Darles la prueba gratis_. Ese mismo `deploy:funciones` / `deploy:reglas` publica
+   **Eliminar mi cuenta** (función `eliminarCuenta` y la colección `bajas`): las reglas y la
+   función van antes que el sitio.
 2. **Base vieja `default`**: borrarla cuando todo funcione con `(default)`
    (`npx firebase firestore:databases:delete default`).
 

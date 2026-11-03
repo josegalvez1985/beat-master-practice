@@ -26,7 +26,7 @@ import { httpsCallable } from "firebase/functions";
 import { db, functions } from "@/lib/firebase";
 import type { Perfil } from "@/lib/auth";
 import { hoy } from "@/lib/dates";
-import { normalizarDocumento, normalizarTexto } from "@/lib/documento";
+import { normalizarDocumento } from "@/lib/documento";
 import type { InstrumentId } from "@/lib/instruments";
 import { archivosDelPlan, type Bloque, type Ficha, type Plan } from "@/lib/plan";
 import type { PlanId, Suscripcion } from "@/lib/planes";
@@ -493,31 +493,17 @@ export function progreso(
 
 // --- Profesor: students ---
 
-// Search by document number (digits) or by any name prefix.
-export async function buscarAlumnos(texto: string): Promise<Perfil[]> {
+// The profesor assigns alumnos only by document number (never by name): the number is
+// unique (documentos/{nro}), so it is always the right person. Returns the account with
+// that number, whatever its role (the screen explains when it is a profesor), or null.
+export async function buscarPorDocumento(texto: string): Promise<Perfil | null> {
   const nroDocumento = normalizarDocumento(texto);
-  const usuarios = collection(db, "usuarios");
-  let resultados: Perfil[];
-
-  if (nroDocumento && nroDocumento.length === texto.replace(/[\s.-]/g, "").length) {
-    const snap = await getDocs(
-      query(usuarios, where("nro_documento", "==", nroDocumento), limit(5)),
-    );
-    resultados = snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as Perfil);
-  } else {
-    const palabras = normalizarTexto(texto)
-      .split(" ")
-      .filter((p) => p.length >= 2);
-    const [primera] = palabras;
-    if (!primera) return [];
-    const snap = await getDocs(
-      query(usuarios, where("terminos", "array-contains", primera.slice(0, 20)), limit(30)),
-    );
-    resultados = snap.docs
-      .map((d) => ({ uid: d.id, ...d.data() }) as Perfil & { terminos: string[] })
-      .filter((p) => palabras.every((palabra) => p.terminos.includes(palabra.slice(0, 20))));
-  }
-  return resultados.filter((p) => p.rol === "alumno");
+  if (!nroDocumento) return null;
+  const snap = await getDocs(
+    query(collection(db, "usuarios"), where("nro_documento", "==", nroDocumento), limit(1)),
+  );
+  const [encontrado] = snap.docs;
+  return encontrado ? ({ uid: encontrado.id, ...encontrado.data() } as Perfil) : null;
 }
 
 // Only through the agregarAlumno Cloud Function (functions/src/planes.ts): it checks the

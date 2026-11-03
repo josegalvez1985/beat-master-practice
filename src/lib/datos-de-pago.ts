@@ -3,10 +3,10 @@
 // Each line is shown as is, label and value; leave a value empty to hide that line.
 
 export const DATOS_DE_PAGO = {
-  banco: "ueno bank",
+  banco: "",
   titular: "Jose Galvez",
-  alias: "CI 4169298",
-  cuenta: "16714744",
+  alias: "",
+  cuenta: "",
   // Where to send the receipt (WhatsApp number with country code): 0986 103 839.
   whatsapp: "595986103839",
 };

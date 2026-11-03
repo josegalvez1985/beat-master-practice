@@ -3,8 +3,10 @@ import { FirebaseError } from "firebase/app";
 import {
   browserSessionPersistence,
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
   indexedDBLocalPersistence,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
@@ -23,7 +25,8 @@ import {
   type Timestamp,
   type Unsubscribe,
 } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { httpsCallable } from "firebase/functions";
+import { auth, db, functions } from "@/lib/firebase";
 import { terminosDeBusqueda } from "@/lib/documento";
 import type { InstrumentId } from "@/lib/instruments";
 
@@ -60,6 +63,9 @@ const listeners = new Set<() => void>();
 let stopPerfil: Unsubscribe | null = null;
 // True after "Salir" in this tab: the next login starts at the home instead of the last page.
 let salidaVoluntaria = false;
+// While "Eliminar mi cuenta" runs, the profile disappears before the account: that is not an
+// unfinished sign-up, so the "incomplete" screen is not shown.
+let eliminando = false;
 
 export const fueSalidaVoluntaria = () => salidaVoluntaria;
 
@@ -81,7 +87,7 @@ onAuthStateChanged(auth, (user) => {
     (snap) => {
       if (snap.exists()) {
         setSession({ status: "ready", user, perfil: { uid: user.uid, ...snap.data() } as Perfil });
-      } else if (!snap.metadata.fromCache) {
+      } else if (!snap.metadata.fromCache && !eliminando) {
         setSession({ status: "incomplete", user });
       }
       // Missing only in the local copy (offline): wait for the server, it may well exist.
@@ -179,11 +185,13 @@ export async function register(datos: {
       creadoEn: serverTimestamp(),
     });
     // A profesor starts with the 30-day trial of their plan (src/lib/planes.ts) and their phone,
-    // in the same batch: the rules require both and only allow the trial now.
+    // in the same batch: the rules require both and only allow the trial now, or from the start
+    // of the old trial if this document had a profesor account that was deleted (bajas).
     if (datos.rol === "profesor") {
+      const baja = await getDoc(doc(db, "bajas", datos.nro_documento));
       batch.set(doc(db, "suscripciones", user.uid), {
         plan: "prueba",
-        pruebaDesde: serverTimestamp(),
+        pruebaDesde: baja.exists() ? (baja.data().pruebaDesde as Timestamp) : serverTimestamp(),
       });
       batch.set(doc(db, "telefonos", user.uid), {
         telefono: datos.telefono,
@@ -214,7 +222,7 @@ export async function resetPassword(nroDocumento: string, email: string) {
 // The local copy of the data belongs to whoever signed in (a shared computer): it is cleared and
 // the app starts again at the home. With other tabs open it cannot be cleared; the rules still
 // decide what each account reads from the server.
-export async function signOut() {
+export async function signOut(destino = "") {
   salidaVoluntaria = true;
   // This browser stops receiving the notices of this account (while still signed in, so the
   // rules let it delete its device). A separate chunk, loaded only here and in the profile.
@@ -226,7 +234,41 @@ export async function signOut() {
   } catch {
     // Another tab is using it.
   }
-  window.location.replace(import.meta.env.BASE_URL);
+  window.location.replace(import.meta.env.BASE_URL + destino);
+}
+
+const llamarEliminarCuenta = httpsCallable<void, { eliminada: boolean }>(
+  functions,
+  "eliminarCuenta",
+);
+
+// "Eliminar mi cuenta" (Mi perfil): the password again (Firebase asks for a recent sign-in to
+// delete an account, and the function checks it), then the eliminarCuenta Cloud Function deletes
+// the files, the data and the account (functions/src/cuenta.ts). Cannot be undone.
+export async function eliminarCuenta(password: string) {
+  const user = auth.currentUser;
+  if (!user?.email) throw new AuthError("sin-cuenta");
+  await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+  await user.getIdToken(true);
+  eliminando = true;
+  try {
+    await llamarEliminarCuenta();
+  } catch (error) {
+    // A previous attempt deleted everything but the Authentication account: finish it here (the
+    // password was just typed, so Firebase allows it).
+    if ((error as FirebaseError)?.code === "functions/not-found") await user.delete();
+    else {
+      eliminando = false;
+      throw error;
+    }
+  }
+  try {
+    if (localStorage.getItem(DOCUMENTO_KEY)) localStorage.removeItem(DOCUMENTO_KEY);
+  } catch {
+    // Blocked storage: nothing was kept.
+  }
+  // The account no longer exists: leave and clear the local copy of its data.
+  await signOut("?cuenta=eliminada");
 }
 
 // An account whose sign-up failed halfway (Auth account without profile): delete it so the

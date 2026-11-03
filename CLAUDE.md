@@ -87,6 +87,11 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
   `firestore.rules` se reconoce por `documentos/4169298`, en `agregarAlumno` igual, y en
   `storage.rules` por su **uid escrito a mano** (Storage no puede leer un tercer documento): si esa
   cuenta se recrea, actualizarlo. `habilitarDias` da días por excepción (cortesía de Gs. 0 en `pagos`).
+- **Eliminar mi cuenta** (perfil): la Cloud Function `eliminarCuenta` (`functions/src/cuenta.ts`)
+  borra archivos, documentos, perfil, `documentos/{nro}` y la cuenta de Auth, en ese orden. Toda
+  colección nueva que cuelgue de una persona se suma a su lista. Del profesor se conservan
+  `suscripciones` (con `baja`) y `pagos`, y `bajas/{nro}` guarda `pruebaDesde` para que volver a
+  registrarse no dé otra prueba gratis. La cuenta del administrador no se elimina.
 - `telefonos/{uid}`: el celular del profesor, aparte de `usuarios` (que leen todos los profesores);
   solo lo leen su dueño y el admin (vía `planesAdmin`). Nunca guardar datos privados en `usuarios`.
 - Frases del inicio (`src/lib/frases.md`): una por día, las 100 sin repetir (`fraseDelDia`).

@@ -74,7 +74,8 @@ service cloud.firestore {
     // documentos/{nro_documento} -> { uid, email }: makes the document number unique and lets
     // the login turn it into the account email. Readable one by one, never listable.
     // documentos and usuarios point at each other and are only created together, in one batch,
-    // and never deleted: neither can exist without the other.
+    // and never deleted from the app: neither can exist without the other. "Eliminar mi cuenta"
+    // deletes both in one batch from the eliminarCuenta Cloud Function (functions/src/cuenta.ts).
     match /documentos/{nroDocumento} {
       allow get: if true;
       allow list: if false;
@@ -125,10 +126,20 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // suscripciones/{uid}: the profesor's plan, one per profesor, never deleted. The profesor
+    // When the trial of a new profesor starts: now, or when the old one started if that document
+    // had a profesor account that was deleted (bajas).
+    function pruebaDesdeDe(nroDocumento) {
+      let baja = /databases/$(database)/documents/bajas/$(nroDocumento);
+      return exists(baja) ? get(baja).data.pruebaDesde : request.time;
+    }
+
+    // suscripciones/{uid}: the profesor's plan, one per profesor, never deleted (also kept, with
+    // `baja`, when the profesor deletes their account: accounting history). The profesor
     // creates it only while registering (same batch as the profile, which requires it), as a
-    // 30-day trial from the server time. Paid plans and the trials of profesores from before the
-    // plans are written by the Cloud Functions (activarPlan, planesAdmin) as the admin.
+    // 30-day trial from the server time, or from the start of the old trial if that document
+    // had a profesor account that was deleted (bajas): deleting and registering again does not
+    // give a new trial. Paid plans and the trials of profesores from before the plans are
+    // written by the Cloud Functions (activarPlan, planesAdmin) as the admin.
     match /suscripciones/{uid} {
       allow read: if signedIn() && uid == me();
       allow create: if signedIn() && uid == me()
@@ -136,13 +147,24 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/usuarios/$(uid)).data.rol == 'profesor'
         && request.resource.data.keys().hasOnly(['plan', 'pruebaDesde'])
         && request.resource.data.plan == 'prueba'
-        && request.resource.data.pruebaDesde == request.time;
+        && request.resource.data.pruebaDesde == pruebaDesdeDe(getAfter(/databases/$(database)/documents/usuarios/$(uid)).data.nro_documento);
       allow update, delete: if false;
     }
 
+    // bajas/{nro_documento}: a profesor account with that document was deleted ("Eliminar mi
+    // cuenta", functions/src/cuenta.ts). Keeps only when its trial started, so registering again
+    // continues that trial; its plan and payments stay in suscripciones/{uid viejo} (with `baja`)
+    // and pagos. Written only by that function, never deleted. Readable one by one, like
+    // documentos: registering reads it.
+    match /bajas/{nroDocumento} {
+      allow get: if signedIn();
+      allow list, write: if false;
+    }
+
     // pagos/{profesorId}_{referencia}: each payment the admin recorded (activarPlan) and each
-    // exception (habilitarDias, tipo "cortesia", Gs. 0). Hangs from usuarios (never deleted); the
-    // profesor reads their own, nobody writes from the app.
+    // exception (habilitarDias, tipo "cortesia", Gs. 0). Hangs from usuarios and from the plan
+    // (suscripciones/{profesorId}, which stays when the account is deleted); the profesor reads
+    // their own, nobody writes from the app.
     match /pagos/{id} {
       allow read: if signedIn() && resource.data.profesorId == me();
       allow write: if false;
@@ -151,7 +173,8 @@ service cloud.firestore {
     // telefonos/{uid}: the profesor's mobile, apart from usuarios (which every profesor can read):
     // only its owner reads it here; the admin sees it through planesAdmin. Created in the same
     // batch as the profile of a new profesor (which requires it), or later by a profesor from
-    // before the phones. Never deleted. Keep the pattern in sync with src/lib/telefono.ts.
+    // before the phones. Deleted only with the account (eliminarCuenta). Keep the pattern in sync
+    // with src/lib/telefono.ts.
     match /telefonos/{uid} {
       allow read: if signedIn() && uid == me();
       allow create, update: if signedIn() && uid == me()

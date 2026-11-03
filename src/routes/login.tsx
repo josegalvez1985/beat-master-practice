@@ -58,6 +58,11 @@ export default function LoginPage() {
       <PageMeta title={(modal && titles[modal]) || SITE_TITLE} description={SITE_DESCRIPTION} />
       <AuthLayout title="Iniciar sesión" subtitle="Entra con tu número de documento.">
         <View style={authStyles.form}>
+          {params.get("cuenta") === "eliminada" ? (
+            <Text style={authStyles.muted}>
+              Tu cuenta y todos tus datos se eliminaron de Pulso. Gracias por haber sido parte.
+            </Text>
+          ) : null}
           <View style={authStyles.field}>
             <Label>Nro. de documento</Label>
             <Input

@@ -22,12 +22,13 @@ import { esAdmin } from "@/lib/admin";
 import { signOut, usePerfil } from "@/lib/auth";
 import { colors, fonts, radius } from "@/lib/theme";
 
-type NavItem = { href: string; label: string; icon: LucideIcon };
+// `corto`: the label in the phone bottom bar, where each tab has about 64 px.
+type NavItem = { href: string; label: string; icon: LucideIcon; corto?: string };
 
 const nav: Record<"profesor" | "alumno", NavItem[]> = {
   profesor: [
     { href: "/", label: "Inicio", icon: Home },
-    { href: "/planificacion", label: "Planificación", icon: CalendarDays },
+    { href: "/planificacion", label: "Planificación", icon: CalendarDays, corto: "Planificar" },
     { href: "/herramientas", label: "Herramientas", icon: Wrench },
     { href: "/plan", label: "Mi plan", icon: CreditCard },
   ],
@@ -44,8 +45,13 @@ export function AppShell() {
   const { pathname } = useLocation();
   const { width } = useWindowDimensions();
   const compact = width < 640;
+  // The admin account has everything enabled, so its "Mi plan" says nothing: Admin takes its
+  // place (Mi plan is still in the profile). Five tabs, like any profesor, fit a phone.
   const items = esAdmin(perfil)
-    ? [...nav[perfil.rol], { href: "/admin", label: "Admin", icon: Database }]
+    ? [
+        ...nav[perfil.rol].filter((item) => item.href !== "/plan"),
+        { href: "/admin", label: "Admin", icon: Database },
+      ]
     : nav[perfil.rol];
 
   return (
@@ -153,8 +159,11 @@ function BarraInferior({ items, pathname }: { items: NavItem[]; pathname: string
                   color={seleccionado ? colors.primary : colors.mutedForeground}
                 />
               </View>
-              <Text style={[styles.tabLabel, seleccionado && styles.tabLabelActivo]}>
-                {item.label}
+              <Text
+                numberOfLines={1}
+                style={[styles.tabLabel, seleccionado && styles.tabLabelActivo]}
+              >
+                {item.corto ?? item.label}
               </Text>
             </Pressable>
           </Link>
@@ -275,14 +284,19 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     backgroundColor: colors.bar,
   },
+  // The tabs share the width: the bar never gets wider than the screen (that widened the whole
+  // page on a phone).
   tab: {
-    minWidth: 72,
+    flex: 1,
+    minWidth: 0,
+    maxWidth: 96,
     alignItems: "center",
     gap: 2,
     paddingVertical: 2,
   },
   tabIcono: {
     width: 56,
+    maxWidth: "100%",
     height: 30,
     alignItems: "center",
     justifyContent: "center",
@@ -292,6 +306,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.selected,
   },
   tabLabel: {
+    maxWidth: "100%",
     fontFamily: fonts.medium,
     fontSize: 12,
     color: colors.mutedForeground,

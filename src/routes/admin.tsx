@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, Database, FileText, RotateCcw, Users } from "lucide-react";
 import { shellStyles } from "@/components/AppShell";
@@ -174,6 +181,8 @@ function Colecciones({
 // One document: its id and a hint of what it is; the whole data, on tap.
 function Documento({ documento }: { documento: DocumentoBackend }) {
   const [abierto, setAbierto] = useState(false);
+  // On a phone the date goes under the id instead of taking the right side of the row.
+  const angosto = useWindowDimensions().width < 560;
   const pista = [
     "nombre",
     "titulo",
@@ -207,8 +216,9 @@ function Documento({ documento }: { documento: DocumentoBackend }) {
               {pista}
             </Text>
           ) : null}
+          {angosto ? <Text style={styles.detalle}>{fecha(documento.actualizado)}</Text> : null}
         </View>
-        <Text style={styles.detalle}>{fecha(documento.actualizado)}</Text>
+        {angosto ? null : <Text style={styles.detalle}>{fecha(documento.actualizado)}</Text>}
       </Pressable>
       {abierto ? (
         <View style={styles.json}>
@@ -242,9 +252,9 @@ function Cuentas() {
       {consulta.error ? <Text style={styles.error}>{mensaje(consulta.error)}</Text> : null}
       {consulta.isPending ? <ActivityIndicator color={colors.primary} /> : null}
       {cuentas.map((c) => (
-        <View key={c.uid} style={[styles.fila, styles.filaCabecera]}>
+        <View key={c.uid} style={[styles.fila, styles.filaCabecera, styles.filaQueBaja]}>
           <Users size={16} color={colors.mutedForeground} />
-          <View style={styles.flex}>
+          <View style={styles.info}>
             <Text selectable style={styles.id}>
               {c.email ?? "(sin correo)"}
             </Text>
@@ -350,16 +360,29 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 10,
   },
+  // The badges go below the text on a phone.
+  filaQueBaja: {
+    flexWrap: "wrap",
+  },
+  info: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 200,
+    minWidth: 0,
+  },
+  // Ids, uids and Storage paths have no spaces: they break anywhere instead of widening the page.
   id: {
     fontFamily: fonts.semibold,
     fontSize: 14,
     color: colors.foreground,
-  },
+    wordBreak: "break-all",
+  } as object,
   detalle: {
     fontFamily: fonts.sans,
     fontSize: 12,
     color: colors.mutedForeground,
-  },
+    wordBreak: "break-word",
+  } as object,
   json: {
     gap: 6,
     paddingHorizontal: 12,

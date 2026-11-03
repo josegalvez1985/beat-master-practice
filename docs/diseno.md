@@ -189,8 +189,10 @@ Logo a la izquierda (lleva al inicio); navegación del rol (profesor: _Inicio_, 
 _Practicar_, _Herramientas_); a la
 derecha el selector de tema, el nombre, el rol y la foto (llevan a **Mi perfil**) y **Salir**. En
 celular la navegación muestra solo íconos, la cuenta solo la foto y el tema se cambia desde el
-perfil. La cuenta del administrador ve además _Admin_ (ícono de base de datos), en la barra superior
-y en la inferior.
+perfil. La cuenta del administrador ve _Admin_ (ícono de base de datos) en lugar de _Mi plan_ (su
+plan dice solo "Todo habilitado" y sigue en el perfil), en la barra superior y en la inferior. En
+la barra inferior las pestañas se reparten el ancho (nunca más ancha que la pantalla, aun en
+320 px) y _Planificación_ se lee _Planificar_.
 
 ### Mi perfil (`/perfil`)
 
@@ -208,6 +210,12 @@ y en la inferior.
   plegables, uno abierto a la vez (borde `primary` y fondo `selected`), con pasos numerados. El
   contenido está en [`manual.ts`](../src/lib/manual.ts): actualízalo junto con _Primeros pasos_.
 - **Ayuda y contacto**: _Escribir a Pulso_ abre el formulario de contacto con sus datos cargados.
+- **Eliminar mi cuenta** (al final; no aparece en la cuenta del administrador): botón `outline`
+  con la papelera y el texto en `colors.destructive`. Abre un diálogo que lista, con puntos rojos,
+  todo lo que se borra según el rol, dice qué se conserva (al profesor, sus pagos y su plan), pide
+  la **contraseña** y confirma con el botón rojo _Eliminar para siempre_ (con "Eliminando… puede
+  tardar un minuto"). Al terminar vuelve al login con el aviso "Tu cuenta y todos tus datos se
+  eliminaron de Pulso" (`/?cuenta=eliminada`).
 
 ### Profesor · Inicio (`/`)
 
@@ -215,9 +223,12 @@ y en la inferior.
   alumnos** tiene en esa lista ("Guitarra · 12 alumnos"), junto a la escena musical con **sus**
   instrumentos flotando (el arpa al centro si la enseña; si no, el ecualizador).
 - Indicadores: **Alumnos**, **Clases este mes**, **Entregas esta semana**.
-- **Agregar alumno**: un solo buscador que acepta número de documento o nombre; cada resultado
-  muestra botones "+ Guitarra", "+ Piano"… (uno por instrumento que enseña) y "Guitarra ✓" si ya está
-  en la lista.
+- **Agregar alumno**: solo por **número de documento**, nunca por nombre (dos alumnos pueden
+  llamarse igual; el documento es único). Dos campos: _Nro. de documento_ (con _Buscar_) y, aparte,
+  _Nombre del alumno_ en solo lectura, que se completa al encontrarlo para que el profesor
+  confirme que es él; cambiar el número lo vacía. Debajo, botones "+ Guitarra", "+ Piano"… (uno por
+  instrumento que enseña) y "Guitarra ✓" si ya está en la lista. Si el número no tiene cuenta, o
+  es de un profesor, lo dice.
 - **Mis alumnos**: filtro por instrumento; por alumno, avatar, documento, instrumento, barra de
   progreso, porcentaje y "x de y clases". Tocar la fila abre el detalle.
 - **Próximas clases** con acceso directo a Planificación.
@@ -472,6 +483,14 @@ instrumento, su meta semanal total como dato aparte y las últimas anotaciones).
   - **Archivos**: una fila por archivo (ruta, tamaño, tipo y fecha), con el peso total arriba.
 - Las listas se cargan de a 50 (100 en cuentas y archivos) con **Cargar más**. Un error de la
   función se muestra en rojo en lugar de la lista.
+- **En el celular**: las pestañas de `Segmented` pasan a una segunda línea si no entran; en cada
+  fila, el estado y los botones bajan debajo del texto (la columna de texto tiene base de
+  ~220 px, no `flex: 1` con base 0, que la dejaba en una tira angosta); los ids, uid y rutas de
+  Storage se cortan en cualquier carácter (`wordBreak`) en lugar de ensanchar la página, y la
+  fecha de cada documento va debajo del id. Los modales (`Dialog` y `confirmar`) usan menos
+  margen y relleno bajo 520 px, se desplazan por dentro si el formulario es largo, y la lista de
+  `confirmar` (por ejemplo, los profesores sin plan) se desplaza sola con los botones siempre a la
+  vista.
 
 ## Adaptable y accesible
 

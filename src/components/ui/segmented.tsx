@@ -32,8 +32,12 @@ export function Segmented<T extends string>({
 }
 
 const styles = StyleSheet.create({
+  // On a narrow screen the options that do not fit go to a second line instead of pushing the
+  // page sideways.
   track: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    maxWidth: "100%",
     alignSelf: "flex-start",
     padding: 4,
     gap: 4,

@@ -19,6 +19,7 @@ import { Button, buttonForeground } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { confirmar } from "@/components/ui/confirmar";
 import { Section } from "@/components/ui/section";
@@ -27,7 +28,7 @@ import { avisar } from "@/components/ui/toast";
 import { usePerfil, type Perfil } from "@/lib/auth";
 import {
   agregarAlumno,
-  buscarAlumnos,
+  buscarPorDocumento,
   inscripcionId,
   progreso,
   quitarInscripcion,
@@ -39,7 +40,7 @@ import {
   type Inscripcion,
 } from "@/lib/data";
 import { hoy, inicioDeSemana, rango } from "@/lib/dates";
-import { formatearDocumento } from "@/lib/documento";
+import { documentoValido, formatearDocumento, normalizarDocumento } from "@/lib/documento";
 import { instrumento, type InstrumentId } from "@/lib/instruments";
 import { colors, fonts, radius } from "@/lib/theme";
 
@@ -122,24 +123,48 @@ function AgregarAlumno({
   perfil: Perfil;
   inscripciones: Inscripcion[];
 }) {
-  const [texto, setTexto] = useState("");
+  const [documento, setDocumento] = useState("");
   const [buscando, setBuscando] = useState(false);
-  const [resultados, setResultados] = useState<Perfil[] | null>(null);
+  // The alumno with that exact document number; null until one is found.
+  const [alumno, setAlumno] = useState<Perfil | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [agregando, setAgregando] = useState<string | null>(null);
   const inscriptos = new Set(inscripciones.map((i) => i.id));
   const plan = usePlanProfesor(perfil.uid);
   const alumnos = new Set(inscripciones.map((i) => i.alumnoId)).size;
 
+  const cambiarDocumento = (valor: string) => {
+    setDocumento(valor);
+    // A different number is a different person: the name shown no longer applies.
+    setAlumno(null);
+    setAviso(null);
+    setError(null);
+  };
+
   const buscar = async () => {
-    if (texto.trim().length < 2) {
-      setError("Escribe un número de documento o al menos 2 letras del nombre.");
+    const nro = normalizarDocumento(documento);
+    setAlumno(null);
+    setAviso(null);
+    if (!documentoValido(nro)) {
+      setError("Escribe el número de documento del alumno (solo números, de 5 a 10 cifras).");
       return;
     }
     setError(null);
     setBuscando(true);
     try {
-      setResultados(await buscarAlumnos(texto));
+      const encontrado = await buscarPorDocumento(nro);
+      if (!encontrado) {
+        setAviso(
+          `No hay ninguna cuenta con el documento ${formatearDocumento(nro)}. Pídele al alumno que se registre en Pulso con ese número.`,
+        );
+      } else if (encontrado.rol !== "alumno") {
+        setAviso(
+          `El documento ${formatearDocumento(nro)} es de una cuenta de profesor, no de alumno.`,
+        );
+      } else {
+        setAlumno(encontrado);
+      }
     } catch {
       setError("No se pudo buscar. Vuelve a probar.");
     } finally {
@@ -171,46 +196,61 @@ function AgregarAlumno({
       title="Agregar alumno"
       subtitle={
         plan.limite
-          ? `Busca por número de documento o por nombre. Tienes ${alumnos} de ${plan.limite} alumnos de tu plan.`
-          : "Busca por número de documento o por nombre."
+          ? `Carga el número de documento del alumno. Tienes ${alumnos} de ${plan.limite} alumnos de tu plan.`
+          : "Carga el número de documento del alumno."
       }
     >
       {plan.bloqueado ? <BloqueadoPorPlan que="agregar alumnos" /> : null}
-      <View style={styles.searchRow}>
-        <View style={styles.searchInput}>
+      <View style={styles.campos}>
+        <View style={styles.campo}>
+          <Label>Nro. de documento</Label>
+          <View style={styles.searchRow}>
+            <View style={styles.searchInput}>
+              <Input
+                accessibilityLabel="Número de documento del alumno"
+                placeholder="Ej. 4567890"
+                value={documento}
+                onChangeText={cambiarDocumento}
+                onSubmitEditing={buscar}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={14}
+                returnKeyType="search"
+              />
+            </View>
+            <Button onPress={buscar} disabled={buscando}>
+              {buscando ? (
+                <ActivityIndicator size="small" color={buttonForeground()} />
+              ) : (
+                <Search size={16} color={buttonForeground()} />
+              )}
+              Buscar
+            </Button>
+          </View>
+        </View>
+        <View style={styles.campo}>
+          <Label>Nombre del alumno</Label>
           <Input
-            accessibilityLabel="Buscar alumno"
-            placeholder="Ej. 4567890 o María González"
-            value={texto}
-            onChangeText={setTexto}
-            onSubmitEditing={buscar}
-            returnKeyType="search"
+            accessibilityLabel="Nombre del alumno"
+            placeholder="Aparece al buscar el documento"
+            value={alumno?.nombre ?? ""}
+            editable={false}
+            style={styles.soloLectura}
           />
         </View>
-        <Button onPress={buscar} disabled={buscando}>
-          {buscando ? (
-            <ActivityIndicator size="small" color={buttonForeground()} />
-          ) : (
-            <Search size={16} color={buttonForeground()} />
-          )}
-          Buscar
-        </Button>
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      {resultados?.length === 0 ? (
-        <Text style={styles.muted}>
-          No encontramos alumnos. Pídele que se registre en Pulso con su número de documento.
-        </Text>
-      ) : null}
-      {resultados?.map((alumno) => (
-        <View key={alumno.uid} style={styles.result}>
+      {aviso ? <Text style={styles.muted}>{aviso}</Text> : null}
+      {alumno ? (
+        <View style={styles.result}>
           <Avatar nombre={alumno.nombre} foto={alumno.foto} />
           <View style={styles.flex}>
-            <Text style={styles.name}>{alumno.nombre}</Text>
             <Text style={styles.muted}>
               Doc. {formatearDocumento(alumno.nro_documento)} · Estudia{" "}
               {alumno.instrumentos.map((id) => instrumento(id).name).join(", ")}
             </Text>
+            <Text style={styles.muted}>Agrégalo a tu lista de:</Text>
             <View style={styles.chips}>
               {perfil.instrumentos.map((id) => {
                 const agregado = inscriptos.has(inscripcionId(perfil.uid, alumno.uid, id));
@@ -235,7 +275,7 @@ function AgregarAlumno({
             </View>
           </View>
         </View>
-      ))}
+      ) : null}
     </Section>
   );
 }
@@ -294,7 +334,7 @@ function MisAlumnos({
         <EmptyState
           icon={Users}
           title="Todavía no tienes alumnos en tu lista"
-          description="Búscalos arriba por número de documento o nombre. Al agregarlos se les habilitan tus clases."
+          description="Cárgalos arriba con su número de documento. Al agregarlos se les habilitan tus clases."
         />
       ) : null}
       {visibles.map((inscripcion) => {
@@ -388,6 +428,19 @@ const styles = StyleSheet.create({
   sideColumn: {
     flexGrow: 1,
     flexBasis: 0,
+  },
+  campos: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  campo: {
+    flexGrow: 1,
+    flexBasis: 240,
+    gap: 6,
+  },
+  soloLectura: {
+    backgroundColor: colors.muted,
   },
   searchRow: {
     flexDirection: "row",

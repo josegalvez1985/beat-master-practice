@@ -1,7 +1,18 @@
 import type { ReactNode } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { X } from "lucide-react";
 import { colors, fonts, radius, shared } from "@/lib/theme";
+
+// Below this width (a phone) the panel takes almost the whole screen, with less padding.
+const ANGOSTO = 520;
 
 // Centered modal panel. Closes with the X button, a click on the backdrop or Escape.
 export function Dialog({
@@ -17,9 +28,10 @@ export function Dialog({
   description?: string;
   children: ReactNode;
 }) {
+  const angosto = useWindowDimensions().width < ANGOSTO;
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, angosto && styles.overlayAngosto]}>
         <Pressable
           accessibilityLabel="Cerrar"
           focusable={false}
@@ -27,9 +39,13 @@ export function Dialog({
           style={[StyleSheet.absoluteFill, styles.backdrop]}
         />
         <View style={[shared.panel, styles.panel]}>
-          <ScrollView contentContainerStyle={styles.content}>
+          <ScrollView
+            style={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={[styles.content, angosto && styles.contentAngosto]}
+          >
             <View style={styles.header}>
-              <Text style={styles.title}>{title}</Text>
+              <Text style={[styles.title, angosto && styles.titleAngosto]}>{title}</Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Cerrar"
@@ -55,6 +71,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 16,
   },
+  overlayAngosto: {
+    padding: 8,
+  },
   backdrop: {
     backgroundColor: colors.backdrop,
   },
@@ -62,11 +81,20 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 448,
     maxHeight: "100%",
+    overflow: "hidden",
     borderRadius: radius["2xl"],
     backgroundColor: colors.card,
   },
+  // Lets a long form scroll inside the panel instead of growing past the screen.
+  scroll: {
+    flexGrow: 0,
+    flexShrink: 1,
+  },
   content: {
     padding: 24,
+  },
+  contentAngosto: {
+    padding: 16,
   },
   header: {
     flexDirection: "row",
@@ -75,10 +103,15 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   title: {
+    flexShrink: 1,
     fontFamily: fonts.headingBold,
     fontSize: 26,
     lineHeight: 32,
     color: colors.foreground,
+  },
+  titleAngosto: {
+    fontSize: 22,
+    lineHeight: 28,
   },
   close: {
     width: 32,

@@ -26,6 +26,9 @@ const cuenta = (rol: Role): TemaManual => ({
       : []),
     "En Apariencia eliges el tema Claro, Oscuro o el de tu dispositivo (Sistema).",
     "Salir, arriba a la derecha, cierra la sesión y borra la copia de tus datos guardada en ese dispositivo.",
+    rol === "profesor"
+      ? "Para irte de Pulso: Mi perfil → Eliminar mi cuenta, y confirma con tu contraseña. Se borran para siempre tu cuenta, tus clases con sus archivos, las entregas de tus alumnos, tus listas y mensajes; solo se conservan tus pagos y tu plan, como historial. No se puede deshacer."
+      : "Para irte de Pulso: Mi perfil → Eliminar mi cuenta, y confirma con tu contraseña. Se borran para siempre tu cuenta, tus entregas (audios, videos, fotos y PDF), tu diario, tus récords y todo tu avance. No se puede deshacer.",
   ],
 });
 
@@ -75,7 +78,7 @@ export const manual: Record<Role, TemaManual[]> = {
       titulo: "Agregar alumnos",
       pasos: [
         "El alumno primero crea su cuenta en Pulso (gratis) con su número de documento.",
-        "En Inicio → Agregar alumno, búscalo por número de documento o por nombre.",
+        "En Inicio → Agregar alumno, carga su número de documento y toca Buscar: su nombre aparece en el campo de al lado para que confirmes que es él.",
         "Toca «+ Guitarra», «+ Piano»… según el instrumento que le enseñas. Si ya está en esa lista, ves «Guitarra ✓».",
         "Desde ese momento ve tus clases de ese instrumento.",
       ],
