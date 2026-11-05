@@ -38,7 +38,7 @@ const herramientas = (rol: Role): TemaManual => ({
     "En Herramientas eliges el instrumento (si tienes varios) y ves solo las herramientas que le sirven.",
     "Afinador: escucha el micrófono, muestra la nota y te dice si subir o bajar; tocar una cuerda fija esa cuerda y suena su nota.",
     "Metrónomo: compás, subdivisión y «Subir el tempo solo» (sube unos BPM cada tantos compases hasta un tope).",
-    "Grabadora: audio o video, con o sin click (usa auriculares). Al terminar ves el análisis de afinación y tiempo, y puedes descargar la toma.",
+    "Grabadora: audio o video, con o sin click (usa auriculares). Antes de grabar hay una cuenta para volver al instrumento. Al terminar ves el análisis (tiempo; afinación en arco, viento y voz) y puedes descargar la toma.",
     "También, según el instrumento: acordes, oído, lectura de notas y a primera vista, y polca, guarania y galopa con su acompañamiento.",
     "En los audios, videos y YouTube de una clase puedes bajar la velocidad y repetir un pasaje de A a B.",
     rol === "alumno"
@@ -75,22 +75,30 @@ export const manual: Record<Role, TemaManual[]> = {
   profesor: [
     cuenta("profesor"),
     {
+      titulo: "Tu inicio: Para hoy",
+      pasos: [
+        "Para hoy reúne lo que te necesita: entregas por revisar, clases de hoy, quién avisó que no puede ir, mensajes nuevos y alumnos con clases pendientes que hace más de 14 días no entregan.",
+        "Toca cualquier fila para ir directo a eso.",
+      ],
+    },
+    {
       titulo: "Agregar alumnos",
       pasos: [
-        "El alumno primero crea su cuenta en Pulso (gratis) con su número de documento.",
-        "En Inicio → Agregar alumno, carga su número de documento y toca Buscar: su nombre aparece en el campo de al lado para que confirmes que es él.",
+        "En Inicio → Mis alumnos, toca «Agregar alumno», carga su número de documento y toca Buscar: su nombre aparece en el campo de al lado para que confirmes que es él.",
         "Toca «+ Guitarra», «+ Piano»… según el instrumento que le enseñas. Si ya está en esa lista, ves «Guitarra ✓».",
-        "Desde ese momento ve tus clases de ese instrumento.",
+        "¿Todavía no tiene cuenta? «Invitar por WhatsApp» abre el mensaje ya escrito con el enlace para registrarse.",
+        "Desde ese momento ve las clases que le asignes y las que sean para toda la lista.",
       ],
     },
     {
       titulo: "Planificar clases",
       pasos: [
         "En Planificación ves tus clases por Semana, Mes o Año; las flechas cambian de período y «Hoy» vuelve a la fecha actual.",
-        "Toca «+» en un día (o Nueva clase) y completa instrumento, título, fecha, hora, modalidad (presencial o virtual con su enlace), objetivos y tarea.",
+        "Toca «+» en un día (o Nueva clase) y elige para quién es: uno o varios alumnos, o «Todos» los de ese instrumento. Solo la ven ellos. Desde la ficha de un alumno, «Nueva clase» ya viene con él elegido.",
+        "Completa instrumento, título, fecha, hora, modalidad (presencial o virtual con su enlace), objetivos y tarea.",
         "«Repetir cada semana hasta…» crea varias clases de una vez (hasta 60).",
         "«Es un recital o muestra» agrega el lugar y el programa: quién toca qué.",
-        "En la clase: Editar, Duplicar a otra fecha (sin archivos) o Eliminar (también borra sus materiales y las entregas de los alumnos).",
+        "En la clase: Editar, Duplicar a otra fecha o para otro alumno (sin archivos) o Eliminar (también borra sus materiales y las entregas de los alumnos).",
       ],
     },
     {
@@ -119,25 +127,30 @@ export const manual: Record<Role, TemaManual[]> = {
         "En el celular, «Sacar foto» abre la cámara: fotografía una partitura, el pizarrón o una tarea y se sube al instante. También en los bloques de archivos del plan.",
         "Tus alumnos los ven en la clase; audio y video se reproducen ahí mismo.",
         "La papelera quita un archivo; tienes unos segundos para «Deshacer».",
+        "«De mi biblioteca» guarda los archivos que repites (un PDF de escalas, una pista): súbelos una vez y toca «Usar» en cada clase. La clase recibe su copia, así que borrarlo de la biblioteca no lo quita de las clases.",
       ],
     },
     {
       titulo: "Revisar entregas y evaluar",
       pasos: [
-        "En la clase, «Alumnos de la clase» muestra quién entregó y quién asistió.",
-        "Escucha o mira cada grabación, más lento o repitiendo un pasaje, con su análisis: notas afinadas, estabilidad del tiempo y BPM.",
-        "Pausa en el momento justo y toca «Comentar en este momento»: el alumno ve tu comentario en ese segundo y te responde «Entendido» o «Ya lo corregí».",
+        "En Inicio, «Entregas por revisar» abre Por revisar: una entrega por vez, de la más antigua a la más nueva. «Después» la deja para el final de la cola.",
+        "Escucha o mira cada grabación, más lento o repitiendo un pasaje, con su análisis: estabilidad del tiempo y BPM, y notas afinadas en arco, viento y voz.",
+        "Pausa en el momento justo y toca «Comentar en este momento»: escribe, o toca «Grabar mi respuesta» para mostrárselo en audio o video. El alumno lo ve en ese segundo y te responde «Entendido» o «Ya lo corregí».",
+        "El ícono de la diana convierte un comentario en una meta de su semana.",
         "«Evaluar con rúbrica»: de 1 a 5 en cada criterio del instrumento, más una devolución breve.",
-        "Marca la asistencia (Presente, Llegó tarde, Ausente; tocar la marcada la borra) y escríbele en Mensajes. Si un alumno avisa que no puede ir, lo ves ahí.",
+        "«Revisada y siguiente» la saca de la cola y pasa a la próxima. Si el alumno sube un archivo nuevo, vuelve a la cola.",
+        "En la clase, «Pasar lista» marca la asistencia (Presente, Llegó tarde, Ausente; tocar la marcada la borra), con un botón para marcar presentes a los que faltan. Si un alumno avisa que no puede ir, lo ves ahí. «Mensajes» te dice cuántos son nuevos.",
       ],
     },
     {
       titulo: "Seguir el avance de cada alumno",
       pasos: [
-        "En Inicio → Mis alumnos ves la barra de progreso de cada uno; filtra por instrumento.",
-        "Toca un alumno para ver sus clases entregadas y pendientes, su asistencia, sus habilidades (promedio de la rúbrica) y su diario de práctica.",
+        "En Inicio → Mis alumnos, la barra es su avance en la ruta de aprendizaje; debajo ves si está al día con sus entregas (solo cuentan las clases desde que entró y hasta hoy).",
+        "Toca un alumno. «Para preparar la clase» resume en qué quedaron: su última clase y qué le costó, cuánto practicó, tu última evaluación, sus metas y sus tempos.",
+        "Ahí están tus notas privadas (el alumno no las ve) y «Enviar resumen a la familia», que abre WhatsApp con el resumen de la semana ya escrito.",
+        "Más abajo: sus clases, su asistencia, sus habilidades (promedio de la rúbrica) y su diario de práctica.",
         "En su ruta de aprendizaje eliges el nivel y marcas cada objetivo que alcanza.",
-        "Ahí mismo escriben, tú y el alumno, sus metas de la semana y su repertorio, con el estado de cada obra.",
+        "Ahí mismo escriben, tú y el alumno, sus metas de la semana y su repertorio, con el estado de cada obra y a qué tempo va.",
       ],
     },
     {
@@ -168,16 +181,17 @@ export const manual: Record<Role, TemaManual[]> = {
       titulo: "Tu inicio",
       pasos: [
         "El anillo muestra tu semana: tu meta de minutos o, sin meta, las clases entregadas.",
-        "«Tu próxima práctica» es la clase pendiente más cercana: toca «Practicar ahora». Al lado ves tu racha de días.",
-        "«Tu práctica de hoy»: elige 10, 20 o 40 minutos y sigue los pasos.",
-        "Más abajo, una tarjeta por profesor con tus clases y tu avance.",
+        "Hoy: primero, lo que te dijo tu profesor. Después, «Tu práctica de hoy»: elige 10, 20 o 40 minutos, toca «Practicar ahora» y sigue los pasos. Abajo ves cuántos días practicaste esta semana.",
+        "Mis clases: una tarjeta por profesor con tus clases y si estás al día. Las clases de antes de que entraras no te quedan pendientes.",
+        "Mi progreso: tu ruta, tus metas, tu repertorio, tus habilidades, tus insignias y todo lo que te dijo tu profesor.",
+        "En la pestaña Practicar tienes la práctica de hoy con el afinador y el metrónomo a mano.",
       ],
     },
     {
       titulo: "Practicar una clase",
       pasos: [
         "Abre la clase y toca «Empezar práctica» (o «Continuar práctica»).",
-        "Ves un bloque por pantalla, con cronómetro y sonido. «Hecho y siguiente» pasa al próximo; también un pedal Bluetooth o las flechas del teclado.",
+        "Ves un bloque por pantalla, con cronómetro y sonido, y la pantalla queda encendida. «Me salió y sigo» o «Me costó» pasan al próximo y le cuentan a tu profesor cómo te fue; también un pedal Bluetooth o las flechas del teclado.",
         "«Afinar» abre el afinador con la afinación de la clase.",
         "Al terminar, tus minutos se anotan solos en el diario.",
       ],
@@ -185,17 +199,19 @@ export const manual: Record<Role, TemaManual[]> = {
     {
       titulo: "Grabarte y entregar",
       pasos: [
-        "En la clase, en «Tu entrega», graba audio o video. Con click, usa auriculares para que no se escuche en la grabación.",
-        "Pulso analiza tu afinación y tu tiempo; escúchate y toca «Enviar a mi profesor», o graba de nuevo.",
+        "En la clase, en «Tu entrega», graba audio o video. Antes de empezar hay una cuenta para volver al instrumento. Con click, usa auriculares para que no se escuche en la grabación.",
+        "Pulso analiza tu grabación (tiempo; afinación en arco, viento y voz); escúchate y toca «Enviar a mi profesor», o graba de nuevo.",
+        "Si cierras la pestaña sin enviarla, la grabación te espera al volver a esa clase. Sin internet se guarda y se envía sola cuando vuelve.",
         "También puedes subir un archivo: audio, video, o fotos y PDF de una tarea escrita (hasta 20 MB).",
         "En el celular, «Sacar foto» abre la cámara: fotografía tu tarea escrita o tu partitura y se envía a tu profesor.",
-        "Entregar es lo que cuenta en el avance de tus clases. La papelera quita un archivo; tienes unos segundos para «Deshacer».",
+        "Entregar es lo que te deja al día con tus clases. La papelera quita un archivo; tienes unos segundos para «Deshacer».",
       ],
     },
     {
       titulo: "Correcciones de tu profesor",
       pasos: [
-        "Sus comentarios aparecen debajo de la grabación; tocar uno te lleva a ese segundo.",
+        "Lo nuevo aparece arriba en Inicio, en «Tu profesor te dijo», y todo queda en Mi progreso, en «Lo que me dijo mi profesor».",
+        "Sus comentarios aparecen debajo de la grabación; tocar uno te lleva a ese segundo. Algunos son respuestas grabadas: escúchalas ahí mismo.",
         "Respóndele «Entendido» o «Ya lo corregí».",
         "Su evaluación (rúbrica) aparece en la clase, con barras por criterio.",
         "Si tienes una duda, escríbele en Mensajes. Si no puedes ir a una clase, toca «No puedo ir».",
@@ -204,10 +220,9 @@ export const manual: Record<Role, TemaManual[]> = {
     {
       titulo: "Tu avance",
       pasos: [
-        "Cada clase entregada suma al progreso de ese instrumento.",
-        "Ves tu ruta de aprendizaje (la marca tu profesor), tus habilidades y tus insignias.",
+        "Tu avance real es tu ruta de aprendizaje: el nivel y los objetivos que marca tu profesor. Ahí también ves tus habilidades y tus insignias.",
         "Metas de la semana: las escriben tú y tu profesor; márcalas al cumplirlas.",
-        "Repertorio: tú y tu profesor agregan obras con su estado; toca «Repasé hoy» al repasarla.",
+        "Repertorio: tú y tu profesor agregan obras con su estado; toca «Repasé hoy» al repasarla y anota a qué tempo va y cuál es el objetivo.",
         "Mi evolución compara tu primera grabación con la última.",
       ],
     },

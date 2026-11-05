@@ -80,8 +80,8 @@ export function AvisosConfig({ perfil }: { perfil: Perfil }) {
             }
           />
           <Text style={styles.ayuda}>
-            Llega solo si ese día todavía no anotaste práctica en tu diario, y te cuenta tu racha.
-            Necesita los avisos activados.
+            Llega solo si ese día todavía no anotaste práctica en tu diario, y te cuenta cuántos
+            días practicaste esta semana. Necesita los avisos activados.
           </Text>
         </View>
       ) : null}

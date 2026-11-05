@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { Plus, X } from "lucide-react";
 import { authStyles } from "@/components/AuthLayout";
 import { Opciones } from "@/components/plan/comunes";
+import { SelectorDestino } from "@/components/SelectorDestino";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Chip } from "@/components/ui/chip";
@@ -11,7 +12,14 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Perfil } from "@/lib/auth";
-import { actualizarClase, crearClases, type Clase } from "@/lib/data";
+import {
+  actualizarClase,
+  crearClases,
+  destinoDe,
+  useInscripcionesProfesor,
+  type Clase,
+  type Destino,
+} from "@/lib/data";
 import { repetir, sumarDias } from "@/lib/dates";
 import { instrumento, type InstrumentId } from "@/lib/instruments";
 import { colors, fonts } from "@/lib/theme";
@@ -27,8 +35,9 @@ export function normalizarHora(texto: string) {
 
 type Modalidad = "" | "presencial" | "virtual";
 
-// Create (optionally repeating every week) or edit a class: when, where (in person or online
-// with its link) and, for a recital, the place and the program.
+// Create (optionally repeating every week) or edit a class: who it is for, when, where (in person
+// or online with its link) and, for a recital, the place and the program. `alumnoInicial`: opened
+// from an alumno's page, the class starts as theirs.
 export function ClaseFormDialog({
   visible,
   onClose,
@@ -36,6 +45,7 @@ export function ClaseFormDialog({
   clase,
   fechaInicial,
   instrumentoInicial,
+  alumnoInicial,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -43,6 +53,7 @@ export function ClaseFormDialog({
   clase?: Clase;
   fechaInicial: string;
   instrumentoInicial?: InstrumentId | null;
+  alumnoInicial?: string;
 }) {
   return (
     <Dialog visible={visible} onClose={onClose} title={clase ? "Editar clase" : "Nueva clase"}>
@@ -52,6 +63,7 @@ export function ClaseFormDialog({
         clase={clase}
         fechaInicial={fechaInicial}
         instrumentoInicial={instrumentoInicial}
+        alumnoInicial={alumnoInicial}
       />
     </Dialog>
   );
@@ -63,16 +75,25 @@ function ClaseForm({
   clase,
   fechaInicial,
   instrumentoInicial,
+  alumnoInicial,
 }: {
   onClose: () => void;
   perfil: Perfil;
   clase?: Clase;
   fechaInicial: string;
   instrumentoInicial?: InstrumentId | null;
+  alumnoInicial?: string;
 }) {
   const [inst, setInst] = useState<InstrumentId>(
     clase?.instrumento ?? instrumentoInicial ?? (perfil.instrumentos[0] as InstrumentId),
   );
+  const inscripciones = useInscripcionesProfesor(perfil.uid);
+  // A new class asks who it is for: most lessons are for one person, and "the whole list" must be a
+  // decision, not something that happens by not looking.
+  const [destino, setDestino] = useState<Destino>(
+    clase ? destinoDe(clase) : { alumnos: alumnoInicial ? [alumnoInicial] : [] },
+  );
+  const hayAlumnos = inscripciones.data.some((i) => i.instrumento === inst);
   const [fecha, setFecha] = useState(clase?.fecha ?? fechaInicial);
   const [titulo, setTitulo] = useState(clase?.titulo ?? "");
   const [descripcion, setDescripcion] = useState(clase?.descripcion ?? "");
@@ -98,6 +119,12 @@ function ClaseForm({
     }
     if (!fecha) {
       setError("Elige la fecha.");
+      return;
+    }
+    // Without alumnos yet, it is for the whole list: the ones added later will see it.
+    const destinoFinal: Destino = hayAlumnos ? destino : { paraTodos: true };
+    if ("alumnos" in destinoFinal && !destinoFinal.alumnos.length) {
+      setError("Elige para qué alumnos es la clase, o «Todos».");
       return;
     }
     const horaFinal = hora.trim() ? normalizarHora(hora) : "";
@@ -131,9 +158,15 @@ function ClaseForm({
     setLoading(true);
     try {
       if (clase) {
-        await actualizarClase(clase.id, { ...cambios, fecha });
+        await actualizarClase(clase.id, {
+          ...cambios,
+          fecha,
+          // The other one goes away: a class has only one of the two.
+          paraTodos: "paraTodos" in destinoFinal ? true : undefined,
+          alumnos: "alumnos" in destinoFinal ? destinoFinal.alumnos : undefined,
+        });
       } else {
-        await crearClases(perfil, { instrumento: inst, ...cambios }, fechas);
+        await crearClases(perfil, { instrumento: inst, ...cambios, ...destinoFinal }, fechas);
       }
       onClose();
     } catch {
@@ -154,12 +187,23 @@ function ClaseForm({
                 label={instrumento(id).name}
                 icon={instrumento(id).icon}
                 selected={inst === id}
-                onPress={() => setInst(id)}
+                onPress={() => {
+                  setInst(id);
+                  // Those alumnos are from the other instrument's list.
+                  if (id !== inst) setDestino({ alumnos: [] });
+                }}
               />
             ))}
           </View>
         </View>
       ) : null}
+
+      <SelectorDestino
+        instrumento={inst}
+        inscripciones={inscripciones.data}
+        valor={destino}
+        onChange={setDestino}
+      />
 
       <View style={authStyles.field}>
         <Label>Título</Label>
@@ -334,7 +378,7 @@ function ClaseForm({
 
       {error ? <Text style={authStyles.error}>{error}</Text> : null}
 
-      <Button size="lg" disabled={loading} onPress={onSubmit}>
+      <Button size="lg" disabled={loading || inscripciones.loading} onPress={onSubmit}>
         {loading ? <ActivityIndicator size="small" color={buttonForeground()} /> : null}
         {clase
           ? "Guardar cambios"

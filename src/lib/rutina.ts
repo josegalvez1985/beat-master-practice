@@ -119,9 +119,11 @@ export function rutinaDeHoy({
     pasos.push({
       id: "repaso",
       titulo: `Repasa: ${repaso.obra}`,
-      detalle: repaso.repasadoEn
-        ? "Es la obra que hace más tiempo no tocas: tócala entera, sin parar."
-        : "Tócala entera, sin parar, para no olvidarla.",
+      detalle: `${
+        repaso.repasadoEn
+          ? "Es la obra que hace más tiempo no tocas: tócala entera, sin parar."
+          : "Tócala entera, sin parar, para no olvidarla."
+      }${repaso.bpm ? ` Vas a ${repaso.bpm} BPM${repaso.bpmObjetivo ? `, objetivo ${repaso.bpmObjetivo}` : ""}.` : ""}`,
       minutos: de(partes.repaso),
       obra: repaso,
     });

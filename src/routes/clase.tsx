@@ -4,25 +4,28 @@ import { useNavigate, useParams } from "react-router";
 import {
   CalendarPlus,
   CalendarX,
+  ClipboardList,
   ChevronLeft,
   Copy,
   FolderOpen,
   Lock,
-  MessageCircle,
   Pencil,
   Trash2,
   Video,
 } from "lucide-react";
 import { shellStyles } from "@/components/AppShell";
 import { Avatar } from "@/components/ui/avatar";
+import { BibliotecaArchivos } from "@/components/BibliotecaArchivos";
 import { ClaseFormDialog } from "@/components/ClaseFormDialog";
+import { EntregaRevision, MensajesPlegables } from "@/components/EntregaRevision";
 import { Grabadora } from "@/components/Grabadora";
 import { Link } from "@/components/Link";
 import { MaterialList, UploadButton } from "@/components/Materials";
 import { MensajesClase } from "@/components/MensajesClase";
-import { RubricaEditor, RubricaVista } from "@/components/Rubrica";
+import { RubricaVista } from "@/components/Rubrica";
 import { PageMeta } from "@/components/PageMeta";
 import { PlanClase } from "@/components/plan/PlanClase";
+import { SelectorDestino } from "@/components/SelectorDestino";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
 import { Dialog } from "@/components/ui/dialog";
@@ -36,16 +39,19 @@ import { usePerfil, type Perfil } from "@/lib/auth";
 import { archivoIcs, enlaceGoogle } from "@/lib/calendario";
 import {
   avisarAusencia,
+  destinoDe,
+  esParaAlumno,
   marcarAsistencia,
+  marcarAsistenciaDeVarios,
+  mensajesSinLeer,
+  nombreDestino,
   responderDevolucion,
   useMensajes,
   useMensajesDeClase,
-  agregarDevolucion,
   agregarMaterial,
   duplicarClase,
   eliminarClase,
   limpiarDevoluciones,
-  quitarDevolucion,
   agregarArchivoEntrega,
   guardarComentario,
   quitarArchivoEntrega,
@@ -54,9 +60,13 @@ import {
   useEntrega,
   useEntregasDeClase,
   useInscripcionesProfesor,
+  usePracticasDeClase,
+  sinRevisar,
   type Asistencia,
   type Clase,
+  type Destino,
   type Entrega,
+  type Inscripcion,
 } from "@/lib/data";
 import { formatoLargo, hoy, sumarDias } from "@/lib/dates";
 import {
@@ -154,7 +164,11 @@ function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
             {clase.modalidad ? (
               <Badge label={clase.modalidad === "virtual" ? "Virtual" : "Presencial"} />
             ) : null}
-            {esDueno ? null : <Badge label={`Prof. ${clase.profesorNombre}`} />}
+            {esDueno ? (
+              <BadgeDestino clase={clase} uid={perfil.uid} />
+            ) : (
+              <Badge label={`Prof. ${clase.profesorNombre}`} />
+            )}
             {!esDueno && clase.asistencia?.[perfil.uid] ? (
               <Badge
                 label={ASISTENCIA[clase.asistencia[perfil.uid]!]}
@@ -237,12 +251,17 @@ function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
             <MaterialList materiales={materiales} onRemove={esDueno ? quitar : undefined} />
           )}
           {puedeEditar ? (
-            <UploadButton
-              label="Subir materiales"
-              carpeta={`clases/${clase.id}`}
-              accept={ACCEPT_MATERIAL}
-              onUploaded={(material) => agregarMaterial(clase.id, material)}
-            />
+            <>
+              <UploadButton
+                label="Subir materiales"
+                carpeta={`clases/${clase.id}`}
+                accept={ACCEPT_MATERIAL}
+                onUploaded={(material) => agregarMaterial(clase.id, material)}
+              />
+              <View style={styles.bibliotecaBoton}>
+                <BibliotecaArchivos clase={clase} uid={perfil.uid} />
+              </View>
+            </>
           ) : esDueno ? (
             <BloqueadoPorPlan que="subir archivos ni editar la clase" />
           ) : null}
@@ -250,7 +269,7 @@ function Detalle({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
       ) : null}
 
       {esDueno ? (
-        <EntregasDeAlumnos clase={clase} perfil={perfil} />
+        <EntregasDeAlumnos clase={clase} perfil={perfil} puedeSubir={puedeEditar} />
       ) : (
         <MiEntrega clase={clase} perfil={perfil} />
       )}
@@ -277,6 +296,13 @@ const ASISTENCIA: Record<Asistencia, string> = {
   tarde: "Llegó tarde",
   ausente: "Ausente",
 };
+
+// Who the class is for, for its profesor.
+function BadgeDestino({ clase, uid }: { clase: Clase; uid: string }) {
+  const inscripciones = useInscripcionesProfesor(uid);
+  if (inscripciones.loading) return null;
+  return <Badge label={`Para: ${nombreDestino(clase, inscripciones.data)}`} />;
+}
 
 // Join the video call and add the class to the calendar (with a reminder an hour before).
 function AccionesDeFecha({ clase }: { clase: Clase }) {
@@ -396,14 +422,23 @@ function DuplicarDialog({
   const navigate = useNavigate();
   const [fecha, setFecha] = useState(sumarDias(clase.fecha, 7));
   const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // The same lesson for someone else: the usual way to reuse a plan with individual students.
+  const inscripciones = useInscripcionesProfesor(perfil.uid);
+  const [destino, setDestino] = useState<Destino>(destinoDe(clase));
   const conArchivos =
     clase.materiales.length > 0 ||
     (clase.bloques ?? []).some((b) => b.tipo === "archivos" && b.archivos.length > 0);
 
   const duplicar = async () => {
+    if ("alumnos" in destino && !destino.alumnos.length) {
+      setError("Elige para qué alumnos es la copia, o «Todos».");
+      return;
+    }
+    setError(null);
     setGuardando(true);
     try {
-      const id = await duplicarClase(perfil, clase, fecha);
+      const id = await duplicarClase(perfil, clase, fecha, destino);
       avisar({ texto: "Clase duplicada." });
       onClose();
       navigate(`/clases/${id}`);
@@ -418,16 +453,23 @@ function DuplicarDialog({
       visible
       onClose={onClose}
       title="Duplicar clase"
-      description="Se crea una clase igual (título, objetivos, ficha y plan) en la fecha que elijas."
+      description="Se crea una clase igual (título, objetivos, ficha y plan) en la fecha y para los alumnos que elijas."
     >
       <View style={styles.duplicar}>
         <DateInput label="Fecha de la copia" value={fecha} onChange={setFecha} />
+        <SelectorDestino
+          instrumento={clase.instrumento}
+          inscripciones={inscripciones.data}
+          valor={destino}
+          onChange={setDestino}
+        />
         {conArchivos ? (
           <Text style={styles.muted}>
-            Los archivos (materiales y bloques de archivos) no se copian: súbelos de nuevo en la
-            copia. Así cada clase es dueña de sus archivos y borrar una no deja a la otra sin ellos.
+            Los archivos no se copian: cada clase es dueña de los suyos y borrar una no deja a la
+            otra sin ellos. Agrégalos en la copia con «De mi biblioteca» o súbelos de nuevo.
           </Text>
         ) : null}
+        {error ? <Text style={styles.errorTexto}>{error}</Text> : null}
         <Button disabled={!fecha || guardando} onPress={duplicar}>
           <Copy size={16} color={buttonForeground()} />
           {guardando ? "Duplicando…" : "Duplicar"}
@@ -495,6 +537,7 @@ function EntregaForm({
       {archivos.length ? (
         <MaterialList
           materiales={archivos}
+          instrumento={clase.instrumento}
           onRemove={quitar}
           devoluciones={entrega?.devoluciones}
           respuestas={entrega?.respuestas}
@@ -559,20 +602,31 @@ function EntregaForm({
   );
 }
 
-// Profesor: every enrolled alumno and what they delivered for this class.
-function EntregasDeAlumnos({ clase, perfil }: { clase: Clase; perfil: Perfil }) {
+// Profesor: the alumnos this class is for and what they delivered. Someone taken out of the class
+// after delivering stays here while that delivery exists.
+function EntregasDeAlumnos({
+  clase,
+  perfil,
+  puedeSubir,
+}: {
+  clase: Clase;
+  perfil: Perfil;
+  puedeSubir: boolean;
+}) {
   const inscripciones = useInscripcionesProfesor(perfil.uid);
   const entregas = useEntregasDeClase(clase.id, perfil.uid);
-  const alumnos = inscripciones.data.filter((i) => i.instrumento === clase.instrumento);
+  const practicas = usePracticasDeClase(clase);
   const porAlumno = new Map(entregas.data.map((e) => [e.alumnoId, e]));
-
-  // Comments left on a file the alumno removed meanwhile (see limpiarDevoluciones).
-  useEffect(() => {
-    entregas.data.forEach((e) => limpiarDevoluciones(e, false).catch(() => {}));
-  }, [entregas.data]);
+  const alumnos = inscripciones.data.filter(
+    (i) =>
+      i.instrumento === clase.instrumento &&
+      (esParaAlumno(clase, i.alumnoId) || porAlumno.has(i.alumnoId)),
+  );
+  const [pasandoLista, setPasandoLista] = useState(false);
 
   // Who said they cannot come (the last notice of each alumno).
   const mensajes = useMensajesDeClase(clase);
+  const nuevos = mensajesSinLeer(mensajes.data, perfil.uid);
   const ausencias = new Map(
     mensajes.data.filter((m) => m.tipo === "ausencia").map((m) => [m.alumnoId, m.texto]),
   );
@@ -585,58 +639,58 @@ function EntregasDeAlumnos({ clase, perfil }: { clase: Clase; perfil: Perfil }) 
     <Section
       title="Alumnos de la clase"
       subtitle={`${porAlumno.size} de ${alumnos.length} entregaron${clase.asistencia ? ` · ${presentes} asistieron` : ""}`}
+      actions={
+        alumnos.length ? (
+          <Button variant="secondary" onPress={() => setPasandoLista(true)}>
+            <ClipboardList size={16} color={buttonForeground("secondary")} />
+            Pasar lista
+          </Button>
+        ) : null
+      }
     >
       {alumnos.length === 0 ? (
         <EmptyState
           icon={FolderOpen}
-          title={`No tienes alumnos de ${instrumento(clase.instrumento).name}`}
-          description="Agrégalos desde el inicio para que vean esta clase."
+          title={
+            clase.alumnos
+              ? "Esta clase no tiene alumnos"
+              : `No tienes alumnos de ${instrumento(clase.instrumento).name}`
+          }
+          description={
+            clase.alumnos
+              ? "Elige para quién es con Editar."
+              : "Agrégalos desde el inicio para que vean esta clase."
+          }
         />
       ) : null}
       {alumnos.map((alumno) => {
         const entrega = porAlumno.get(alumno.alumnoId);
+        const estado = clase.asistencia?.[alumno.alumnoId];
         return (
           <View key={alumno.id} style={styles.delivery}>
             <View style={styles.deliveryHeader}>
               <Avatar nombre={alumno.alumnoNombre} />
               <Text style={[styles.name, styles.flex]}>{alumno.alumnoNombre}</Text>
-              {entrega ? <Badge label="Entregada" tone="success" /> : <Badge label="Pendiente" />}
+              {estado ? <Badge label={ASISTENCIA[estado]} /> : null}
+              {!entrega ? (
+                <Badge label="Pendiente" />
+              ) : sinRevisar(entrega) ? (
+                <Badge label="Por revisar" tone="primary" />
+              ) : (
+                <Badge label="Revisada" tone="success" />
+              )}
             </View>
             {ausencias.has(alumno.alumnoId) ? (
               <Text style={styles.ausencia}>
                 Avisó que no viene: “{ausencias.get(alumno.alumnoId)}”
               </Text>
             ) : null}
-            <SelectorAsistencia clase={clase} alumnoId={alumno.alumnoId} />
-            {entrega?.comentario ? <Text style={styles.body}>“{entrega.comentario}”</Text> : null}
             {entrega ? (
-              <MaterialList
-                materiales={entrega.archivos}
-                devoluciones={entrega.devoluciones}
-                respuestas={entrega.respuestas}
-                onComentar={(material, segundo, texto) =>
-                  agregarDevolucion(entrega, {
-                    id: Math.random().toString(36).slice(2, 10),
-                    archivoId: material.id,
-                    segundo: Math.round(segundo * 10) / 10,
-                    texto,
-                    fecha: Date.now(),
-                  }).catch(() => {
-                    avisar({ texto: "No se pudo guardar el comentario.", tipo: "error" });
-                  })
-                }
-                onQuitarDevolucion={(devolucion) =>
-                  void quitarDevolucion(entrega, devolucion).catch(() =>
-                    avisar({ texto: "No se pudo borrar el comentario.", tipo: "error" }),
-                  )
-                }
-              />
-            ) : null}
-            {entrega ? (
-              <RubricaEditor
-                key={entrega.evaluacion?.fecha ?? "nueva"}
+              <EntregaRevision
+                clase={clase}
                 entrega={entrega}
-                instrumento={clase.instrumento}
+                practica={practicas.data.find((p) => p.alumnoId === alumno.alumnoId)}
+                puedeSubir={puedeSubir}
               />
             ) : null}
             <MensajesPlegables
@@ -644,11 +698,52 @@ function EntregasDeAlumnos({ clase, perfil }: { clase: Clase; perfil: Perfil }) 
               alumnoId={alumno.alumnoId}
               alumnoNombre={alumno.alumnoNombre}
               perfil={perfil}
+              sinLeer={nuevos.filter((m) => m.alumnoId === alumno.alumnoId).length}
             />
           </View>
         );
       })}
+      {pasandoLista ? (
+        <PasarLista clase={clase} alumnos={alumnos} onClose={() => setPasandoLista(false)} />
+      ) : null}
     </Section>
+  );
+}
+
+// Attendance in one view, away from the deliveries: "Todos presentes" and then the exceptions.
+function PasarLista({
+  clase,
+  alumnos,
+  onClose,
+}: {
+  clase: Clase;
+  alumnos: Inscripcion[];
+  onClose: () => void;
+}) {
+  const sinMarcar = alumnos.map((a) => a.alumnoId).filter((id) => !clase.asistencia?.[id]);
+  return (
+    <Dialog visible onClose={onClose} title="Pasar lista" description={clase.titulo}>
+      <View style={styles.duplicar}>
+        {sinMarcar.length ? (
+          <Button
+            variant="secondary"
+            onPress={() =>
+              void marcarAsistenciaDeVarios(clase.id, sinMarcar, "presente").catch(() =>
+                avisar({ texto: "No se pudo guardar la asistencia.", tipo: "error" }),
+              )
+            }
+          >
+            Marcar presentes a los {sinMarcar.length} que faltan
+          </Button>
+        ) : null}
+        {alumnos.map((alumno) => (
+          <View key={alumno.id} style={styles.filaLista}>
+            <Text style={[styles.name, styles.nombreLista]}>{alumno.alumnoNombre}</Text>
+            <SelectorAsistencia clase={clase} alumnoId={alumno.alumnoId} />
+          </View>
+        ))}
+      </View>
+    </Dialog>
   );
 }
 
@@ -676,41 +771,25 @@ function SelectorAsistencia({ clase, alumnoId }: { clase: Clase; alumnoId: strin
   );
 }
 
-function MensajesPlegables({
-  clase,
-  alumnoId,
-  alumnoNombre,
-  perfil,
-}: {
-  clase: Clase;
-  alumnoId: string;
-  alumnoNombre: string;
-  perfil: Perfil;
-}) {
-  const [abierto, setAbierto] = useState(false);
-  if (!abierto)
-    return (
-      <Button
-        variant="secondary"
-        size="sm"
-        style={styles.saveComment}
-        onPress={() => setAbierto(true)}
-      >
-        <MessageCircle size={14} color={buttonForeground("secondary")} />
-        Mensajes
-      </Button>
-    );
-  return (
-    <MensajesClase
-      clase={clase}
-      alumnoId={alumnoId}
-      perfil={perfil}
-      otroNombre={alumnoNombre.split(" ")[0] ?? alumnoNombre}
-    />
-  );
-}
-
 const styles = StyleSheet.create({
+  bibliotecaBoton: {
+    alignSelf: "flex-start",
+  },
+  filaLista: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
+  },
+  nombreLista: {
+    flexGrow: 1,
+    flexBasis: 160,
+  },
+  errorTexto: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    color: colors.destructive,
+  },
   fechaAcciones: {
     marginTop: 10,
     flexDirection: "row",

@@ -15,11 +15,21 @@ con el número de documento.
   por instrumento, marcan la **ruta de aprendizaje** por niveles y escriben **mensajes** por clase.
 - **Alumnos**: se registran con su número de documento y sus instrumentos. Cuando un profesor los
   agrega a su lista, ven sus clases, se graban (o suben) sus prácticas en audio o video, o fotos (también con la cámara del celular) y PDF de tareas escritas (con click
-  en los auriculares si quieren; la app mide su **afinación y su tiempo** antes de enviar), siguen
-  su barra de progreso, su ruta, sus habilidades y sus **insignias**, y llevan un diario con meta
+  en los auriculares si quieren; la app mide su **tiempo** y, en arco, viento y voz, su **afinación**
+  antes de enviar), siguen si están al día, su ruta, sus habilidades y sus **insignias**, y llevan un diario con meta
   semanal. Cada día, **Tu práctica de hoy** arma la rutina según el tiempo que tienen; tienen
   **repertorio**, **metas de la semana**, **Mi evolución** (primera grabación vs. la última),
   responden cada devolución, avisan si no pueden ir y reciben **avisos** en el navegador.
+- **Clases por alumno**: cada clase es para uno o varios alumnos (individual o de un grupo) o para
+  toda la lista de un instrumento; solo la ven ellos, con su hora y su asistencia. _Duplicar_ reusa
+  el plan para otro alumno.
+- **El día del profesor**: _Para hoy_ reúne lo urgente; _Por revisar_ pasa las entregas una tras
+  otra, con comentarios escritos o **grabados** y _Convertir en meta_; _Para preparar la clase_
+  resume en qué quedaron, con **notas privadas** y un resumen por WhatsApp para la familia;
+  _Pasar lista_, **biblioteca de archivos** e _Invitar por WhatsApp_.
+- **El día del alumno**: _Hoy_, _Mis clases_ y _Mi progreso_. Primero lo que dijo su profesor; en cada
+  bloque, _Me salió_ o _Me costó_, y el tempo de cada obra. La grabadora cuenta antes de empezar,
+  mantiene la pantalla encendida y no pierde la toma si se corta internet o se cierra la pestaña.
 - **Diseño**: tema claro y oscuro, y una escena animada (arpa paraguaya, instrumentos que flotan,
   notas y la línea de pulso) en el login y en el inicio de cada persona con sus instrumentos, hecha
   con SVG y CSS para que no pese ni gaste memoria.
@@ -166,7 +176,11 @@ Lo que ya está en el código pero todavía no en el sitio ni en Firebase:
    _Planes_ → _Darles la prueba gratis_. Ese mismo `deploy:funciones` / `deploy:reglas` publica
    **Eliminar mi cuenta** (función `eliminarCuenta` y la colección `bajas`): las reglas y la
    función van antes que el sitio.
-2. **Base vieja `default`**: borrarla cuando todo funcione con `(default)`
+2. **Publicar las clases por alumno**, con lo mismo y en el mismo orden, y enseguida `/admin` →
+   _Planes_ → _Preparar datos anteriores_
+   ([docs/despliegue.md](docs/despliegue.md#publicar-las-clases-por-alumno-una-vez)). Sin ese paso,
+   los alumnos no ven las clases anteriores.
+3. **Base vieja `default`**: borrarla cuando todo funcione con `(default)`
    (`npx firebase firestore:databases:delete default`).
 
 ## Próximamente

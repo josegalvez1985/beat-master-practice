@@ -21,7 +21,7 @@ const PASOS = [
     icon: Mic,
     titulo: "Grábate y entrega",
     texto:
-      "En cada clase te grabas (con click si quieres). Pulso mide tu afinación y tu tiempo, y tu profesor te devuelve comentarios: respóndele con «Entendido» o «Ya lo corregí».",
+      "En cada clase te grabas (con click si quieres). Pulso analiza tu grabación, y tu profesor te devuelve comentarios: respóndele con «Entendido» o «Ya lo corregí».",
   },
   {
     icon: Award,

@@ -7,8 +7,19 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import { CalendarDays, ChevronRight, Inbox, Plus, Search, Trash2, Users } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronRight,
+  Inbox,
+  MessageCircle,
+  Plus,
+  Search,
+  Trash2,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import { Bienvenida } from "@/components/Bienvenida";
+import { ParaHoy } from "@/components/ParaHoy";
 import { AvisoPlan, BloqueadoPorPlan, usePlanProfesor } from "@/components/PlanAviso";
 import { Pastilla, pastillaStyles } from "@/components/ui/pastilla";
 import { ClaseItem } from "@/components/ClaseItem";
@@ -17,6 +28,7 @@ import { Link } from "@/components/Link";
 import { PageMeta } from "@/components/PageMeta";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
+import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,22 +38,29 @@ import { Section } from "@/components/ui/section";
 import { Stat } from "@/components/ui/stat";
 import { avisar } from "@/components/ui/toast";
 import { usePerfil, type Perfil } from "@/lib/auth";
+import { invitacionAlumno } from "@/lib/contacto";
 import {
   agregarAlumno,
   buscarPorDocumento,
   inscripcionId,
+  nombreDestino,
   progreso,
   quitarInscripcion,
+  sinRevisar,
+  textoAlDia,
   useClasesProfesor,
   useEntregasProfesor,
   useInscripcionesProfesor,
+  useLogrosProfesor,
   type Clase,
   type Entrega,
   type Inscripcion,
+  type Logros,
 } from "@/lib/data";
-import { hoy, inicioDeSemana, rango } from "@/lib/dates";
+import { hoy, rango } from "@/lib/dates";
 import { documentoValido, formatearDocumento, normalizarDocumento } from "@/lib/documento";
 import { instrumento, type InstrumentId } from "@/lib/instruments";
+import { avanceDeNivel, nivelLabel } from "@/lib/ruta";
 import { colors, fonts, radius } from "@/lib/theme";
 
 export default function ProfesorInicio() {
@@ -51,15 +70,13 @@ export default function ProfesorInicio() {
   const inscripciones = useInscripcionesProfesor(perfil.uid);
   const clases = useClasesProfesor(perfil.uid);
   const entregas = useEntregasProfesor(perfil.uid);
+  const logros = useLogrosProfesor(perfil.uid);
 
   const fechaHoy = hoy();
   const [inicioMes, finMes] = rango("mes", fechaHoy);
-  const semana = inicioDeSemana(fechaHoy);
   const alumnos = new Set(inscripciones.data.map((i) => i.alumnoId)).size;
   const clasesMes = clases.data.filter((c) => c.fecha >= inicioMes && c.fecha <= finMes).length;
-  const entregasSemana = entregas.data.filter(
-    (e) => e.actualizadoEn && e.actualizadoEn.toDate() >= new Date(`${semana}T00:00:00`),
-  ).length;
+  const porRevisar = entregas.data.filter(sinRevisar).length;
 
   return (
     <>
@@ -91,32 +108,72 @@ export default function ProfesorInicio() {
 
       <AvisoPlan uid={perfil.uid} />
 
+      <ParaHoy
+        uid={perfil.uid}
+        inscripciones={inscripciones.data}
+        clases={clases.data}
+        entregas={entregas.data}
+      />
+
       <View style={styles.stats}>
         <Stat icon={Users} label="Alumnos" value={String(alumnos)} />
         <Stat icon={CalendarDays} label="Clases este mes" value={String(clasesMes)} />
-        <Stat icon={Inbox} label="Entregas esta semana" value={String(entregasSemana)} />
+        <Stat icon={Inbox} label="Por revisar" value={String(porRevisar)} />
       </View>
 
       <View style={[styles.columns, lg && styles.row]}>
         <View style={[styles.column, lg && styles.mainColumn]}>
-          <AgregarAlumno perfil={perfil} inscripciones={inscripciones.data} />
           <MisAlumnos
             perfil={perfil}
             inscripciones={inscripciones.data}
             loading={inscripciones.loading}
             clases={clases.data}
             entregas={entregas.data}
+            logros={logros.data}
           />
         </View>
         <View style={[styles.column, lg && styles.sideColumn]}>
-          <ProximasClases clases={clases.data.filter((c) => c.fecha >= fechaHoy).slice(0, 6)} />
+          <ProximasClases
+            clases={clases.data.filter((c) => c.fecha >= fechaHoy).slice(0, 6)}
+            inscripciones={inscripciones.data}
+          />
         </View>
       </View>
     </>
   );
 }
 
+// Adding someone is occasional: it opens from a button, it does not take the top of the home.
 function AgregarAlumno({
+  perfil,
+  inscripciones,
+  visible,
+  onClose,
+}: {
+  perfil: Perfil;
+  inscripciones: Inscripcion[];
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const plan = usePlanProfesor(perfil.uid);
+  const alumnos = new Set(inscripciones.map((i) => i.alumnoId)).size;
+  return (
+    <Dialog
+      visible={visible}
+      onClose={onClose}
+      title="Agregar alumno"
+      description={
+        plan.limite
+          ? `Carga su número de documento. Tienes ${alumnos} de ${plan.limite} alumnos de tu plan.`
+          : "Carga su número de documento."
+      }
+    >
+      <FormularioAlumno perfil={perfil} inscripciones={inscripciones} />
+    </Dialog>
+  );
+}
+
+function FormularioAlumno({
   perfil,
   inscripciones,
 }: {
@@ -132,7 +189,7 @@ function AgregarAlumno({
   const [agregando, setAgregando] = useState<string | null>(null);
   const inscriptos = new Set(inscripciones.map((i) => i.id));
   const plan = usePlanProfesor(perfil.uid);
-  const alumnos = new Set(inscripciones.map((i) => i.alumnoId)).size;
+  const [sinCuenta, setSinCuenta] = useState(false);
 
   const cambiarDocumento = (valor: string) => {
     setDocumento(valor);
@@ -140,12 +197,14 @@ function AgregarAlumno({
     setAlumno(null);
     setAviso(null);
     setError(null);
+    setSinCuenta(false);
   };
 
   const buscar = async () => {
     const nro = normalizarDocumento(documento);
     setAlumno(null);
     setAviso(null);
+    setSinCuenta(false);
     if (!documentoValido(nro)) {
       setError("Escribe el número de documento del alumno (solo números, de 5 a 10 cifras).");
       return;
@@ -156,8 +215,9 @@ function AgregarAlumno({
       const encontrado = await buscarPorDocumento(nro);
       if (!encontrado) {
         setAviso(
-          `No hay ninguna cuenta con el documento ${formatearDocumento(nro)}. Pídele al alumno que se registre en Pulso con ese número.`,
+          `Todavía no hay ninguna cuenta con el documento ${formatearDocumento(nro)}. Invítalo a registrarse con ese número.`,
         );
+        setSinCuenta(true);
       } else if (encontrado.rol !== "alumno") {
         setAviso(
           `El documento ${formatearDocumento(nro)} es de una cuenta de profesor, no de alumno.`,
@@ -192,14 +252,7 @@ function AgregarAlumno({
   };
 
   return (
-    <Section
-      title="Agregar alumno"
-      subtitle={
-        plan.limite
-          ? `Carga el número de documento del alumno. Tienes ${alumnos} de ${plan.limite} alumnos de tu plan.`
-          : "Carga el número de documento del alumno."
-      }
-    >
+    <View style={styles.formulario}>
       {plan.bloqueado ? <BloqueadoPorPlan que="agregar alumnos" /> : null}
       <View style={styles.campos}>
         <View style={styles.campo}>
@@ -242,6 +295,7 @@ function AgregarAlumno({
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {aviso ? <Text style={styles.muted}>{aviso}</Text> : null}
+      {sinCuenta ? <InvitarPorWhatsApp nombre={perfil.nombre} /> : null}
       {alumno ? (
         <View style={styles.result}>
           <Avatar nombre={alumno.nombre} foto={alumno.foto} />
@@ -276,7 +330,28 @@ function AgregarAlumno({
           </View>
         </View>
       ) : null}
-    </Section>
+      {!sinCuenta && !alumno ? (
+        <View style={styles.invitar}>
+          <Text style={styles.muted}>¿Todavía no tiene cuenta?</Text>
+          <InvitarPorWhatsApp nombre={perfil.nombre} />
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+// The message is ready: WhatsApp asks who to send it to. Nothing is saved in Pulso.
+function InvitarPorWhatsApp({ nombre }: { nombre: string }) {
+  return (
+    <Pressable
+      accessibilityRole="link"
+      href={invitacionAlumno(nombre)}
+      hrefAttrs={{ target: "_blank", rel: "noopener" }}
+      style={styles.enlace}
+    >
+      <MessageCircle size={14} color={colors.foreground} />
+      <Text style={styles.enlaceTexto}>Invitar por WhatsApp</Text>
+    </Pressable>
   );
 }
 
@@ -286,13 +361,16 @@ function MisAlumnos({
   loading,
   clases,
   entregas,
+  logros,
 }: {
   perfil: Perfil;
   inscripciones: Inscripcion[];
   loading: boolean;
   clases: Clase[];
   entregas: Entrega[];
+  logros: Logros[];
 }) {
+  const [agregando, setAgregando] = useState(false);
   const [filtro, setFiltro] = useState<InstrumentId | null>(null);
   const visibles = inscripciones.filter((i) => !filtro || i.instrumento === filtro);
 
@@ -301,7 +379,12 @@ function MisAlumnos({
     const ok = await confirmar({
       titulo: `¿Quitar a ${inscripcion.alumnoNombre}?`,
       mensaje: `Sale de tu lista de ${nombre} y deja de ver tus clases de ${nombre}. Se borra lo que tenía en esta lista:`,
-      detalle: ["Su ruta de aprendizaje", "Sus metas de la semana", "Su repertorio"],
+      detalle: [
+        "Su ruta de aprendizaje",
+        "Sus metas de la semana",
+        "Su repertorio",
+        "Tus notas sobre este alumno",
+      ],
       aceptar: "Quitar de la lista",
       peligro: true,
     });
@@ -315,7 +398,28 @@ function MisAlumnos({
   };
 
   return (
-    <Section title="Mis alumnos" subtitle="Progreso: clases entregadas sobre clases planificadas.">
+    <Section
+      title="Mis alumnos"
+      subtitle="La barra es su avance en la ruta de aprendizaje."
+      actions={
+        <Button
+          variant={inscripciones.length ? "secondary" : "default"}
+          onPress={() => setAgregando(true)}
+        >
+          <UserPlus
+            size={16}
+            color={buttonForeground(inscripciones.length ? "secondary" : "default")}
+          />
+          Agregar alumno
+        </Button>
+      }
+    >
+      <AgregarAlumno
+        perfil={perfil}
+        inscripciones={inscripciones}
+        visible={agregando}
+        onClose={() => setAgregando(false)}
+      />
       {perfil.instrumentos.length > 1 ? (
         <View style={styles.chips}>
           <Chip label="Todos" selected={!filtro} onPress={() => setFiltro(null)} />
@@ -334,11 +438,14 @@ function MisAlumnos({
         <EmptyState
           icon={Users}
           title="Todavía no tienes alumnos en tu lista"
-          description="Cárgalos arriba con su número de documento. Al agregarlos se les habilitan tus clases."
+          description="Toca «Agregar alumno» y carga su número de documento. Al agregarlos ven las clases que les asignes."
         />
       ) : null}
       {visibles.map((inscripcion) => {
-        const p = progreso(clases, entregas, inscripcion.alumnoId, inscripcion.instrumento);
+        const p = progreso(clases, entregas, inscripcion);
+        const ruta = logros.find((l) => l.id === inscripcion.id);
+        const nivel = ruta?.nivel ?? "inicial";
+        const avance = avanceDeNivel(inscripcion.instrumento, nivel, ruta?.cumplidos ?? []);
         return (
           <View key={inscripcion.id} style={styles.studentRow}>
             <Link href={`/alumnos/${inscripcion.alumnoId}`}>
@@ -349,13 +456,13 @@ function MisAlumnos({
                     <Text numberOfLines={1} style={styles.name}>
                       {inscripcion.alumnoNombre}
                     </Text>
-                    <Text style={styles.percent}>{p.porcentaje}%</Text>
+                    <Text style={styles.percent}>{avance}%</Text>
                   </View>
                   <Text style={styles.muted}>
-                    Doc. {formatearDocumento(inscripcion.alumnoDocumento)} ·{" "}
-                    {instrumento(inscripcion.instrumento).name} · {p.hechas} de {p.total} clases
+                    {instrumento(inscripcion.instrumento).name} · nivel{" "}
+                    {nivelLabel(nivel).toLowerCase()} · {textoAlDia(p)}
                   </Text>
-                  <Progress value={p.porcentaje} style={styles.progress} />
+                  <Progress value={avance} style={styles.progress} />
                 </View>
                 <ChevronRight size={18} color={colors.mutedForeground} />
               </Pressable>
@@ -375,7 +482,13 @@ function MisAlumnos({
   );
 }
 
-function ProximasClases({ clases }: { clases: Clase[] }) {
+function ProximasClases({
+  clases,
+  inscripciones,
+}: {
+  clases: Clase[];
+  inscripciones: Inscripcion[];
+}) {
   return (
     <Section
       title="Próximas clases"
@@ -396,7 +509,7 @@ function ProximasClases({ clases }: { clases: Clase[] }) {
         />
       ) : null}
       {clases.map((clase) => (
-        <ClaseItem key={clase.id} clase={clase} />
+        <ClaseItem key={clase.id} clase={clase} destino={nombreDestino(clase, inscripciones)} />
       ))}
     </Section>
   );
@@ -428,6 +541,32 @@ const styles = StyleSheet.create({
   sideColumn: {
     flexGrow: 1,
     flexBasis: 0,
+  },
+  formulario: {
+    marginTop: 16,
+    gap: 12,
+  },
+  invitar: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
+  },
+  enlace: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    height: 32,
+    paddingHorizontal: 10,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  enlaceTexto: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.foreground,
   },
   campos: {
     flexDirection: "row",

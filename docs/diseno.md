@@ -149,7 +149,9 @@ Los íconos son de [Lucide](https://lucide.dev).
 
 **Modal Crear cuenta** (`?modal=registro`)
 
-1. Tarjetas grandes **Alumno** / **Profesor** ("¿Eres alumno o profesor?").
+1. Tarjetas grandes **Profesor** / **Alumno** ("¿Eres profesor o alumno?"), sin ninguna elegida al
+   abrir: el rol no cambia después, así que tiene que ser una decisión. El enlace de invitación de
+   un profesor (`&rol=alumno`) abre con Alumno elegido.
 2. Nombre y apellido, Nro. de documento (con aclaración de para qué sirve), **celular** (solo profesores,
    obligatorio: "Solo lo ve el equipo de Pulso"), correo y contraseña.
 3. Instrumentos con chips seleccionables; la pregunta cambia según el rol.
@@ -178,8 +180,8 @@ registrarse de nuevo con el mismo correo.
 ### Navegación
 
 - **Celular (< 640 px)**: barra inferior con íconos y texto (profesor: Inicio, Planificación,
-  Herramientas, Mi plan, Perfil; alumno: Inicio, **Practicar**, Herramientas, Perfil). _Practicar_ lleva directo al modo práctica de la
-  próxima clase (`/practicar`).
+  Herramientas, Mi plan, Perfil; alumno: Inicio, **Practicar**, Herramientas, Perfil). _Practicar_ abre la práctica de hoy con el afinador y el metrónomo
+  a mano (`/practicar`).
 - **Avisos** breves abajo de la pantalla para lo que pasó ("Foto actualizada", errores al guardar)
   y para deshacer ("Bloque eliminado · **Deshacer**").
 
@@ -222,16 +224,28 @@ la barra inferior las pestañas se reparten el ancho (nunca más ancha que la pa
 - **Bienvenida**: saludo, una **frase motivadora** del día (`src/lib/frases.md`: una por día, las 100 sin repetir) e instrumentos que enseña, con una pastilla por instrumento y **cuántos
   alumnos** tiene en esa lista ("Guitarra · 12 alumnos"), junto a la escena musical con **sus**
   instrumentos flotando (el arpa al centro si la enseña; si no, el ecualizador).
-- Indicadores: **Alumnos**, **Clases este mes**, **Entregas esta semana**.
-- **Agregar alumno**: solo por **número de documento**, nunca por nombre (dos alumnos pueden
+- **Para hoy**, lo primero: una fila tocable por cada cosa que lo necesita, en el orden en que la
+  atendería: entregas por revisar (borde `primary` y fondo `selected`), clases de hoy con para quién
+  son, quién avisó que no puede ir, mensajes nuevos y alumnos sin entregar hace más de 14 días. Sin
+  nada, "Nada urgente".
+- Indicadores: **Alumnos**, **Clases este mes**, **Por revisar**.
+- **Mis alumnos**: _Agregar alumno_ arriba a la derecha (ámbar solo si todavía no tiene ninguno);
+  filtro por instrumento; por alumno, avatar, instrumento, nivel, "x de y clases entregadas" y la
+  barra con el porcentaje de su ruta de aprendizaje. Tocar la fila abre el detalle.
+- **Agregar alumno** (modal): solo por **número de documento**, nunca por nombre (dos alumnos pueden
   llamarse igual; el documento es único). Dos campos: _Nro. de documento_ (con _Buscar_) y, aparte,
   _Nombre del alumno_ en solo lectura, que se completa al encontrarlo para que el profesor
   confirme que es él; cambiar el número lo vacía. Debajo, botones "+ Guitarra", "+ Piano"… (uno por
-  instrumento que enseña) y "Guitarra ✓" si ya está en la lista. Si el número no tiene cuenta, o
-  es de un profesor, lo dice.
-- **Mis alumnos**: filtro por instrumento; por alumno, avatar, documento, instrumento, barra de
-  progreso, porcentaje y "x de y clases". Tocar la fila abre el detalle.
-- **Próximas clases** con acceso directo a Planificación.
+  instrumento que enseña) y "Guitarra ✓" si ya está en la lista. Si el número es de un profesor, lo
+  dice; si no tiene cuenta, ofrece **Invitar por WhatsApp**.
+- **Próximas clases** con para quién es cada una y acceso directo a Planificación.
+
+### Profesor · Por revisar (`/revision`)
+
+Título con cuántas faltan; una tarjeta con la entrega actual (nombre del alumno, clase y fecha, _Le
+costó: …_, su comentario, archivos con comentarios escritos o grabados, rúbrica y **Revisada y
+siguiente**), _Después_ para dejarla al final y, debajo, _En la cola_: los demás, tocables. Vacía:
+"¡Todo revisado!".
 
 ### Profesor · Planificación (`/planificacion`)
 
@@ -239,7 +253,10 @@ la barra inferior las pestañas se reparten el ancho (nunca más ancha que la pa
 - **Semana**: los 7 días, con "+" en cada día para crear una clase ese día.
 - **Mes**: los días que tienen clases.
 - **Año**: los 12 meses con sus clases, para ver el plan completo.
-- **Nueva clase** (modal): instrumento, título, fecha, **hora** (opcional, "18:30"),
+- Cada clase dice para quién es ("Ana Pérez", "Ana y Luis", "Todos").
+- **Nueva clase** (modal): instrumento, **para quién es** (_Elegir alumnos_, con un chip por alumno
+  de esa lista, o _Todos los de Guitarra_; hay que elegir: "toda la lista" nunca pasa por no mirar),
+  título, fecha, **hora** (opcional, "18:30"),
   **modalidad** (presencial o virtual con el **enlace** de la videollamada), objetivos y tarea,
   **Es un recital o muestra** (lugar y programa: quién toca qué) y **Repetir cada semana hasta…**
   (muestra cuántas clases se van a crear, máximo 60).
@@ -265,8 +282,11 @@ la barra inferior las pestañas se reparten el ancho (nunca más ancha que la pa
 
 ### Profesor · Alumno (`/alumnos/:id`)
 
-Encabezado con nombre y documento; una tarjeta por instrumento con el porcentaje grande, la barra,
-la lista de clases con su estado _Entregada_ / _Pendiente_, cuántas veces asistió, su **ruta de
+Encabezado con nombre y documento; una tarjeta por instrumento con "x de y clases entregadas", cuántas
+veces asistió y **Nueva clase** (ya viene con el alumno elegido). Primero, **Para preparar la clase**
+(fondo `muted`): última clase y qué le costó, práctica de la semana, tu última evaluación, comentarios
+sin responder, metas, tempos y próxima clase; **Enviar resumen a la familia** (WhatsApp) y **Tus notas
+privadas**. Después, la lista de clases con su estado _Entregada_ / _Pendiente_, su **ruta de
 aprendizaje** (nivel inicial, básico, intermedio o avanzado con sus objetivos: el profesor elige el
 nivel y marca cada objetivo de un toque), sus **habilidades** (el promedio de cada criterio de la
 rúbrica, con flecha si subió) y su **diario de práctica** de ese instrumento (minutos de la semana en ese
@@ -326,25 +346,27 @@ instrumento, su meta semanal total como dato aparte y las últimas anotaciones).
   - **Alumno**: resumen del plan con _Hecho_ en cada bloque, la barra "x de y bloques practicados"
     y **Empezar / Continuar práctica**, que abre el **modo práctica**: un bloque por pantalla con
     "Bloque 2 de 5" y puntos de avance, cronómetro con los minutos sugeridos (sigue contando en
-    ámbar al pasarse), el contenido en grande, _Anterior_ y **Hecho y siguiente** (también con un pedal Bluetooth o las flechas ← →), y al final
+    ámbar al pasarse), el contenido en grande, _Anterior_, _Me costó_ y **Me salió y sigo** (un pedal Bluetooth o las flechas ← → pasan sin opinar); la pantalla queda encendida; y al final
     _¡Práctica terminada!_ con la invitación a subir la entrega (es lo que cuenta en el avance de las clases) y el aviso
     "Anotamos N min en tu diario: tu avance de la semana ya se actualizó" (se anota solo). `?practicar=1` lo abre directo.
-- **Materiales** (u **Otros materiales** si hay plan): lista con tipo y tamaño; audio y video se
+- **Materiales** (u **Otros materiales** si hay plan; el profesor tiene **De mi biblioteca**: sus
+  archivos para reusar, con _Usar_, _Subir a mi biblioteca_ y la papelera con _Deshacer_): lista con tipo y tamaño; audio y video se
   reproducen ahí mismo con **velocidad** (50, 75, 90, 100 %, sin cambiar el tono) y **repetir de A
   a B** para un pasaje, PDF y partituras se abren en otra pestaña. La papelera (del profesor en los
   materiales, del alumno en sus archivos de la entrega) quita el archivo con **Deshacer** (6 s), y
   si el borrado falla lo vuelve a mostrar con un aviso de error.
-- **Profesor**: Editar, Eliminar (pide confirmación y avisa que también se borran los materiales y
-  las entregas de los alumnos), Subir materiales (con barra de avance por archivo; en celular y tablet, también **Sacar foto**, que abre la cámara) y **Alumnos de la
-  clase** ("1 de 3 entregaron · 2 asistieron"): por alumno, **asistencia** (Presente, Llegó tarde,
-  Ausente; tocar la marcada la borra), sus archivos con el **análisis** de la grabación (notas
-  afinadas, estabilidad del tiempo, BPM), comentarios, **Evaluar con rúbrica** (1 a 5 por criterio
-  del instrumento y una devolución breve) y **Mensajes**.
+- **Profesor**: la insignia _Para: …_, Editar, Eliminar (pide confirmación y avisa que también se borran los materiales y
+  las entregas de los alumnos), Duplicar (a otra fecha y para otros alumnos), Subir materiales (con barra de avance por archivo; en celular y tablet, también **Sacar foto**, que abre la cámara) y **Alumnos de la
+  clase** ("1 de 3 entregaron · 2 asistieron"), solo los alumnos de esa clase, con **Pasar lista** (modal: Presente, Llegó tarde,
+  Ausente por alumno, tocar la marcada la borra, y _Marcar presentes a los N que faltan_). Por alumno, insignias de asistencia y de _Pendiente_ / _Por revisar_ / _Revisada_, _Le costó: …_, sus archivos con el **análisis** de la grabación (estabilidad del tiempo, BPM y, en arco, viento y voz, notas
+  afinadas), comentarios en un segundo (escritos o **Grabar mi respuesta**, en audio o video; la diana los **convierte en meta** de la semana), **Evaluar con rúbrica** (1 a 5 por criterio
+  del instrumento y una devolución breve), **Marcar como revisada** y **Mensajes** (ámbar con "2 nuevos").
 - **Alumno**: **Tu entrega**, con insignia de estado, la **evaluación de tu profesor** (barras por
   criterio y su devolución), **Grabar audio / video** ahí mismo (_Sin click_ / _Con click_ con el
-  tempo, y el aviso de usar auriculares; al terminar, **Analizando afinación y tiempo…** y el
-  resultado, que se envía con la grabación; se escucha, se puede repetir o descargar, y **Enviar a
-  mi profesor**), _Subir audio, video, foto o PDF_ como alternativa (fotos y PDF hasta 20 MB: una tarea escrita, una partitura copiada) y, en celular y tablet, **Sacar foto** con la cámara, sus archivos, un comentario para el profesor
+  tempo, y el aviso de usar auriculares; primero una **cuenta** con el número grande en ámbar y
+  _Cancelar_; al terminar, **Analizando tu grabación…** y el resultado, que se envía con la
+  grabación; se escucha, se puede repetir o descargar, y **Enviar a mi profesor**; sin enviar, vuelve
+  al abrir la clase, "Tenías esta grabación sin enviar", y sin conexión avisa que se enviará sola), _Subir audio, video, foto o PDF_ como alternativa (fotos y PDF hasta 20 MB: una tarea escrita, una partitura copiada) y, en celular y tablet, **Sacar foto** con la cámara, sus archivos, un comentario para el profesor
   y **Mensajes con tu profesor** (una charla por clase; cada uno borra los suyos).
 
 ### Alumno · Inicio (`/`)
@@ -354,25 +376,32 @@ instrumento, su meta semanal total como dato aparte y las últimas anotaciones).
   entregadas (ver _Progreso_ en [arquitectura](arquitectura.md#progreso)); al lado, la escena con sus
   instrumentos. El número de documento sigue en el aviso para quien aún no está en una lista y en
   _Mi perfil_.
-- **Tu próxima práctica** (borde ámbar): la clase pendiente más cercana (hoy, mañana o atrasada),
-  sus bloques y minutos y **Practicar ahora**; al lado la **racha** (días seguidos) y los **minutos
-  de esta semana**. Si no hay pendientes: "¡Estás al día!".
-- **Tu práctica de hoy**: 10, 20 o 40 min y los pasos numerados con sus minutos (calentamiento, la
-  clase, _Refuerza: tiempo_…, _Repasa: obra_ con **Hecho**); cada paso lleva a donde se hace; abajo,
-  las metas de la semana sin cumplir.
 - **Primera vez**: _Bienvenido a Pulso_, cuatro pasos con ícono y _Siguiente_ / _Saltar_, y _¿Cómo
   tocas hoy?_ con los cuatro niveles descritos por instrumento.
 - Sin profesor todavía: aviso explicando que el profesor debe agregarlo.
-- Con profesores: una tarjeta por profesor e instrumento con el porcentaje, la barra y las clases
-  (con su hora, _Recital_ o _Virtual_), ordenadas primero las atrasadas sin entregar, luego las
-  próximas y al final las entregadas; debajo, su **ruta de aprendizaje** (nivel y objetivos que
-  marcó el profesor), **Metas de la semana** (casillas, agregar y "Semanas anteriores: 5 de 7
-  cumplidas"), **Repertorio** (cada obra con su estado y _Repasé hoy_) y sus **habilidades**.
-  Después, **Mi evolución**: la primera grabación al lado de la
-  última y los gráficos de notas afinadas y desvío del tiempo (tocar un punto muestra fecha y valor).
-- En la columna lateral: **Diario de práctica** (minutos de la semana contra la meta, _Anotar
-  práctica_), **Tus insignias** (las ganadas primero; las otras, con lo que falta: "3 de 7 días"), el **afinador** (solo si estudia un instrumento que lo usa), el metrónomo y **Más
-  herramientas para practicar**.
+- Con profesores, tres pestañas (`Segmented`, en la URL: `?ver=`), una pregunta cada una:
+  - **Hoy** (qué hago): **Tu profesor te dijo** si hay algo nuevo (comentarios sin responder,
+    evaluaciones de los últimos 14 días, mensajes sin leer; cada fila lleva a la clase) y **Tu
+    práctica de hoy** (borde ámbar): 10, 20 o 40 min; la clase pendiente más cercana (hoy, mañana o
+    atrasada) con **Practicar ahora**, o "¡Estás al día!"; los pasos numerados con sus minutos
+    (calentamiento, la clase, _Refuerza: tiempo_…, _Repasa: obra_ con **Hecho**), que llevan a donde
+    se hace; las metas sin cumplir y "Esta semana: 5 de 7 días · 120 min". Al lado, **Diario de
+    práctica** (minutos contra la meta, _Anotar práctica_).
+  - **Mis clases**: una tarjeta por profesor e instrumento con "x de y clases entregadas", la barra
+    y las clases (con su hora, _Recital_ o _Virtual_), ordenadas primero las atrasadas sin entregar,
+    luego las próximas, las entregadas y, al final y sin estado, las de antes de que entrara.
+  - **Mi progreso**: por lista, **ruta de aprendizaje** (nivel y objetivos que marcó el profesor),
+    **Metas de la semana** (casillas, agregar y "Semanas anteriores: 5 de 7 cumplidas"),
+    **Repertorio** (cada obra con su estado, _Repasé hoy_ y a qué tempo va) y sus **habilidades**;
+    **Mi evolución**: la primera grabación al lado de la última y los gráficos de desvío del tiempo
+    y, en arco, viento y voz, notas afinadas (tocar un punto muestra fecha y valor); **Lo que me
+    dijo mi profesor** (todo, de lo más nuevo a lo más viejo, con _Ver más_) y **Tus insignias** (las
+    ganadas primero; las otras, con lo que falta: "3 de 7 días").
+
+### Alumno · Practicar (`/practicar`)
+
+Título, **Tu práctica de hoy** (la misma de _Hoy_) y, a mano, el **afinador** (solo si estudia un
+instrumento que lo usa), el metrónomo y **Más herramientas para practicar**.
 
 ### Herramientas (`/herramientas`)
 
@@ -506,7 +535,6 @@ instrumento, su meta semanal total como dato aparte y las últimas anotaciones).
 | Pantalla      | Mejora sugerida                                                                                                                                                       |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Planificación | Cuadrícula de calendario en la vista Mes y arrastrar clases para cambiarlas de día                                                                                    |
-| Clase         | Marcar cada entrega como _Revisada_ y dejar devoluciones en audio, además de las escritas con marca de tiempo                                                         |
 | Batería       | Medidor de tiempo sobre un groove completo (bombo y caja por separado) y exportar el groove a partitura                                                               |
 | Herramientas  | Guardar el puntaje de oído y lectura para ver el avance semana a semana                                                                                               |
 | General       | Notificaciones (nueva clase, nueva entrega, nueva devolución) y esqueletos de carga                                                                                   |

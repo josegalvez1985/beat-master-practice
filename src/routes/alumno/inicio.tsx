@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import { CalendarDays, UserPlus, Wrench } from "lucide-react";
-import { Afinador } from "@/components/Afinador";
+import { useSearchParams } from "react-router";
+import { CalendarDays, UserPlus } from "lucide-react";
 import { AvanceSemana } from "@/components/AvanceSemana";
 import { Bienvenida } from "@/components/Bienvenida";
 import { ClaseItem } from "@/components/ClaseItem";
+import { HistorialCorrecciones, Novedades } from "@/components/Correcciones";
 import { ResumenDiario } from "@/components/herramientas/Diario";
 import { BienvenidaAlumno, vioBienvenida } from "@/components/BienvenidaAlumno";
 import { MetasSemana } from "@/components/MetasSemana";
@@ -14,19 +15,18 @@ import { Repertorio } from "@/components/Repertorio";
 import { Insignias } from "@/components/Insignias";
 import { Habilidades } from "@/components/Rubrica";
 import { RutaAprendizaje } from "@/components/RutaAprendizaje";
-import { Link } from "@/components/Link";
-import { Metronome } from "@/components/Metronome";
 import { PageMeta } from "@/components/PageMeta";
-import { ProximaPractica } from "@/components/ProximaPractica";
-import { Button, buttonForeground } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
 import { Section } from "@/components/ui/section";
-import { afinable } from "@/lib/afinador";
+import { Segmented } from "@/components/ui/segmented";
 import { usePerfil } from "@/lib/auth";
 import {
+  desdeSuIngreso,
+  fechaDeIngreso,
   progreso,
-  useClasesDe,
+  textoAlDia,
   useClasesDeInscripciones,
   useDiarioAlumno,
   useEntregasAlumno,
@@ -35,11 +35,9 @@ import {
   useMetasAlumno,
   useRecordsAlumno,
   useRepertorioAlumno,
+  type Clase,
   type Entrega,
   type Inscripcion,
-  type Logros,
-  type Meta,
-  type Obra,
 } from "@/lib/data";
 import { hoy } from "@/lib/dates";
 import { formatearDocumento } from "@/lib/documento";
@@ -48,15 +46,25 @@ import { insignias } from "@/lib/insignias";
 import { instrumento } from "@/lib/instruments";
 import { colors, fonts } from "@/lib/theme";
 
+const VISTAS = [
+  { value: "hoy", label: "Hoy" },
+  { value: "clases", label: "Mis clases" },
+  { value: "progreso", label: "Mi progreso" },
+] as const;
+type Vista = (typeof VISTAS)[number]["value"];
+
+// Three questions, one per tab: what do I do today, what are my classes, how am I doing. The tab
+// lives in the URL (?ver=), so going back from a class returns to it.
 export default function AlumnoInicio() {
   const perfil = usePerfil();
   const { width } = useWindowDimensions();
   const lg = width >= 1024;
+  const [params, setParams] = useSearchParams();
+  const ver: Vista = VISTAS.find((v) => v.value === params.get("ver"))?.value ?? "hoy";
+
   const inscripciones = useInscripcionesAlumno(perfil.uid);
   const entregas = useEntregasAlumno(perfil.uid);
   const clases = useClasesDeInscripciones(inscripciones.data);
-  // Only the tuner of instruments this alumno studies (profile or a profesor list).
-  const afinables = instrumentosDe(perfil.instrumentos, inscripciones.data).filter(afinable);
   const logros = useLogrosAlumno(perfil.uid);
   const diario = useDiarioAlumno(perfil.uid);
   const records = useRecordsAlumno(perfil.uid);
@@ -64,42 +72,31 @@ export default function AlumnoInicio() {
   const metas = useMetasAlumno(perfil.uid);
   const [bienvenida, setBienvenida] = useState(() => !vioBienvenida(perfil.uid));
   const misInstrumentos = instrumentosDe(perfil.instrumentos, inscripciones.data);
+  const vigentes = desdeSuIngreso(clases.data, inscripciones.data);
   const lista = insignias({
     entregas: entregas.data,
     diario: diario.data,
     records: records.data,
     logros: logros.data,
+    instrumentos: misInstrumentos,
   });
+  const sinProfesor = !inscripciones.loading && inscripciones.data.length === 0;
 
   return (
     <>
       <PageMeta title="Inicio — Pulso" description="Tus clases, tus entregas y tu progreso." />
       <Bienvenida
         titulo={`Hola, ${perfil.nombre.split(" ")[0]}`}
-        instrumentos={instrumentosDe(perfil.instrumentos, inscripciones.data)}
+        instrumentos={misInstrumentos}
         rol="alumno"
       >
         <AvanceSemana
           perfil={perfil}
-          instrumentos={instrumentosDe(perfil.instrumentos, inscripciones.data)}
-          clases={clases.data}
+          instrumentos={misInstrumentos}
+          clases={vigentes}
           entregas={entregas.data}
         />
       </Bienvenida>
-
-      {inscripciones.data.length && !clases.loading ? (
-        <ProximaPractica alumnoId={perfil.uid} clases={clases.data} entregas={entregas.data} />
-      ) : null}
-
-      {inscripciones.data.length ? (
-        <PracticaDeHoy
-          instrumentos={misInstrumentos}
-          clases={clases.data}
-          entregas={entregas.data}
-          obras={obras.data}
-          metas={metas.data}
-        />
-      ) : null}
 
       {bienvenida ? (
         <BienvenidaAlumno
@@ -109,83 +106,131 @@ export default function AlumnoInicio() {
         />
       ) : null}
 
-      <View style={[styles.columns, lg && styles.row]}>
-        <View style={[styles.column, lg && styles.mainColumn]}>
-          {inscripciones.loading ? <ActivityIndicator color={colors.primary} /> : null}
-          {!inscripciones.loading && inscripciones.data.length === 0 ? (
-            <EmptyState
-              icon={UserPlus}
-              title="Todavía no estás en la lista de un profesor"
-              description={`Pásale tu número de documento (${formatearDocumento(perfil.nro_documento)}) a tu profesor. Cuando te agregue, aquí aparecerán sus clases.`}
-            />
-          ) : null}
-          {inscripciones.data.map((inscripcion) => (
+      {inscripciones.loading ? <ActivityIndicator color={colors.primary} /> : null}
+      {sinProfesor ? (
+        <EmptyState
+          icon={UserPlus}
+          title="Todavía no estás en la lista de un profesor"
+          description={`Pásale tu número de documento (${formatearDocumento(perfil.nro_documento)}) a tu profesor. Cuando te agregue, aquí aparecerán sus clases.`}
+        />
+      ) : null}
+
+      {inscripciones.data.length ? (
+        <Segmented
+          value={ver}
+          options={VISTAS}
+          onChange={(v) => setParams(v === "hoy" ? {} : { ver: v }, { replace: true })}
+        />
+      ) : null}
+
+      {inscripciones.data.length && ver === "hoy" ? (
+        <View style={[styles.columns, lg && styles.row]}>
+          <View style={[styles.column, lg && styles.mainColumn]}>
+            <Novedades uid={perfil.uid} clases={clases.data} entregas={entregas.data} />
+            {clases.loading ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <PracticaDeHoy
+                alumnoId={perfil.uid}
+                instrumentos={misInstrumentos}
+                clases={vigentes}
+                entregas={entregas.data}
+                obras={obras.data}
+                metas={metas.data}
+              />
+            )}
+          </View>
+          <View style={[styles.column, lg && styles.sideColumn]}>
+            <ResumenDiario perfil={perfil} />
+          </View>
+        </View>
+      ) : null}
+
+      {inscripciones.data.length && ver === "clases"
+        ? inscripciones.data.map((inscripcion) => (
             <InscripcionCard
               key={inscripcion.id}
               inscripcion={inscripcion}
+              clases={clases.data}
+              cargando={clases.loading}
               entregas={entregas.data}
-              logros={logros.data.find((l) => l.id === inscripcion.id)}
-              obras={obras.data}
-              metas={metas.data}
             />
-          ))}
-          {entregas.data.length ? (
+          ))
+        : null}
+
+      {inscripciones.data.length && ver === "progreso" ? (
+        <View style={[styles.columns, lg && styles.row]}>
+          <View style={[styles.column, lg && styles.mainColumn]}>
+            {inscripciones.data.map((inscripcion) => (
+              <Section
+                key={inscripcion.id}
+                title={instrumento(inscripcion.instrumento).name}
+                subtitle={`Prof. ${inscripcion.profesorNombre}`}
+              >
+                <RutaAprendizaje
+                  inscripcion={inscripcion}
+                  logros={logros.data.find((l) => l.id === inscripcion.id)}
+                  editable={false}
+                />
+                <MetasSemana inscripcion={inscripcion} metas={metas.data} />
+                <Repertorio inscripcion={inscripcion} obras={obras.data} />
+                <Habilidades
+                  instrumento={inscripcion.instrumento}
+                  entregas={entregas.data.filter((e) => e.profesorId === inscripcion.profesorId)}
+                />
+              </Section>
+            ))}
+            {entregas.data.length ? (
+              <Section
+                title="Mi evolución"
+                subtitle="Tu primera grabación al lado de la última, y cómo cambian tus mediciones."
+              >
+                <MiEvolucion instrumentos={misInstrumentos} entregas={entregas.data} />
+              </Section>
+            ) : null}
+          </View>
+          <View style={[styles.column, lg && styles.sideColumn]}>
+            <HistorialCorrecciones clases={clases.data} entregas={entregas.data} />
             <Section
-              title="Mi evolución"
-              subtitle="Tu primera grabación al lado de la última, y cómo cambian tu afinación y tu tiempo."
+              title="Tus insignias"
+              subtitle={`${lista.filter((i) => i.ganada).length} de ${lista.length} ganadas`}
             >
-              <MiEvolucion instrumentos={misInstrumentos} entregas={entregas.data} />
+              <Insignias lista={lista} />
             </Section>
-          ) : null}
+          </View>
         </View>
-        <View style={[styles.column, lg && styles.sideColumn]}>
-          <ResumenDiario perfil={perfil} />
-          <Section
-            title="Tus insignias"
-            subtitle={`${lista.filter((i) => i.ganada).length} de ${lista.length} ganadas`}
-          >
-            <Insignias lista={lista} />
-          </Section>
-          {afinables.length ? <Afinador instrumentos={afinables} /> : null}
-          <Metronome />
-          <Link href="/herramientas">
-            <Button variant="secondary">
-              <Wrench size={16} color={buttonForeground("secondary")} />
-              Más herramientas para practicar
-            </Button>
-          </Link>
-        </View>
-      </View>
+      ) : null}
     </>
   );
 }
 
 const VISIBLES = 5;
 
-// One profesor + instrument: progress bar and the classes, pending ones first.
+// One profesor + instrument: how up to date they are and the classes, pending ones first. Classes
+// from before they joined stay available at the end, without a status: nothing is due from them.
 function InscripcionCard({
   inscripcion,
+  clases,
+  cargando,
   entregas,
-  logros,
-  obras,
-  metas,
 }: {
   inscripcion: Inscripcion;
+  clases: Clase[];
+  cargando: boolean;
   entregas: Entrega[];
-  logros: Logros | undefined;
-  obras: Obra[];
-  metas: Meta[];
 }) {
-  const clases = useClasesDe(inscripcion.profesorId, inscripcion.instrumento);
   const [todas, setTodas] = useState(false);
-  const p = progreso(clases.data, entregas, inscripcion.alumnoId, inscripcion.instrumento);
+  const deLaLista = clases.filter(
+    (c) => c.profesorId === inscripcion.profesorId && c.instrumento === inscripcion.instrumento,
+  );
+  const p = progreso(deLaLista, entregas, inscripcion);
   const entregadas = new Set(entregas.map((e) => e.claseId));
   const fechaHoy = hoy();
+  const ingreso = fechaDeIngreso(inscripcion);
 
-  // Past classes not delivered yet, then upcoming, then delivered.
   const orden = (claseId: string, fecha: string) =>
-    entregadas.has(claseId) ? 2 : fecha < fechaHoy ? 0 : 1;
-  const lista = [...clases.data].sort(
+    entregadas.has(claseId) ? 2 : fecha < ingreso ? 3 : fecha < fechaHoy ? 0 : 1;
+  const lista = [...deLaLista].sort(
     (a, b) => orden(a.id, a.fecha) - orden(b.id, b.fecha) || a.fecha.localeCompare(b.fecha),
   );
   const mostradas = todas ? lista : lista.slice(0, VISIBLES);
@@ -193,15 +238,14 @@ function InscripcionCard({
   return (
     <Section
       title={instrumento(inscripcion.instrumento).name}
-      subtitle={`Prof. ${inscripcion.profesorNombre} · ${p.hechas} de ${p.total} clases entregadas`}
-      actions={<Text style={styles.percent}>{p.porcentaje}%</Text>}
+      subtitle={`Prof. ${inscripcion.profesorNombre} · ${textoAlDia(p)}`}
     >
-      <Progress value={p.porcentaje} />
-      {clases.loading ? <ActivityIndicator color={colors.primary} /> : null}
-      {!clases.loading && lista.length === 0 ? (
+      {p.total ? <Progress value={p.porcentaje} /> : null}
+      {cargando ? <ActivityIndicator color={colors.primary} /> : null}
+      {!cargando && lista.length === 0 ? (
         <EmptyState
           icon={CalendarDays}
-          title="Tu profesor todavía no publicó clases"
+          title="Tu profesor todavía no publicó clases para ti"
           description="Cuando las planifique, aparecerán aquí."
         />
       ) : null}
@@ -209,7 +253,9 @@ function InscripcionCard({
         <ClaseItem
           key={clase.id}
           clase={clase}
-          estado={entregadas.has(clase.id) ? "entregada" : "pendiente"}
+          estado={
+            entregadas.has(clase.id) ? "entregada" : clase.fecha < ingreso ? undefined : "pendiente"
+          }
         />
       ))}
       {lista.length > VISIBLES ? (
@@ -222,13 +268,13 @@ function InscripcionCard({
           {todas ? "Ver menos" : `Ver todas (${lista.length})`}
         </Button>
       ) : null}
-      <RutaAprendizaje inscripcion={inscripcion} logros={logros} editable={false} />
-      <MetasSemana inscripcion={inscripcion} metas={metas} />
-      <Repertorio inscripcion={inscripcion} obras={obras} />
-      <Habilidades
-        instrumento={inscripcion.instrumento}
-        entregas={entregas.filter((e) => e.profesorId === inscripcion.profesorId)}
-      />
+      {p.pendientes ? (
+        <Text style={styles.ayuda}>
+          Te{" "}
+          {p.pendientes === 1 ? "falta entregar 1 clase" : `faltan entregar ${p.pendientes} clases`}
+          .
+        </Text>
+      ) : null}
     </Section>
   );
 }
@@ -252,12 +298,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexBasis: 0,
   },
-  percent: {
-    fontFamily: fonts.display,
-    fontSize: 28,
-    color: colors.primary,
-  },
   more: {
     alignSelf: "flex-start",
+  },
+  ayuda: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    color: colors.mutedForeground,
   },
 });

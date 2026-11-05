@@ -11,9 +11,10 @@ import {
   Star,
   Trophy,
 } from "lucide-react";
-import { MUY_ESTABLE_MS } from "@/lib/analisis";
+import { MUY_ESTABLE_MS, mideAfinacion } from "@/lib/analisis";
 import type { EntradaDiario, Entrega, Logros, RecordRudimento } from "@/lib/data";
 import { sumarDias } from "@/lib/dates";
+import type { InstrumentId } from "@/lib/instruments";
 import { avanceDeNivel } from "@/lib/ruta";
 
 // Badges earned from what is already saved (deliveries, diary, records, learning path): they
@@ -46,11 +47,13 @@ export function insignias({
   diario,
   records,
   logros,
+  instrumentos,
 }: {
   entregas: Entrega[];
   diario: EntradaDiario[];
   records: RecordRudimento[];
   logros: Logros[];
+  instrumentos: InstrumentId[];
 }): Insignia[] {
   const racha = mejorRacha(diario);
   const horas = diario.reduce((total, e) => total + e.minutos, 0) / 60;
@@ -58,7 +61,11 @@ export function insignias({
   const cincos = entregas.some((e) =>
     Object.values(e.evaluacion?.criterios ?? {}).some((v) => v === 5),
   );
-  const afinada = archivos.some((a) => (a.analisis?.afinacion ?? 0) >= 90);
+  // Only where tuning is measured; without such an instrument the badge is not offered.
+  const afinada = entregas.some(
+    (e) =>
+      mideAfinacion(e.instrumento) && e.archivos.some((a) => (a.analisis?.afinacion ?? 0) >= 90),
+  );
   const aTiempo = archivos.some(
     (a) => a.analisis?.desvioMs !== undefined && a.analisis.desvioMs <= MUY_ESTABLE_MS,
   );
@@ -117,13 +124,17 @@ export function insignias({
       ganada: horas >= 50,
       avance: conteo(horas, 50, "horas"),
     },
-    {
-      id: "afinado",
-      nombre: "Oído fino",
-      descripcion: "Una grabación con 90% o más de notas afinadas",
-      icon: Mic,
-      ganada: afinada,
-    },
+    ...(instrumentos.some(mideAfinacion)
+      ? [
+          {
+            id: "afinado",
+            nombre: "Oído fino",
+            descripcion: "Una grabación con 90% o más de notas afinadas",
+            icon: Mic,
+            ganada: afinada,
+          },
+        ]
+      : []),
     {
       id: "a-tiempo",
       nombre: "Reloj",

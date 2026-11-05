@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  Frown,
   NotebookPen,
   Pause,
   Play,
@@ -24,7 +25,15 @@ import { Button, buttonForeground } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Section } from "@/components/ui/section";
-import { anotarPracticaDeClase, type Clase } from "@/lib/data";
+import { avisar } from "@/components/ui/toast";
+import {
+  anotarPracticaDeClase,
+  marcarBloque,
+  useMiPractica,
+  type Clase,
+  type ResultadoBloque,
+} from "@/lib/data";
+import { usePantallaEncendida } from "@/lib/pantalla";
 import { etapa as etapaDe, type Bloque, type Plan } from "@/lib/plan";
 import { hechosDeClase, marcarHecho, usePractica } from "@/lib/practica";
 import { colors, fonts, radius } from "@/lib/theme";
@@ -42,7 +51,11 @@ export function Practica({
 }) {
   const [params, setParams] = useSearchParams();
   const registros = usePractica(alumnoId ?? "vista-previa");
-  const hechos = alumnoId ? hechosDeClase(registros, clase.id) : new Set<string>();
+  // On every device (practicas), plus what this browser marked before that collection existed.
+  const enLaNube = useMiPractica(clase, alumnoId).data?.bloques;
+  const hechos = alumnoId
+    ? new Set([...hechosDeClase(registros, clase.id), ...Object.keys(enLaNube ?? {})])
+    : new Set<string>();
   const [enModo, setEnModo] = useState(() => params.get("practicar") === "1");
   const total = plan.bloques.length;
   const listos = plan.bloques.filter((b) => hechos.has(b.id)).length;
@@ -51,8 +64,14 @@ export function Practica({
     plan.bloques.findIndex((b) => !hechos.has(b.id)),
   );
 
-  const marcar = (bloque: Bloque, hecho: boolean) => {
-    if (alumnoId) marcarHecho(alumnoId, clase.id, bloque.id, bloque.minutos, hecho);
+  // "hecho" without an opinion never replaces a "Me costó" already said about that block.
+  const marcar = (bloque: Bloque, hecho: boolean, resultado?: ResultadoBloque) => {
+    if (!alumnoId) return;
+    marcarHecho(alumnoId, clase.id, bloque.id, bloque.minutos, hecho);
+    const nuevo = hecho ? (resultado ?? enLaNube?.[bloque.id] ?? "hecho") : null;
+    void marcarBloque(clase, alumnoId, bloque.id, nuevo).catch(() =>
+      avisar({ texto: "No se pudo guardar cómo te fue en este bloque.", tipo: "error" }),
+    );
   };
 
   const salir = () => {
@@ -144,8 +163,8 @@ export function Practica({
   );
 }
 
-// One block per screen, like a player: timer with the suggested minutes, the content, and
-// "Hecho y siguiente".
+// One block per screen, like a player: timer with the suggested minutes, the content, and how it
+// went ("Me costó" / "Me salió"), which goes on to the next one. The screen stays on.
 function ModoPractica({
   clase,
   plan,
@@ -160,11 +179,12 @@ function ModoPractica({
   inicio: number;
   hechos: Set<string>;
   alumnoId: string | null;
-  onMarcar: (bloque: Bloque, hecho: boolean) => void;
+  onMarcar: (bloque: Bloque, hecho: boolean, resultado?: ResultadoBloque) => void;
   onSalir: () => void;
 }) {
   const [indice, setIndice] = useState(inicio);
   const [terminado, setTerminado] = useState(false);
+  usePantallaEncendida(!terminado);
   // The diary entry written when finishing (updates the weekly progress right away).
   const [diario, setDiario] = useState<{
     estado: "anotando" | "anotado" | "ya" | "error";
@@ -182,9 +202,10 @@ function ModoPractica({
   const total = plan.bloques.length;
   const bloque = plan.bloques[indice];
 
-  const siguiente = () => {
+  // Without `resultado` (a pedal or the arrow keys): done, without saying how it went.
+  const siguiente = (resultado?: ResultadoBloque) => {
     if (!bloque) return;
-    onMarcar(bloque, true);
+    onMarcar(bloque, true, resultado);
     if (indice + 1 >= total) {
       setTerminado(true);
       // Minutes of every block done, this one included (`hechos` updates on the next render).
@@ -330,9 +351,13 @@ function ModoPractica({
           Anterior
         </Button>
         <Text style={styles.pedal}>Pedal o flechas ← →</Text>
-        <Button size="lg" onPress={siguiente} style={styles.siguiente}>
+        <Button variant="secondary" size="lg" onPress={() => siguiente("costo")}>
+          <Frown size={18} color={buttonForeground("secondary")} />
+          Me costó
+        </Button>
+        <Button size="lg" onPress={() => siguiente("bien")} style={styles.siguiente}>
           <Check size={18} color={buttonForeground()} />
-          {indice + 1 >= total ? "Hecho y terminar" : "Hecho y siguiente"}
+          {indice + 1 >= total ? "Me salió y termino" : "Me salió y sigo"}
           {indice + 1 >= total ? null : <ArrowRight size={18} color={buttonForeground()} />}
         </Button>
       </View>

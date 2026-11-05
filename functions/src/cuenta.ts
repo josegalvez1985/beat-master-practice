@@ -79,6 +79,7 @@ export const eliminarCuenta = onCall(
     //    delivery made to them (a profesor's).
     await borrarCarpeta(`usuarios/${uid}/`);
     if (profesor) {
+      await borrarCarpeta(`biblioteca/${uid}/`);
       const clases = await refsDonde("clases", "profesorId", uid);
       for (const clase of clases) {
         await borrarCarpeta(`clases/${clase.id}/`);
@@ -93,13 +94,26 @@ export const eliminarCuenta = onCall(
     // 2. Documents that hang from the account (children before their parents).
     const campo = profesor ? "profesorId" : "alumnoId";
     const colecciones = profesor
-      ? ["mensajes", "entregas", "logros", "repertorio", "metas", "inscripciones", "biblioteca"]
-      : [
+      ? [
           "mensajes",
           "entregas",
+          "practicas",
           "logros",
           "repertorio",
           "metas",
+          "notasAlumno",
+          "inscripciones",
+          "biblioteca",
+          "bibliotecaArchivos",
+        ]
+      : [
+          "mensajes",
+          "entregas",
+          "practicas",
+          "logros",
+          "repertorio",
+          "metas",
+          "notasAlumno",
           "inscripciones",
           "diario",
           "records",
@@ -118,6 +132,19 @@ export const eliminarCuenta = onCall(
         const batch = db().batch();
         for (const d of conAsistencia.docs.slice(i, i + POR_BATCH))
           batch.update(d.ref, new FieldPath("asistencia", uid), FieldValue.delete());
+        await batch.commit();
+      }
+      // The classes made for them. One left without alumnos stays with its profesor, who sees it
+      // as "sin alumnos" and can give it to someone else.
+      const suyas = await db()
+        .collection("clases")
+        .where("alumnos", "array-contains", uid)
+        .select()
+        .get();
+      for (let i = 0; i < suyas.docs.length; i += POR_BATCH) {
+        const batch = db().batch();
+        for (const d of suyas.docs.slice(i, i + POR_BATCH))
+          batch.update(d.ref, { alumnos: FieldValue.arrayRemove(uid) });
         await batch.commit();
       }
     }

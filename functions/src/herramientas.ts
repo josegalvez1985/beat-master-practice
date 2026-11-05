@@ -73,19 +73,33 @@ const entregasDeAlumno = (uid: string) =>
 const entregasDeProfesor = (uid: string) =>
   leer(db().collection("entregas").where("profesorId", "==", uid));
 
-// Same formula as the app (src/lib/data.ts, progreso): delivered / planned for that instrument.
-function progreso(
-  clases: Clase[],
-  entregas: DocumentData[],
-  alumnoId: string,
-  instrumento: string,
-) {
-  const ids = new Set(clases.filter((c) => c.instrumento === instrumento).map((c) => c.id));
-  const hechas = entregas.filter((e) => e.alumnoId === alumnoId && ids.has(e.claseId)).length;
+// The class is for this alumno (without `alumnos`, for the whole list). As esParaAlumno in the app.
+const esParaAlumno = (c: DocumentData, alumnoId: string) =>
+  !Array.isArray(c.alumnos) || c.alumnos.includes(alumnoId);
+
+const ingresoDe = (i: DocumentData) =>
+  i.creadoEn?.toDate ? fechaParaguay(i.creadoEn.toDate()) : "";
+
+// Same formula as the app (src/lib/data.ts, progreso): of the classes due since the alumno joined,
+// how many they delivered. Future classes do not count.
+function progreso(clases: Clase[], entregas: DocumentData[], inscripcion: DocumentData) {
+  const hoy = fechaParaguay();
+  const desde = ingresoDe(inscripcion);
+  const entregadas = new Set(
+    entregas.filter((e) => e.alumnoId === inscripcion.alumnoId).map((e) => e.claseId as string),
+  );
+  const cuentan = clases.filter(
+    (c) =>
+      c.instrumento === inscripcion.instrumento &&
+      c.profesorId === inscripcion.profesorId &&
+      esParaAlumno(c, inscripcion.alumnoId) &&
+      (entregadas.has(c.id) || (c.fecha >= desde && c.fecha <= hoy)),
+  );
+  const hechas = cuentan.filter((c) => entregadas.has(c.id)).length;
   return {
     clasesEntregadas: hechas,
-    clasesPlanificadas: ids.size,
-    porcentaje: ids.size ? Math.round((hechas / ids.size) * 100) : 0,
+    clasesQueYaCorrespondian: cuentan.length,
+    porcentaje: cuentan.length ? Math.round((hechas / cuentan.length) * 100) : 0,
   };
 }
 
@@ -173,7 +187,7 @@ const entregaEnPalabras = (e: DocumentData) => ({
   comentarioDelAlumno: e.comentario || null,
   comentariosDelProfesor: (e.devoluciones ?? []).map((d: DocumentData) => ({
     enElSegundo: d.segundo,
-    texto: d.texto,
+    texto: d.texto || "(respuesta grabada en audio o video)",
   })),
   actualizada: e.actualizadoEn?.toDate?.().toISOString().slice(0, 10) ?? null,
 });
@@ -294,7 +308,16 @@ export async function ejecutar(rol: Rol, uid: string, nombre: string, entrada: E
 async function clasesDeAlumno(uid: string) {
   const inscripciones = await inscripcionesDeAlumno(uid);
   const listas = await Promise.all(inscripciones.map((i) => clasesDe(i.profesorId, i.instrumento)));
-  return { inscripciones, clases: listas.flat() };
+  // Only the ones for them, as the rules let them see.
+  return { inscripciones, clases: listas.flat().filter((c) => esParaAlumno(c, uid)) };
+}
+
+// Classes from before the alumno joined are not pending for them.
+function vigentes(clases: Clase[], inscripciones: DocumentData[]) {
+  const desde = new Map(
+    inscripciones.map((i) => [`${i.profesorId}_${i.instrumento}`, ingresoDe(i)]),
+  );
+  return clases.filter((c) => c.fecha >= (desde.get(`${c.profesorId}_${c.instrumento}`) ?? ""));
 }
 
 async function resumenAlumno(uid: string, hoy: string) {
@@ -305,7 +328,7 @@ async function resumenAlumno(uid: string, hoy: string) {
     leer(db().collection("diario").where("alumnoId", "==", uid)),
   ]);
   const entregadas = new Set(entregas.map((e) => e.claseId));
-  const pendientes = clases
+  const pendientes = vigentes(clases, inscripciones)
     .filter((c) => !entregadas.has(c.id))
     .sort((a, b) => a.fecha.localeCompare(b.fecha));
   const semana = inicioDeSemana(hoy);
@@ -315,7 +338,7 @@ async function resumenAlumno(uid: string, hoy: string) {
     listas: inscripciones.map((i) => ({
       profesor: i.profesorNombre,
       instrumento: nombreInstrumento(i.instrumento),
-      avance: progreso(clases, entregas, uid, i.instrumento),
+      avance: progreso(clases, entregas, i),
     })),
     proximaPendiente: pendientes.find((c) => c.fecha >= hoy)
       ? claseEnLista(
@@ -353,10 +376,12 @@ async function claseAlumno(uid: string, claseId?: string) {
   if (!claseId) throw new ErrorHerramienta("Falta clase_id.");
   const snap = await db().doc(`clases/${claseId}`).get();
   const c = snap.exists ? ({ id: snap.id, ...snap.data() } as Clase) : null;
-  // Only the classes of a profesor list the alumno is in (same check as the rules).
+  // Only the classes of a profesor list the alumno is in, and made for them (same check as the
+  // rules).
   const inscripto =
     c && (await db().doc(`inscripciones/${c.profesorId}_${uid}_${c.instrumento}`).get()).exists;
-  if (!c || !inscripto) throw new ErrorHerramienta("Esa clase no existe o no es de tus listas.");
+  if (!c || !inscripto || !esParaAlumno(c, uid))
+    throw new ErrorHerramienta("Esa clase no existe o no es de tus listas.");
   const entrega = await db().doc(`entregas/${claseId}_${uid}`).get();
   return {
     ...claseEnDetalle(c),
@@ -440,7 +465,9 @@ async function clasesProfesor(uid: string, hoy: string, entrada: Entrada) {
     clases: lista.slice(0, MAX_CLASES).map((c) => ({
       ...claseEnLista(c),
       entregas: entregas.filter((e) => e.claseId === c.id).length,
-      alumnosDelInstrumento: inscripciones.filter((i) => i.instrumento === c.instrumento).length,
+      alumnosDeLaClase: inscripciones.filter(
+        (i) => i.instrumento === c.instrumento && esParaAlumno(c, i.alumnoId),
+      ).length,
     })),
   };
 }
@@ -475,7 +502,7 @@ async function alumnosProfesor(uid: string, instrumentoId?: string, buscar?: str
       alumnoId: i.alumnoId,
       nombre: i.alumnoNombre,
       instrumento: nombreInstrumento(i.instrumento),
-      avance: progreso(clases, entregas, i.alumnoId, i.instrumento),
+      avance: progreso(clases, entregas, i),
     }));
 }
 
@@ -497,12 +524,12 @@ async function alumnoProfesor(uid: string, hoy: string, alumnoId?: string) {
   const titulos = new Map(clases.map((c) => [c.id, `${c.titulo} (${c.fecha})`]));
   return {
     nombre: inscripciones[0]?.alumnoNombre,
-    porInstrumento: instrumentos.map((id) => ({
-      instrumento: nombreInstrumento(id),
-      avance: progreso(clases, entregas, alumnoId, id),
+    porInstrumento: inscripciones.map((i) => ({
+      instrumento: nombreInstrumento(i.instrumento),
+      avance: progreso(clases, entregas, i),
       // Only the instruments this profesor teaches them (as in the app).
       minutosAnotadosEstaSemana: diario
-        .filter((e) => e.instrumento === id && e.fecha >= semana)
+        .filter((e) => e.instrumento === i.instrumento && e.fecha >= semana)
         .reduce((t, e) => t + (e.minutos || 0), 0),
     })),
     metaSemanalTotalMinutos: perfil.data()?.metaSemanal ?? null,

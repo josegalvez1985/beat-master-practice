@@ -38,7 +38,9 @@ y lo buscan los profesores.
 | `/alumnos/:alumnoId` | profesor   | Progreso de un alumno y estado de cada clase                                                               |
 | `/clases/:claseId`   | ambos      | Detalle de la clase: materiales, entrega del alumno o entregas de todos                                    |
 | `/perfil`            | ambos      | Mi perfil: foto, datos de la cuenta, instrumentos (agregar más) y tema (claro, oscuro o sistema)           |
-| `/practicar`         | alumno     | Abre el modo práctica de la próxima clase pendiente (o "No tienes prácticas pendientes")                   |
+| `/?ver=`             | alumno     | Pestañas del inicio: Hoy (sin parámetro), `clases` y `progreso`                                            |
+| `/practicar`         | alumno     | Tu práctica de hoy, con el afinador y el metrónomo a mano                                                  |
+| `/revision`          | profesor   | **Por revisar**: las entregas sin revisar, una por vez, de la más antigua a la más nueva                   |
 | `/herramientas`      | ambos      | Herramientas de práctica según el instrumento (`?instrumento=…&h=…`)                                       |
 | `/plan`              | profesor   | **Mi plan**: estado, vencimiento, planes, cómo pagar y pagos registrados                                   |
 | `/admin`             | admin      | **Administración**: planes de los profesores y todo el backend en solo lectura                             |
@@ -160,10 +162,19 @@ profesores_); el profesor la borra. La leen el profesor y el alumno. **Este docu
 | `enlace`                       | string `https://…` (opcional)                                             | Videollamada de la clase virtual (Meet, Zoom, Jitsi)                                                              |
 | `asistencia`                   | mapa `alumnoId` → `presente` \| `tarde` \| `ausente` (opcional)           | La marca el profesor en la clase                                                                                  |
 | `evento`                       | `{ tipo: "recital", lugar, programa: { interprete, obra }[] }` (opcional) | La fecha es un recital o muestra, con su programa (máx. 60)                                                       |
+| `paraTodos`                    | `true` (opcional)                                                         | Para toda la lista de ese instrumento, también los que entren después                                             |
+| `alumnos`                      | string[] (opcional, máx. 100)                                             | Para estos alumnos: una clase individual o de un grupo. Nunca junto con `paraTodos`                               |
 | `creadoEn`                     | timestamp                                                                 |                                                                                                                   |
 
 El profesor la crea, edita y borra. La leen los alumnos inscriptos con ese profesor en ese
-instrumento. _Duplicar_ copia hora, modalidad y enlace, no la asistencia ni el recital.
+instrumento **a los que está dirigida**. _Duplicar_ copia hora, modalidad y enlace, no la asistencia
+ni el recital, y permite elegir otros alumnos.
+
+**Por qué dos campos.** Firestore rechaza una consulta si las reglas no pueden garantizar que todos
+los resultados son legibles, y no se puede consultar por un campo que falta. Por eso el alumno lista
+con dos consultas (`paraTodos == true` y `alumnos array-contains` su uid) y toda clase nueva tiene
+uno de los dos. Las clases de antes de estos campos no tienen ninguno: el alumno no las **lista**
+hasta que `/admin` → _Planes_ → _Preparar datos anteriores_ les pone `paraTodos`.
 
 #### Plan de la clase (`ficha` + `bloques`)
 
@@ -190,33 +201,60 @@ Las tablaturas y los archivos Guitar Pro / MusicXML se dibujan y suenan con
 [alphaTab](https://alphatab.net) ([`Partitura.tsx`](../src/components/plan/Partitura.tsx)), que se
 carga solo en las clases que la usan; sin workers, con la fuente y el banco de sonidos empaquetados
 por Vite. El profesor edita con guardado automático; los cambios de archivos se guardan al instante
-(ver [backend](backend.md)). El alumno ve el plan en modo práctica y marca cada bloque como _Hecho_
-(se recuerda en ese navegador).
+(ver [backend](backend.md)). El alumno ve el plan en modo práctica y, en cada bloque, dice _Me salió_
+o _Me costó_ (un pedal o las flechas lo marcan hecho sin opinión).
 
-**Registro de práctica** ([`practica.ts`](../src/lib/practica.ts)): cada _Hecho_ guarda fecha, clase,
-bloque y minutos en `localStorage` del alumno (últimos 6 meses). De ahí salen la **racha** (días
-seguidos hasta hoy o ayer) y los **minutos de la semana** del inicio. Es una ayuda personal, no un
-dato evaluado: vale por dispositivo y no se guarda en Firestore. Lo que el alumno quiere que vea su
-profesor va al **diario de práctica** (colección `diario`, ver abajo): al terminar el modo práctica
-esos minutos se anotan ahí solos (ver _Progreso_).
+**Cómo le fue en cada bloque** (colección `practicas`, ver abajo): se ve en todos sus dispositivos y
+la ve su profesor. [`practica.ts`](../src/lib/practica.ts) sigue guardando en `localStorage` los
+bloques marcados, para mantener lo marcado antes de esa colección. Los **días y minutos de la
+semana** del inicio salen del **diario de práctica** (colección `diario`): así son los mismos en
+todos los dispositivos. Al terminar el modo práctica, los minutos se anotan ahí solos (ver
+_Progreso_).
 
 ### `entregas/{claseId}_{alumnoId}`
 
-| Campo                                  | Tipo                                                                                                                                                         |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `claseId`, `profesorId`, `instrumento` | string                                                                                                                                                       |
-| `alumnoId`, `alumnoNombre`             | string                                                                                                                                                       |
-| `archivos`                             | `Material[]` (al menos uno)                                                                                                                                  |
-| `comentario`                           | string (opcional)                                                                                                                                            |
-| `devoluciones`                         | `Devolucion[]` (opcional, máx. 100): `{ id, archivoId, segundo, texto, fecha }`, comentarios del profesor en un punto de un archivo                          |
-| `evaluacion`                           | `{ criterios: { [id]: 1–5 }, comentario, fecha }` (opcional): la rúbrica del profesor ([`rubrica.ts`](../src/lib/rubrica.ts)); solo la escribe el profesor   |
-| `respuestas`                           | mapa `devolucionId` → `entendido` \| `corregido` (opcional): la respuesta del alumno a cada devolución; el profesor solo puede quitarlas (con su devolución) |
-| `actualizadoEn`                        | timestamp                                                                                                                                                    |
+| Campo                                  | Tipo                                                                                                                                                                                                                                     |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `claseId`, `profesorId`, `instrumento` | string                                                                                                                                                                                                                                   |
+| `alumnoId`, `alumnoNombre`             | string                                                                                                                                                                                                                                   |
+| `archivos`                             | `Material[]` (al menos uno)                                                                                                                                                                                                              |
+| `comentario`                           | string (opcional)                                                                                                                                                                                                                        |
+| `devoluciones`                         | `Devolucion[]` (opcional, máx. 100): `{ id, archivoId, segundo, texto, fecha, media? }`, comentarios del profesor en un punto de un archivo; `media`: su respuesta grabada (`{ ruta, tipo, contentType, tamano }`), con `texto` opcional |
+| `revisadaEn`                           | timestamp (opcional): el profesor la revisó. Un archivo nuevo lo quita y vuelve a _Por revisar_                                                                                                                                          |
+| `evaluacion`                           | `{ criterios: { [id]: 1–5 }, comentario, fecha }` (opcional): la rúbrica del profesor ([`rubrica.ts`](../src/lib/rubrica.ts)); solo la escribe el profesor                                                                               |
+| `respuestas`                           | mapa `devolucionId` → `entendido` \| `corregido` (opcional): la respuesta del alumno a cada devolución; el profesor solo puede quitarlas (con su devolución)                                                                             |
+| `actualizadoEn`                        | timestamp                                                                                                                                                                                                                                |
 
 La escribe el alumno inscripto; la leen el alumno y el profesor. Sus archivos son audio y video
 (hasta 200 MB) o fotos y PDF (hasta 20 MB), en `entregas/{claseId}/{alumnoId}/`. Si el alumno quita su último
 archivo, la entrega se borra y la clase vuelve a quedar pendiente. La borran el alumno o el
 profesor (al borrar la clase).
+
+### `practicas/{claseId}_{alumnoId}`
+
+Cómo le fue al alumno en cada bloque de una clase.
+
+| Campo                                              | Tipo                                           |         |
+| -------------------------------------------------- | ---------------------------------------------- | ------- |
+| `claseId`, `profesorId`, `alumnoId`, `instrumento` | string                                         |         |
+| `bloques`                                          | mapa `bloqueId` → `bien` \| `costo` \| `hecho` | Máx. 40 |
+| `actualizadoEn`                                    | timestamp                                      |         |
+
+La escribe el alumno (la regla comprueba la clase, su destino y la inscripción); la leen él y el
+profesor, que ve _Le costó: …_ en la entrega y en _Para preparar la clase_.
+
+### `notasAlumno/{id}`
+
+Notas privadas del profesor sobre un alumno en una lista: `{ profesorId, alumnoId, instrumento,
+texto (1–2000), creadoEn }`. Solo las lee y las borra el profesor; **el alumno no las ve** y el
+asistente tampoco las consulta. No se editan.
+
+### `bibliotecaArchivos/{id}`
+
+Archivos que el profesor reutiliza: `{ profesorId, material, creadoEn }`, con el archivo en
+`biblioteca/{uid}/`. La Cloud Function `usarArchivoBiblioteca`
+([`biblioteca.ts`](../functions/src/biblioteca.ts)) lo copia a `clases/{claseId}/` y lo agrega a
+`materiales` (comprueba dueño, plan y el máximo de 30).
 
 ### `diario/{id}`
 
@@ -291,10 +329,13 @@ Conversación sobre una clase entre su profesor y un alumno de esa lista.
 | `autorId`                | string                  | Quién lo escribió                                       |
 | `texto`                  | string                  | 1–1000                                                  |
 | `tipo`                   | `"ausencia"` (opcional) | El alumno avisa que no puede ir (el texto es el motivo) |
+| `leido`                  | `true` (opcional)       | El otro abrió la conversación. Ausente = sin leer       |
 | `creadoEn`               | timestamp               |                                                         |
 
-Lo escriben los dos (la regla comprueba la clase y la inscripción); no se editan; cada uno borra
-los suyos y el profesor los borra todos con la clase.
+Lo escriben los dos (la regla comprueba la clase, su destino y la inscripción); el texto no se
+edita: el otro solo puede marcarlo como leído. Cada uno borra los suyos y el profesor los borra
+todos con la clase. Los mensajes de más de 30 días sin `leido` no cuentan como nuevos: son de antes
+de este campo.
 
 ### `repertorio/{id}`
 
@@ -306,10 +347,12 @@ Las obras del alumno en una lista y cómo van.
 | `obra`                                  | string              | 1–120                                                  |
 | `estado`                                | string              | `aprendiendo`, `entera`, `memoria` o `lista` (recital) |
 | `repasadoEn`                            | string `AAAA-MM-DD` | Opcional. Último repaso                                |
+| `bpm`, `bpmObjetivo`                    | number (20–300)     | Opcional. A qué tempo va y a cuál tiene que llegar     |
+| `bpmEn`                                 | string `AAAA-MM-DD` | Opcional. Cuándo se anotó el tempo                     |
 | `creadoEn`                              | timestamp           |                                                        |
 
 La escriben el alumno y el profesor de esa lista (la regla exige la inscripción); solo cambian
-`estado` y `repasadoEn`. Se borra con la inscripción.
+`estado`, `repasadoEn` y el tempo. Se borra con la inscripción.
 
 ### `metas/{id}`
 
@@ -427,11 +470,13 @@ sesión, nunca se lista.
 
 ## Archivos (Cloud Storage)
 
-| Ruta                                      | Sube                    | Lee                                  | Tipos                                                   |
-| ----------------------------------------- | ----------------------- | ------------------------------------ | ------------------------------------------------------- |
-| `clases/{claseId}/{archivo}`              | el profesor de la clase | el profesor y sus alumnos inscriptos | audio, video, imagen, PDF, MusicXML                     |
-| `entregas/{claseId}/{alumnoId}/{archivo}` | el alumno inscripto     | el alumno y el profesor              | audio, video (subidos o grabados en la app: WebM o MP4) |
-| `usuarios/{uid}/foto.jpg`                 | el dueño                | el dueño y cualquier profesor        | JPEG de 512 px, máximo 2 MB                             |
+| Ruta                                                   | Sube                    | Lee                                  | Tipos                                                   |
+| ------------------------------------------------------ | ----------------------- | ------------------------------------ | ------------------------------------------------------- |
+| `clases/{claseId}/{archivo}`                           | el profesor de la clase | el profesor y sus alumnos inscriptos | audio, video, imagen, PDF, MusicXML                     |
+| `entregas/{claseId}/{alumnoId}/{archivo}`              | el alumno inscripto     | el alumno y el profesor              | audio, video (subidos o grabados en la app: WebM o MP4) |
+| `entregas/{claseId}/{alumnoId}/devoluciones/{archivo}` | el profesor de la clase | el alumno y el profesor              | audio y video: su respuesta grabada                     |
+| `biblioteca/{uid}/{archivo}`                           | el profesor dueño       | el profesor dueño                    | los mismos que los materiales de una clase              |
+| `usuarios/{uid}/foto.jpg`                              | el dueño                | el dueño y cualquier profesor        | JPEG de 512 px, máximo 2 MB                             |
 
 **Fotos de perfil.** Se guardan en Storage, no en Firestore (un documento admite 1 MiB y se
 descargaría la imagen en cada lectura del perfil) ni en un servicio externo como Cloudinary (borrar
@@ -481,15 +526,22 @@ las notas de [`notas.ts`](../src/lib/notas.ts). El micrófono y la cámara exige
 - **Metrónomo** ([`Metronome.tsx`](../src/components/Metronome.tsx)): compás 2/4, 3/4, 4/4 y 6/8,
   subdivisiones, marcar el tempo con toques y subir el tempo solo cada N compases.
 - **Grabadora** ([`grabadora.ts`](../src/lib/grabadora.ts)): `MediaRecorder` en audio o video
-  (hasta 30 min de audio o 10 de video, así no supera los 200 MB). En la clase, **Enviar a mi
-  profesor** la sube como archivo de la entrega con `subirYAnotar` (si no se puede anotar en
-  Firestore, borra el archivo). En `/herramientas` solo se escucha o se descarga. **Con click**: el
+  (hasta 30 min de audio o 10 de video, así no supera los 200 MB). Antes de grabar hay una **cuenta**
+  (3 segundos o, con click, un compás) y la pantalla queda encendida
+  ([`pantalla.ts`](../src/lib/pantalla.ts)). En la clase, **Enviar a mi profesor** la sube como
+  archivo de la entrega con `subirYAnotar` (si no se puede anotar en Firestore, borra el archivo).
+  Hasta enviarla queda en este navegador ([`borrador.ts`](../src/lib/borrador.ts), IndexedDB, se
+  borra al tocar **Salir**): si se cierra la pestaña, vuelve al abrir la clase, y sin conexión se
+  envía sola cuando vuelve. En `/herramientas` solo se escucha o se descarga. **Con click**: el
   metrónomo suena solo mientras graba (con auriculares no queda grabado).
 - **Análisis de la grabación** ([`analisis.ts`](../src/lib/analisis.ts)): al terminar una toma de
   hasta 5 minutos, el navegador la decodifica a 22 kHz y mide la **afinación** (YIN cada 100 ms en
-  los primeros 2 minutos; % de notas sostenidas a ±10 cents, ±15 en arco, viento y voz) y el
-  **tiempo** (ataques contra una grilla de corcheas ajustada por mínimos cuadrados: el desvío medio
-  en ms; con click, a ese tempo). El tiempo solo se mide en cuerdas pulsadas, teclados y percusión.
+  los primeros 2 minutos; % de notas sostenidas a ±15 cents) y el **tiempo** (ataques contra una
+  grilla de corcheas ajustada por mínimos cuadrados: el desvío medio en ms; con click, a ese tempo).
+  La afinación solo se mide en **arco, viento y voz** (`mideAfinacion`), donde la hace quien toca:
+  con trastes o cuerdas fijas el número diría sobre todo cómo está afinado el instrumento, y YIN
+  sigue una nota a la vez, así que los acordes lo confunden. El número de grabaciones viejas de esos
+  instrumentos tampoco se muestra. El tiempo solo se mide en cuerdas pulsadas, teclados y percusión.
   Los números viajan con el archivo (`Material.analisis`) y los ve el profesor.
 - **Velocidad y bucle A-B** ([`Reproductor.tsx`](../src/components/Reproductor.tsx)): en todo audio
   y video de clases y entregas (50 a 100 %, sin cambiar el tono) y en YouTube (con los mensajes de
@@ -564,17 +616,23 @@ orden exacto está en [backend.md](backend.md#eliminar-una-cuenta-cascada-comple
 
 ## Progreso
 
-Por alumno y por instrumento:
+Son dos preguntas distintas, por alumno y por instrumento:
+
+- **¿Cuánto aprendió?** La **ruta de aprendizaje**: el nivel y el porcentaje de sus objetivos que
+  marcó el profesor (`avanceDeNivel()` de [`ruta.ts`](../src/lib/ruta.ts)). Es la barra de **Mis
+  alumnos** y lo que el alumno ve en _Mi progreso_.
+- **¿Está al día?** `progreso()` de [`data.ts`](../src/lib/data.ts), la misma función en todas las
+  vistas y copiada en [`herramientas.ts`](../functions/src/herramientas.ts):
 
 ```
-progreso = clases con entrega del alumno / clases planificadas por su profesor para ese instrumento
+al día = clases entregadas / clases para ese alumno desde que entró hasta hoy
 ```
 
-Cuenta todas las clases del plan, también las futuras: es el avance sobre el plan completo (por
-ejemplo, 1 entrega de 12 clases = 8 %). Se calcula en el navegador con `progreso()` de
-[`data.ts`](../src/lib/data.ts), **la misma función en las dos vistas**: el profesor lo ve en
-**Mis alumnos** y en el detalle de cada alumno; el alumno, en su inicio. Una clase cuenta cuando el
-alumno **entrega** su grabación (terminar el modo práctica no alcanza), y se actualiza en vivo.
+Las clases futuras no cuentan: planificar el año entero no baja el número de nadie. Las de antes de
+que entrara tampoco (`inscripciones.creadoEn`): siguen visibles en _Mis clases_, sin estado, pero no
+quedan pendientes ni son su próxima práctica (`desdeSuIngreso()`). Una entrega de una clase futura
+sí suma. Una clase cuenta cuando el alumno **entrega** algo (terminar el modo práctica no alcanza),
+y se actualiza en vivo.
 
 **Avance de la semana** (anillo del inicio del alumno, `avanceSemanal()` de
 [`avance.ts`](../src/lib/avance.ts)), de lunes a domingo:
@@ -604,13 +662,36 @@ instrumentos del alumno y compararla con una parte daría un número falso.
 - **Insignias** ([`insignias.ts`](../src/lib/insignias.ts)): se calculan en el navegador con lo que
   ya está guardado (entregas, diario, récords, análisis, rúbricas y ruta); no se guarda nada nuevo.
 
+## El trabajo del profesor
+
+- **Para hoy** ([`ParaHoy.tsx`](../src/components/ParaHoy.tsx)): entregas por revisar, clases de hoy,
+  ausencias de clases por venir, mensajes sin leer (de los últimos 100) y alumnos con clases
+  pendientes que hace más de 14 días no entregan. Mira solo las entregas: revisar el diario de cada
+  uno serían una consulta por persona en cada visita al inicio.
+- **Por revisar** (`/revision`): cola de entregas sin `revisadaEn`, de la más antigua a la más nueva.
+  [`EntregaRevision`](../src/components/EntregaRevision.tsx) es la misma pieza en la cola y en la
+  clase: comentarios escritos o grabados, _Convertir en meta_, rúbrica y _Revisada_.
+- **Para preparar la clase** ([`PrepararClase.tsx`](../src/components/PrepararClase.tsx), en la ficha
+  del alumno): última clase y qué le costó, práctica de la semana, última evaluación, comentarios sin
+  responder, metas, tempos y próxima clase; las notas privadas (`notasAlumno`), y _Enviar resumen a
+  la familia_, un enlace de WhatsApp con el texto ya escrito: no se guarda nada.
+- **Invitar por WhatsApp**: el enlace abre _Crear cuenta_ con el rol alumno
+  (`?modal=registro&rol=alumno`). No lleva el número de documento: una URL queda en historiales.
+- **Biblioteca de archivos** ([`BibliotecaArchivos.tsx`](../src/components/BibliotecaArchivos.tsx)):
+  se sube una vez y cada clase recibe su copia.
+
 ## La experiencia del alumno
 
-- **Tu práctica de hoy** ([`rutina.ts`](../src/lib/rutina.ts)): el alumno elige 10, 20 o 40
-  minutos (se recuerda en el navegador) y se arma la rutina: calentamiento, la clase pendiente (al
-  modo práctica), el criterio más bajo de su rúbrica con la herramienta que lo entrena y la obra de
-  su repertorio que hace más tiempo no repasa; debajo, sus metas de la semana sin cumplir. Se
-  calcula; no se guarda.
+- **Tu práctica de hoy** ([`rutina.ts`](../src/lib/rutina.ts)): el único lugar que dice qué hacer.
+  Arriba, la clase pendiente con _Practicar ahora_. El alumno elige 10, 20 o 40 minutos (se recuerda
+  en el navegador) y se arma la rutina: calentamiento, la clase pendiente (al modo práctica), el
+  criterio más bajo de su rúbrica con la herramienta que lo entrena y la obra de su repertorio que
+  hace más tiempo no repasa; debajo, sus metas de la semana sin cumplir y "N de 7 días · M min" de
+  esta semana, del diario: descansar un día no le quita nada, como sí lo hacía una racha. Se calcula;
+  no se guarda.
+- **Lo que dijo su profesor** ([`Correcciones.tsx`](../src/components/Correcciones.tsx)): lo nuevo
+  (comentarios sin responder, evaluaciones de los últimos 14 días, mensajes sin leer) va primero en
+  _Hoy_; todo queda en _Mi progreso_, en _Lo que me dijo mi profesor_.
 - **Mi evolución** ([`MiEvolucion.tsx`](../src/components/MiEvolucion.tsx)): la primera grabación
   al lado de la última (por instrumento) y dos gráficos (notas afinadas y desvío del tiempo) con el
   análisis de cada grabación. La fecha sale del id del archivo (empieza con el momento de la subida).
@@ -641,7 +722,8 @@ instrumentos del alumno y compararla con una parte daría un número falso.
   donde está la base `nam5`): `avisarClaseNueva` (clase de los próximos 7 días, a los alumnos de
   la lista), `avisarEntrega` (entrega nueva y respuestas, al profesor; comentario y evaluación, al
   alumno), `avisarMensaje` (al otro de la charla; la ausencia lo dice) y `recordarPractica` (cada
-  hora: los alumnos con `recordatorio` a esa hora que no anotaron práctica hoy, con su racha).
+  hora: los alumnos con `recordatorio` a esa hora que no anotaron práctica hoy, con los días que
+  practicaron esta semana).
 
 ## Búsqueda de alumnos
 

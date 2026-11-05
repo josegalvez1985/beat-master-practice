@@ -8,6 +8,10 @@ export const minutosEntre = (entradas: EntradaDiario[], desde: string, hasta: st
     .filter((e) => e.fecha >= desde && e.fecha <= hasta)
     .reduce((total, e) => total + e.minutos, 0);
 
+// Different days with practice between two dates: "5 de 7 días". Resting a day loses nothing.
+export const diasPracticados = (entradas: EntradaDiario[], desde: string, hasta: string) =>
+  new Set(entradas.filter((e) => e.fecha >= desde && e.fecha <= hasta).map((e) => e.fecha)).size;
+
 export type AvanceSemanal =
   | { tipo: "meta"; porcentaje: number; minutos: number; meta: number }
   | { tipo: "clases"; porcentaje: number; entregadas: number; total: number }

@@ -14,6 +14,7 @@ import {
   Upload,
   type LucideIcon,
 } from "lucide-react";
+import { Grabadora } from "@/components/Grabadora";
 import { Reproductor } from "@/components/Reproductor";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -31,6 +32,7 @@ import {
 } from "@/lib/files";
 import { resumenAnalisis } from "@/lib/analisis";
 import type { Devolucion, Entrega, RespuestaDevolucion } from "@/lib/data";
+import type { InstrumentId } from "@/lib/instruments";
 import { colors, fonts, radius } from "@/lib/theme";
 
 const iconos: Record<MaterialTipo, LucideIcon> = {
@@ -60,6 +62,19 @@ type Comentarios = {
   // `onResponder` the alumno can answer.
   respuestas?: Entrega["respuestas"];
   onResponder?: (devolucion: Devolucion, respuesta: RespuestaDevolucion | null) => void;
+  // The profesor answers in audio or video (absent with the plan blocked: it uploads a file).
+  respuestaGrabada?: {
+    carpeta: string;
+    anotar: (
+      material: Material,
+      segundo: number,
+      texto: string,
+      grabacion: Material,
+    ) => Promise<void>;
+  };
+  onConvertirEnMeta?: (devolucion: Devolucion) => void;
+  // To leave out numbers that say little for this instrument (resumenAnalisis).
+  instrumento?: InstrumentId;
 };
 
 // List of stored files with inline players for audio and video.
@@ -88,6 +103,9 @@ function MaterialRow({
   onQuitarDevolucion,
   respuestas = {},
   onResponder,
+  respuestaGrabada,
+  onConvertirEnMeta,
+  instrumento,
 }: {
   material: Material;
   onRemove?: (material: Material) => void;
@@ -99,6 +117,7 @@ function MaterialRow({
   // Players load their URL only when opened; other files need it for the "open" link.
   const url = useDownloadUrl(abierto || !reproducible ? material.ruta : null);
   const Icon = iconos[material.tipo];
+  const analisis = material.analisis ? resumenAnalisis(material.analisis, instrumento) : "";
 
   return (
     <View style={styles.row}>
@@ -117,9 +136,7 @@ function MaterialRow({
               : ""}
             {onResponder && sinResponder ? ` · ${sinResponder} sin responder` : ""}
           </Text>
-          {material.analisis ? (
-            <Text style={styles.analisis}>Análisis: {resumenAnalisis(material.analisis)}</Text>
-          ) : null}
+          {analisis ? <Text style={styles.analisis}>Análisis: {analisis}</Text> : null}
         </View>
         {reproducible ? (
           <Pressable
@@ -173,6 +190,30 @@ function MaterialRow({
               const devolucion = suyas.find((d) => d.id === id);
               if (devolucion) onQuitarDevolucion(devolucion);
             })
+          }
+          onConvertirEnMeta={
+            onConvertirEnMeta &&
+            ((marca) => {
+              const devolucion = suyas.find((d) => d.id === marca.id);
+              if (devolucion) onConvertirEnMeta(devolucion);
+            })
+          }
+          grabarRespuesta={
+            respuestaGrabada &&
+            ((segundo, texto, terminar) => (
+              <Grabadora
+                conClick={false}
+                etiquetaEnvio="Enviar mi respuesta"
+                avisoEnvio="Respuesta enviada a tu alumno."
+                envio={{
+                  carpeta: respuestaGrabada.carpeta,
+                  anotar: async (grabacion) => {
+                    await respuestaGrabada.anotar(material, segundo, texto, grabacion);
+                    terminar();
+                  },
+                }}
+              />
+            ))
           }
         />
       ) : null}

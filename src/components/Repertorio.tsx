@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Plus, RotateCcw, X } from "lucide-react";
+import { Gauge, Plus, RotateCcw, X } from "lucide-react";
 import { Opciones } from "@/components/plan/comunes";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Stepper } from "@/components/ui/stepper";
 import { avisar } from "@/components/ui/toast";
 import {
   agregarObra,
@@ -24,6 +25,76 @@ export const ESTADOS_OBRA: { value: EstadoObra; label: string }[] = [
 ];
 
 const error = () => avisar({ texto: "No se pudo guardar el repertorio.", tipo: "error" });
+
+// "hoy a 72 BPM, objetivo 100", in words, for the routine and the profesor's summary.
+export function textoTempoObra(obra: Obra) {
+  if (!obra.bpm) return obra.bpmObjetivo ? `Objetivo ${obra.bpmObjetivo} BPM` : "";
+  const cuando = obra.bpmEn
+    ? obra.bpmEn === hoy()
+      ? "hoy "
+      : `el ${formatoDia(obra.bpmEn)} `
+    : "";
+  return `${cuando}a ${obra.bpm} BPM${obra.bpmObjetivo ? `, objetivo ${obra.bpmObjetivo}` : ""}`;
+}
+
+const TEMPO_INICIAL = 60;
+
+// The tempo a piece goes at and the one it should reach. Each tap changes the number; it saves a
+// moment after the last one (one write, not one per tap).
+function TempoObra({ obra }: { obra: Obra }) {
+  const [abierto, setAbierto] = useState(false);
+  const [bpm, setBpm] = useState(obra.bpm ?? TEMPO_INICIAL);
+  const [objetivo, setObjetivo] = useState(obra.bpmObjetivo ?? 100);
+  const primera = useRef(true);
+
+  useEffect(() => {
+    if (primera.current) {
+      primera.current = false;
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void cambiarObra(obra.id, { bpm, bpmObjetivo: objetivo, bpmEn: hoy() }).catch(error);
+    }, 800);
+    return () => window.clearTimeout(timer);
+  }, [bpm, objetivo, obra.id]);
+
+  if (!abierto)
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Anotar el tempo de ${obra.obra}`}
+        onPress={() => setAbierto(true)}
+        style={styles.tempoCerrado}
+      >
+        <Gauge size={14} color={colors.mutedForeground} />
+        <Text style={styles.ayuda}>{textoTempoObra(obra) || "Anotar a qué tempo va"}</Text>
+      </Pressable>
+    );
+
+  return (
+    <View style={styles.tempo}>
+      <Stepper
+        label="tempo actual"
+        value={bpm}
+        onChange={setBpm}
+        min={20}
+        max={300}
+        step={2}
+        suffix="BPM"
+      />
+      <Text style={styles.ayuda}>objetivo</Text>
+      <Stepper
+        label="tempo objetivo"
+        value={objetivo}
+        onChange={setObjetivo}
+        min={20}
+        max={300}
+        step={2}
+        suffix="BPM"
+      />
+    </View>
+  );
+}
 
 // The alumno's pieces in one list, with how far each one is and when it was last reviewed. The
 // alumno and the profesor both edit it.
@@ -82,6 +153,7 @@ export function Repertorio({ inscripcion, obras }: { inscripcion: Inscripcion; o
             valor={o.estado}
             onChange={(estado) => void cambiarObra(o.id, { estado }).catch(error)}
           />
+          <TempoObra obra={o} />
         </View>
       ))}
       <View style={styles.agregar}>
@@ -154,6 +226,19 @@ const styles = StyleSheet.create({
   },
   quitar: {
     padding: 6,
+  },
+  tempoCerrado: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    paddingVertical: 4,
+  },
+  tempo: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 10,
   },
   agregar: {
     flexDirection: "row",

@@ -135,7 +135,11 @@ export default function LoginPage() {
         onRegistrarse={() => setParams({ modal: "registro" }, { replace: true })}
       />
 
-      <RegisterDialog visible={modal === "registro"} onClose={closeModal} />
+      <RegisterDialog
+        visible={modal === "registro"}
+        onClose={closeModal}
+        rolInicial={params.get("rol") === "alumno" ? "alumno" : undefined}
+      />
       <ContactoDialog
         visible={modal === "contacto"}
         onClose={closeModal}

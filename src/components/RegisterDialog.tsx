@@ -15,28 +15,38 @@ import { instruments, type InstrumentId } from "@/lib/instruments";
 import { colors, fonts, radius, shared } from "@/lib/theme";
 
 const roles = [
-  { id: "alumno", title: "Alumno", description: "Quiero aprender", icon: GraduationCap },
   { id: "profesor", title: "Profesor", description: "Quiero enseñar", icon: Presentation },
+  { id: "alumno", title: "Alumno", description: "Quiero aprender", icon: GraduationCap },
 ] as const;
 
-export function RegisterDialog({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+// `rolInicial`: from a profesor's invitation (?modal=registro&rol=alumno). Otherwise nothing is
+// chosen: the role never changes and the document stays taken, so it must be a decision.
+export function RegisterDialog({
+  visible,
+  onClose,
+  rolInicial,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  rolInicial?: Role;
+}) {
   return (
     <Dialog
       visible={visible}
       onClose={onClose}
       title="Crear cuenta"
-      description="Aprende o enseña música a tu ritmo."
+      description="Enseña o aprende música a tu ritmo."
     >
-      <RegisterForm onClose={onClose} />
+      <RegisterForm onClose={onClose} rolInicial={rolInicial} />
     </Dialog>
   );
 }
 
 // Lives inside the dialog so its state resets every time the dialog opens.
-function RegisterForm({ onClose }: { onClose: () => void }) {
+function RegisterForm({ onClose, rolInicial }: { onClose: () => void; rolInicial?: Role }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [role, setRole] = useState<Role>("alumno");
+  const [role, setRole] = useState<Role | null>(rolInicial ?? null);
   const [selected, setSelected] = useState<InstrumentId[]>([]);
   const [form, setForm] = useState({
     name: "",
@@ -53,6 +63,10 @@ function RegisterForm({ onClose }: { onClose: () => void }) {
 
   const onSubmit = async () => {
     const nroDocumento = normalizarDocumento(form.documento);
+    if (!role) {
+      setError("Elige si eres profesor o alumno.");
+      return;
+    }
     if (form.name.trim().length < 2) {
       setError("Escribe tu nombre y apellido.");
       return;
@@ -98,7 +112,7 @@ function RegisterForm({ onClose }: { onClose: () => void }) {
     <>
       <View style={styles.form}>
         <View style={authStyles.field}>
-          <Label>¿Eres alumno o profesor?</Label>
+          <Label>¿Eres profesor o alumno?</Label>
           <View accessibilityRole="radiogroup" style={styles.roles}>
             {roles.map((option) => {
               const active = role === option.id;
@@ -191,7 +205,11 @@ function RegisterForm({ onClose }: { onClose: () => void }) {
 
         <View style={authStyles.field}>
           <Label>
-            {role === "alumno" ? "¿Qué instrumentos estudias?" : "¿Qué instrumentos enseñas?"}
+            {role === "alumno"
+              ? "¿Qué instrumentos estudias?"
+              : role === "profesor"
+                ? "¿Qué instrumentos enseñas?"
+                : "¿Qué instrumentos?"}
           </Label>
           <View style={styles.instruments}>
             {instruments.map((instrument) => (

@@ -11,7 +11,7 @@ import { Chip } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Segmented } from "@/components/ui/segmented";
 import { usePerfil } from "@/lib/auth";
-import { useClasesProfesor, type Clase } from "@/lib/data";
+import { nombreDestino, useClasesProfesor, useInscripcionesProfesor, type Clase } from "@/lib/data";
 import {
   etiquetaPeriodo,
   formatoDia,
@@ -74,6 +74,7 @@ function agrupar(periodo: Periodo, inicio: string, fin: string, clases: Clase[])
 export default function Planificacion() {
   const perfil = usePerfil();
   const clases = useClasesProfesor(perfil.uid);
+  const inscripciones = useInscripcionesProfesor(perfil.uid);
   const [periodo, setPeriodo] = useState<Periodo>("semana");
   const [ancla, setAncla] = useState(hoy());
   const [filtro, setFiltro] = useState<InstrumentId | null>(null);
@@ -190,7 +191,11 @@ export default function Planificacion() {
               ) : null}
             </View>
             {grupo.clases.map((clase) => (
-              <ClaseItem key={clase.id} clase={clase} />
+              <ClaseItem
+                key={clase.id}
+                clase={clase}
+                destino={nombreDestino(clase, inscripciones.data)}
+              />
             ))}
           </View>
         ))}

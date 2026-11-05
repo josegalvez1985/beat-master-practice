@@ -84,7 +84,7 @@ export type PagoAdmin = {
   registradoEn: string | null;
 };
 
-const planesAdmin = httpsCallable<{ que: "listar" | "crearPruebas" }, unknown>(
+const planesAdmin = httpsCallable<{ que: "listar" | "crearPruebas" | "prepararDatos" }, unknown>(
   functions,
   "planesAdmin",
   { timeout: 70_000 },
@@ -94,7 +94,12 @@ export const verPlanes = async () =>
   (await planesAdmin({ que: "listar" })).data as {
     profesores: PlanProfesorAdmin[];
     pagos: PagoAdmin[];
+    // Data from before classes had a destination and deliveries a review (functions/src/planes.ts).
+    porPreparar: { clases: number; entregas: number };
   };
+
+export const prepararDatos = async () =>
+  (await planesAdmin({ que: "prepararDatos" })).data as { clases: number; entregas: number };
 
 export const crearPruebasFaltantes = async () =>
   (await planesAdmin({ que: "crearPruebas" })).data as { creadas: number };

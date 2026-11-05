@@ -17,6 +17,7 @@ import PerfilPage from "@/routes/perfil";
 import AlumnoDetalle from "@/routes/profesor/alumno";
 import MiPlan from "@/routes/profesor/plan";
 import Planificacion from "@/routes/profesor/planificacion";
+import Revision from "@/routes/profesor/revision";
 
 const router = createBrowserRouter(
   [
@@ -49,6 +50,7 @@ const router = createBrowserRouter(
                     { path: "planificacion", element: <Planificacion /> },
                     { path: "alumnos/:alumnoId", element: <AlumnoDetalle /> },
                     { path: "plan", element: <MiPlan /> },
+                    { path: "revision", element: <Revision /> },
                   ],
                 },
               ],

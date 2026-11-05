@@ -10,13 +10,17 @@ import { esPercusion, familia } from "@/lib/plan";
 
 export type Analisis = NonNullable<Material["analisis"]>;
 
+// Tuning is measured only where the player makes the pitch: bowed strings, winds and voice. With
+// frets or fixed strings the number would mostly say how the instrument is tuned, and the detector
+// follows one note at a time, so chords would confuse it.
+export const mideAfinacion = (instrumento: InstrumentId) =>
+  afinable(instrumento) && !!configDe(instrumento).historial;
+
 // Longer takes are not analyzed: decoding keeps the whole take in memory.
 export const MAX_SEGUNDOS_ANALISIS = 5 * 60;
 const TASA = 22050;
-// A held note counts as in tune within this many cents (more room where the pitch is free:
-// vibrato and glides).
-const AFINADO_TRASTES = 10;
-const AFINADO_LIBRE = 15;
+// A held note counts as in tune within this many cents (room for vibrato and glides).
+const AFINADO_MARGEN = 15;
 // Average distance of the attacks from the grid: up to this, the time is very steady.
 export const MUY_ESTABLE_MS = 15;
 
@@ -49,7 +53,7 @@ export async function analizarToma(
     return null;
   }
   const resultado: Analisis = {};
-  if (afinable(instrumento)) {
+  if (mideAfinacion(instrumento)) {
     const afinacion = await medirAfinacion(audio.muestras, audio.tasa, instrumento);
     if (afinacion) Object.assign(resultado, afinacion);
   }
@@ -93,10 +97,11 @@ async function medirAfinacion(muestras: Float32Array, tasa: number, instrumento:
   }
   cerrar();
   if (notas.length < 4) return null;
-  const margen = config.historial ? AFINADO_LIBRE : AFINADO_TRASTES;
   return {
     notas: notas.length,
-    afinacion: Math.round((notas.filter((c) => Math.abs(c) <= margen).length / notas.length) * 100),
+    afinacion: Math.round(
+      (notas.filter((c) => Math.abs(c) <= AFINADO_MARGEN).length / notas.length) * 100,
+    ),
   };
 }
 
@@ -184,10 +189,12 @@ async function medirTiempo(
   return { desvioMs: Math.round(desvio * 1000), bpm: Math.round(60 / periodo / 2) };
 }
 
-// What the numbers mean, in words for the alumno and the profesor.
-export function resumenAnalisis(a: Analisis) {
+// What the numbers mean, in words for the alumno and the profesor. With `instrumento`, recordings
+// from before mideAfinacion do not show a tuning number that says little.
+export function resumenAnalisis(a: Analisis, instrumento?: InstrumentId) {
   const partes: string[] = [];
-  if (a.afinacion !== undefined) partes.push(`${a.afinacion}% de notas afinadas`);
+  if (a.afinacion !== undefined && (!instrumento || mideAfinacion(instrumento)))
+    partes.push(`${a.afinacion}% de notas afinadas`);
   if (a.desvioMs !== undefined)
     partes.push(
       `tiempo ${a.desvioMs <= MUY_ESTABLE_MS ? "muy estable" : a.desvioMs <= 30 ? "estable" : "irregular"} (±${a.desvioMs} ms)`,

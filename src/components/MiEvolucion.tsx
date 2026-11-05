@@ -2,6 +2,7 @@ import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { MaterialList } from "@/components/Materials";
 import { Opciones } from "@/components/plan/comunes";
+import { mideAfinacion } from "@/lib/analisis";
 import type { Entrega } from "@/lib/data";
 import type { Material } from "@/lib/files";
 import { instrumento as instrumentoDe, type InstrumentId } from "@/lib/instruments";
@@ -39,9 +40,11 @@ export function MiEvolucion({
     .sort((a, b) => momento(a) - momento(b));
   const primera = grabaciones[0]!;
   const ultima = grabaciones.at(-1)!;
-  const afinacion = grabaciones
-    .filter((a) => a.analisis?.afinacion !== undefined)
-    .map((a) => ({ t: momento(a), v: a.analisis!.afinacion! }));
+  const afinacion = mideAfinacion(instrumento)
+    ? grabaciones
+        .filter((a) => a.analisis?.afinacion !== undefined)
+        .map((a) => ({ t: momento(a), v: a.analisis!.afinacion! }))
+    : [];
   const tiempo = grabaciones
     .filter((a) => a.analisis?.desvioMs !== undefined)
     .map((a) => ({ t: momento(a), v: a.analisis!.desvioMs! }));
@@ -62,11 +65,11 @@ export function MiEvolucion({
             <Text style={styles.etiqueta}>
               Tu primera grabación · {fechaCorta(momento(primera))}
             </Text>
-            <MaterialList materiales={[primera]} />
+            <MaterialList materiales={[primera]} instrumento={instrumento} />
           </View>
           <View style={styles.columna}>
             <Text style={styles.etiqueta}>La más reciente · {fechaCorta(momento(ultima))}</Text>
-            <MaterialList materiales={[ultima]} />
+            <MaterialList materiales={[ultima]} instrumento={instrumento} />
           </View>
         </View>
       ) : (
@@ -96,8 +99,7 @@ export function MiEvolucion({
       ) : null}
       {afinacion.length < 2 && tiempo.length < 2 ? (
         <Text style={styles.ayuda}>
-          Graba tus entregas desde la app: cada grabación se analiza y aquí verás cómo mejoran tu
-          afinación y tu tiempo.
+          Graba tus entregas desde la app: cada grabación se analiza y aquí verás cómo va mejorando.
         </Text>
       ) : null}
     </View>

@@ -70,8 +70,12 @@ export const avisarClaseNueva = onDocumentCreated(
       .where("profesorId", "==", clase.profesorId)
       .where("instrumento", "==", clase.instrumento)
       .get();
+    // Only the alumnos it is for.
+    const para = clase.alumnos as string[] | undefined;
     await enviar(
-      lista.docs.map((d) => d.get("alumnoId") as string),
+      lista.docs
+        .map((d) => d.get("alumnoId") as string)
+        .filter((alumnoId) => !para || para.includes(alumnoId)),
       {
         titulo: clase.evento ? "Nuevo recital" : "Nueva clase",
         cuerpo: `${clase.titulo} · Prof. ${clase.profesorNombre}`,
@@ -161,7 +165,8 @@ export const avisarMensaje = onDocumentCreated(
 );
 
 // Every hour: the alumnos whose reminder is this hour (Paraguay) and have not logged practice
-// today; with their streak, so they do not break it.
+// today, with the days they practiced this week. Days of the week, not a streak: resting a day
+// must not feel like losing something.
 export const recordarPractica = onSchedule(
   { schedule: "0 * * * *", timeZone: "America/Asuncion", region: "us-central1" },
   async () => {
@@ -179,14 +184,14 @@ export const recordarPractica = onSchedule(
       const diario = await db().collection("diario").where("alumnoId", "==", usuario.id).get();
       const dias = new Set(diario.docs.map((d) => d.get("fecha") as string));
       if (dias.has(hoy)) continue;
-      let racha = 0;
-      while (dias.has(sumarDias(hoy, -(racha + 1)))) racha++;
+      const lunes = sumarDias(hoy, -((new Date(`${hoy}T12:00:00Z`).getUTCDay() + 6) % 7));
+      const estaSemana = [...dias].filter((d) => d >= lunes).length;
       await enviar([usuario.id], {
-        titulo: racha >= 2 ? `Llevas ${racha} días seguidos` : "¿Practicamos hoy?",
-        cuerpo:
-          racha >= 2
-            ? "Unos minutos hoy y no cortas la racha. Mira tu práctica de hoy."
-            : "Aunque sean 10 minutos: tu práctica de hoy ya está armada.",
+        titulo:
+          estaSemana >= 1
+            ? `Esta semana practicaste ${estaSemana} ${estaSemana === 1 ? "día" : "días"}`
+            : "¿Practicamos hoy?",
+        cuerpo: "Aunque sean 10 minutos: tu práctica de hoy ya está armada.",
         url: `${SITIO}/`,
         tag: "recordatorio",
       });

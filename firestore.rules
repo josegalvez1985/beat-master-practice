@@ -199,8 +199,14 @@ service cloud.firestore {
     // other materials and are deleted with the class (eliminarClase).
     // `hora`, `modalidad` and `enlace`: when and where; `asistencia`: alumnoId -> state, marked
     // by the profesor; `evento`: a recital (place and program, free text).
+    // Who it is for: `paraTodos` (the whole list of that instrument) or `alumnos` (those uids),
+    // never both. Firestore can only prove a list query with one of the two, so a class always
+    // has one; only classes from before this field have neither (/admin prepares them).
     function claseValida(data) {
-      return data.keys().hasOnly(['profesorId', 'profesorNombre', 'instrumento', 'titulo', 'descripcion', 'fecha', 'materiales', 'creadoEn', 'ficha', 'bloques', 'hora', 'modalidad', 'enlace', 'asistencia', 'evento'])
+      return data.keys().hasOnly(['profesorId', 'profesorNombre', 'instrumento', 'titulo', 'descripcion', 'fecha', 'materiales', 'creadoEn', 'ficha', 'bloques', 'hora', 'modalidad', 'enlace', 'asistencia', 'evento', 'paraTodos', 'alumnos'])
+        && (!('paraTodos' in data) || data.paraTodos == true)
+        && (!('alumnos' in data) || (data.alumnos is list && data.alumnos.size() <= 100))
+        && !('paraTodos' in data && 'alumnos' in data)
         && textoValido(data.titulo, 1, 120)
         && textoValido(data.descripcion, 0, 4000)
         && data.fecha is string && data.fecha.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
@@ -219,20 +225,33 @@ service cloud.firestore {
           && data.evento.programa is list && data.evento.programa.size() <= 60));
     }
 
-    // clases/{id}: planned by a profesor; visible to the alumnos in that instrument's list.
+    // The class is for the alumno signed in (or, without `alumnos`, for the whole list).
+    function paraElAlumno(data) {
+      return !('alumnos' in data) || me() in data.alumnos;
+    }
+
+    // clases/{id}: planned by a profesor; visible to the alumnos it is for, in that instrument's
+    // list. An alumno lists them with two queries (`paraTodos == true` and `alumnos
+    // array-contains` their uid): a rule cannot allow a query without proving every result.
     match /clases/{claseId} {
-      allow read: if signedIn()
-        && (resource.data.profesorId == me() || inscripto(resource.data.profesorId, resource.data.instrumento));
+      allow get: if signedIn()
+        && (resource.data.profesorId == me()
+          || (inscripto(resource.data.profesorId, resource.data.instrumento) && paraElAlumno(resource.data)));
+      allow list: if signedIn()
+        && (resource.data.profesorId == me()
+          || (inscripto(resource.data.profesorId, resource.data.instrumento)
+            && (resource.data.paraTodos == true || me() in resource.data.alumnos)));
       allow create: if esProfesor()
         && habilitado(me())
         && request.resource.data.profesorId == me()
         && request.resource.data.profesorNombre == usuario(me()).nombre
         && request.resource.data.instrumento in usuario(me()).instrumentos
         && request.resource.data.creadoEn == request.time
+        && ('paraTodos' in request.resource.data || 'alumnos' in request.resource.data)
         && claseValida(request.resource.data);
       // With the plan blocked, only attendance and removing materials.
       allow update: if signedIn() && resource.data.profesorId == me()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['titulo', 'descripcion', 'fecha', 'materiales', 'ficha', 'bloques', 'hora', 'modalidad', 'enlace', 'asistencia', 'evento'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['titulo', 'descripcion', 'fecha', 'materiales', 'ficha', 'bloques', 'hora', 'modalidad', 'enlace', 'asistencia', 'evento', 'paraTodos', 'alumnos'])
         && claseValida(request.resource.data)
         && (habilitado(me())
           || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['asistencia'])
@@ -246,13 +265,14 @@ service cloud.firestore {
     }
 
     function entregaValida(entregaId, data) {
-      return data.keys().hasOnly(['claseId', 'profesorId', 'alumnoId', 'alumnoNombre', 'instrumento', 'archivos', 'comentario', 'actualizadoEn', 'devoluciones', 'evaluacion', 'respuestas'])
+      return data.keys().hasOnly(['claseId', 'profesorId', 'alumnoId', 'alumnoNombre', 'instrumento', 'archivos', 'comentario', 'actualizadoEn', 'devoluciones', 'evaluacion', 'respuestas', 'revisadaEn'])
         && entregaId == data.claseId + '_' + me()
         && data.alumnoId == me()
         && data.alumnoNombre == usuario(me()).nombre
         && data.profesorId == clase(data.claseId).profesorId
         && data.instrumento == clase(data.claseId).instrumento
         && inscripto(data.profesorId, data.instrumento)
+        && paraElAlumno(clase(data.claseId))
         && archivosValidos(data.archivos) && data.archivos.size() >= 1
         && (!('comentario' in data) || textoValido(data.comentario, 0, 2000))
         && (!('respuestas' in data) || (data.respuestas is map && data.respuestas.size() <= 100))
@@ -333,20 +353,27 @@ service cloud.firestore {
     // profesor's comments at a point of a file and `evaluacion` their rubric: stored inside the
     // delivery, so they are deleted with it (and with the class). The alumno never writes them;
     // they only remove devoluciones together with the file they point at (the new list must be
-    // part of the old one).
+    // part of the old one). `revisadaEn`: the profesor reviewed it; a new file removes it, so the
+    // delivery goes back to their review tray (the alumno can only remove it).
     match /entregas/{entregaId} {
       // `resource == null`: the alumno listens to their delivery before it exists.
       allow read: if signedIn()
         && (resource == null || resource.data.alumnoId == me() || resource.data.profesorId == me());
       allow create: if signedIn() && entregaValida(entregaId, request.resource.data)
-        && !('devoluciones' in request.resource.data) && !('evaluacion' in request.resource.data);
+        && !('devoluciones' in request.resource.data) && !('evaluacion' in request.resource.data)
+        && !('revisadaEn' in request.resource.data);
       allow update: if signedIn()
         && ((entregaValida(entregaId, request.resource.data)
             && !('evaluacion' in request.resource.data.diff(resource.data).affectedKeys())
+            && (!('revisadaEn' in request.resource.data.diff(resource.data).affectedKeys())
+              || !('revisadaEn' in request.resource.data))
             && (!('devoluciones' in request.resource.data.diff(resource.data).affectedKeys())
               || resource.data.get('devoluciones', []).hasAll(request.resource.data.get('devoluciones', []))))
           || (resource.data.profesorId == me()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['devoluciones', 'evaluacion', 'respuestas'])
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['devoluciones', 'evaluacion', 'respuestas', 'revisadaEn'])
+            && (!('revisadaEn' in request.resource.data.diff(resource.data).affectedKeys())
+              || !('revisadaEn' in request.resource.data)
+              || request.resource.data.revisadaEn == request.time)
             // The profesor only removes the alumno's answers (with the devolución they answer).
             && request.resource.data.get('respuestas', {}).diff(resource.data.get('respuestas', {})).addedKeys().size() == 0
             && request.resource.data.get('respuestas', {}).diff(resource.data.get('respuestas', {})).changedKeys().size() == 0
@@ -371,6 +398,58 @@ service cloud.firestore {
         && request.resource.data.creadoEn == request.time;
       allow update: if false;
       allow delete: if signedIn() && resource.data.profesorId == me();
+    }
+
+    // bibliotecaArchivos/{id}: files a profesor keeps to reuse (PDF of scales, a backing track). The
+    // file lives in biblioteca/{uid}/ (storage.rules); using it copies it into the class (the
+    // usarArchivoBiblioteca Cloud Function), so a class always owns its files. Deleted by the
+    // profesor (file first) and with the account (eliminarCuenta).
+    match /bibliotecaArchivos/{id} {
+      allow read: if signedIn() && resource.data.profesorId == me();
+      allow create: if esProfesor()
+        && habilitado(me())
+        && request.resource.data.keys().hasOnly(['profesorId', 'material', 'creadoEn'])
+        && request.resource.data.profesorId == me()
+        && request.resource.data.material is map
+        && request.resource.data.material.ruta.matches('^biblioteca/' + me() + '/.+')
+        && request.resource.data.creadoEn == request.time;
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.profesorId == me();
+    }
+
+    // notasAlumno/{id}: the profesor's private notes about an alumno in one list. The alumno never
+    // reads them. They hang from the enrollment: quitarInscripcion deletes them before it, and
+    // eliminarCuenta with either account.
+    match /notasAlumno/{id} {
+      allow read: if signedIn() && resource.data.profesorId == me();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['profesorId', 'alumnoId', 'instrumento', 'texto', 'creadoEn'])
+        && request.resource.data.profesorId == me()
+        && exists(/databases/$(database)/documents/inscripciones/$(me() + '_' + request.resource.data.alumnoId + '_' + request.resource.data.instrumento))
+        && textoValido(request.resource.data.texto, 1, 2000)
+        && request.resource.data.creadoEn == request.time;
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.profesorId == me();
+    }
+
+    // practicas/{claseId}_{alumnoId}: how each block of a class went for the alumno ("bien" or
+    // "costo"; "hecho" without an opinion), so it follows them across devices and their profesor
+    // sees it. Hangs from the class (eliminarClase) and from the alumno (eliminarCuenta).
+    match /practicas/{id} {
+      // `resource == null`: the alumno listens to their record before it exists.
+      allow read: if signedIn()
+        && (resource == null || resource.data.alumnoId == me() || resource.data.profesorId == me());
+      allow create, update: if signedIn()
+        && request.resource.data.keys().hasOnly(['claseId', 'profesorId', 'alumnoId', 'instrumento', 'bloques', 'actualizadoEn'])
+        && id == request.resource.data.claseId + '_' + me()
+        && request.resource.data.alumnoId == me()
+        && request.resource.data.profesorId == clase(request.resource.data.claseId).profesorId
+        && request.resource.data.instrumento == clase(request.resource.data.claseId).instrumento
+        && inscripto(request.resource.data.profesorId, request.resource.data.instrumento)
+        && paraElAlumno(clase(request.resource.data.claseId))
+        && request.resource.data.bloques is map && request.resource.data.bloques.size() <= 40
+        && request.resource.data.actualizadoEn == request.time;
+      allow delete: if signedIn() && (resource.data.alumnoId == me() || resource.data.profesorId == me());
     }
 
     // logros/{profesorId}_{alumnoId}_{instrumento}: the alumno's learning path in that list
@@ -404,9 +483,16 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/clases/$(request.resource.data.claseId))
         && clase(request.resource.data.claseId).profesorId == request.resource.data.profesorId
         && exists(/databases/$(database)/documents/inscripciones/$(request.resource.data.profesorId + '_' + request.resource.data.alumnoId + '_' + clase(request.resource.data.claseId).instrumento))
+        && (!('alumnos' in clase(request.resource.data.claseId))
+          || request.resource.data.alumnoId in clase(request.resource.data.claseId).alumnos)
         && textoValido(request.resource.data.texto, 1, 1000)
         && request.resource.data.creadoEn == request.time;
-      allow update: if false;
+      // Only the other person, and only to mark it as read. Absent = unread.
+      allow update: if signedIn()
+        && (resource.data.profesorId == me() || resource.data.alumnoId == me())
+        && resource.data.autorId != me()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['leido'])
+        && request.resource.data.leido == true;
       // The author deletes their own; the profesor deletes all of them with the class.
       allow delete: if signedIn() && (resource.data.autorId == me() || resource.data.profesorId == me());
     }
@@ -422,20 +508,29 @@ service cloud.firestore {
       return valor is string && valor.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
     }
 
+    function bpmValido(data, campo) {
+      return !(campo in data) || (data[campo] is int && data[campo] >= 20 && data[campo] <= 300);
+    }
+
     // repertorio/{id}: the alumno's pieces in one profesor's list and how far each one is. It
     // hangs from the enrollment and is deleted with it (quitarInscripcion). Both write it.
+    // `bpm` (the tempo it goes at, noted on `bpmEn`) and `bpmObjetivo` are optional.
     match /repertorio/{id} {
       allow read: if signedIn() && (resource.data.profesorId == me() || resource.data.alumnoId == me());
       allow create: if signedIn()
-        && request.resource.data.keys().hasOnly(['profesorId', 'alumnoId', 'instrumento', 'obra', 'estado', 'repasadoEn', 'creadoEn'])
+        && request.resource.data.keys().hasOnly(['profesorId', 'alumnoId', 'instrumento', 'obra', 'estado', 'repasadoEn', 'creadoEn', 'bpm', 'bpmObjetivo', 'bpmEn'])
         && deLaInscripcion(request.resource.data)
         && textoValido(request.resource.data.obra, 1, 120)
         && request.resource.data.estado in ['aprendiendo', 'entera', 'memoria', 'lista']
         && (!('repasadoEn' in request.resource.data) || fechaValida(request.resource.data.repasadoEn))
+        && bpmValido(request.resource.data, 'bpm') && bpmValido(request.resource.data, 'bpmObjetivo')
+        && (!('bpmEn' in request.resource.data) || fechaValida(request.resource.data.bpmEn))
         && request.resource.data.creadoEn == request.time;
       allow update: if signedIn() && (resource.data.profesorId == me() || resource.data.alumnoId == me())
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'repasadoEn'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'repasadoEn', 'bpm', 'bpmObjetivo', 'bpmEn'])
         && request.resource.data.estado in ['aprendiendo', 'entera', 'memoria', 'lista']
+        && bpmValido(request.resource.data, 'bpm') && bpmValido(request.resource.data, 'bpmObjetivo')
+        && (!('bpmEn' in request.resource.data) || fechaValida(request.resource.data.bpmEn))
         && (!('repasadoEn' in request.resource.data) || fechaValida(request.resource.data.repasadoEn));
       allow delete: if signedIn() && (resource.data.profesorId == me() || resource.data.alumnoId == me());
     }

@@ -20,6 +20,21 @@ export type MensajeContacto = {
   mensaje: string;
 };
 
+// wa.me link without a number: WhatsApp asks who to send the written message to.
+export const enlaceWhatsApp = (texto: string) => `https://wa.me/?text=${encodeURIComponent(texto)}`;
+
+// A profesor invites someone who has no account yet. The link opens "Crear cuenta" as alumno.
+export function invitacionAlumno(profesorNombre: string) {
+  const enlace = `${window.location.origin}${import.meta.env.BASE_URL}?modal=registro&rol=alumno`;
+  return enlaceWhatsApp(
+    [
+      `Hola, soy ${profesorNombre}. Voy a compartir las clases y las prácticas por Pulso.`,
+      `Crea tu cuenta gratis aquí: ${enlace}`,
+      "Cuando la tengas, pásame tu número de documento y te agrego a mi lista.",
+    ].join("\n\n"),
+  );
+}
+
 // wa.me link with the message ready to send.
 export function enlaceContacto(datos: MensajeContacto) {
   const motivo = MOTIVOS.find((m) => m.value === datos.motivo)?.label ?? "Consulta";

@@ -188,6 +188,31 @@ npm run deploy:funciones                                               # 4. func
 6. Subir un archivo a una clase para comprobarlo. Si funciona, borrar la base vieja:
    `npx firebase firestore:databases:delete default` (no se puede deshacer).
 
+## Publicar las clases por alumno (una vez)
+
+Las clases por alumno ([arquitectura.md](arquitectura.md#clasesid)), _Por revisar_, las notas
+privadas, la biblioteca de archivos y `practicas` cambian las reglas, los índices, las Functions y
+el sitio. **Las reglas nuevas rechazan la forma en que el sitio anterior lista las clases**: desde
+el paso 2 hasta el 4, los alumnos no ven sus clases. Hazlo en un momento sin uso y sin pausas (si los
+planes tampoco están publicados, va todo junto: el paso 4 de abajo se suma al de ellos).
+
+Antes de publicar, prueba las reglas contra los emuladores (`npm run emulators`): el alumno lista
+sus clases con `paraTodos == true` y con `alumnos array-contains` su uid.
+
+```sh
+npm run deploy:funciones   # 1. usarArchivoBiblioteca, cuenta, avisos, asistente y planesAdmin
+npm run deploy:reglas      # 2. reglas e índices de `mensajes` (el índice tarda unos minutos)
+git push                   # 3. el sitio nuevo (GitHub Actions)
+```
+
+4. Apenas el sitio nuevo esté arriba: `/admin` → **Planes** → **Preparar datos anteriores**. Las
+   clases anteriores pasan a ser para toda su lista (como siempre fueron) y las entregas ya evaluadas
+   o comentadas quedan como revisadas. Hasta este paso, los alumnos no ven las clases anteriores. Se
+   puede repetir sin problema.
+
+Mientras se construye el índice, _Para hoy_ y _Tu profesor te dijo_ no muestran mensajes nuevos; se
+corrige solo.
+
 ## Publicar los planes de los profesores (una vez)
 
 Los planes ([arquitectura.md](arquitectura.md#planes-de-los-profesores)) cambian las reglas, las

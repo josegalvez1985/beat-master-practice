@@ -26,6 +26,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
+import { borrarTodosLosBorradores } from "@/lib/borrador";
 import { auth, db, functions } from "@/lib/firebase";
 import { terminosDeBusqueda } from "@/lib/documento";
 import type { InstrumentId } from "@/lib/instruments";
@@ -228,6 +229,7 @@ export async function signOut(destino = "") {
   // rules let it delete its device). A separate chunk, loaded only here and in the profile.
   await import("@/lib/avisos").then((m) => m.desactivarAvisos()).catch(() => {});
   await firebaseSignOut(auth);
+  borrarTodosLosBorradores();
   try {
     await terminate(db);
     await clearIndexedDbPersistence(db);

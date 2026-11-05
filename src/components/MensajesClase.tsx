@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Send, Trash2 } from "lucide-react";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { avisar } from "@/components/ui/toast";
 import type { Perfil } from "@/lib/auth";
-import { borrarMensaje, enviarMensaje, useMensajes, type Clase } from "@/lib/data";
+import { borrarMensaje, enviarMensaje, marcarLeidos, useMensajes, type Clase } from "@/lib/data";
 import { colors, fonts, radius } from "@/lib/theme";
 
 // The conversation about this class between the profesor and one alumno: doubts about the
@@ -24,6 +24,15 @@ export function MensajesClase({
   const mensajes = useMensajes(clase, alumnoId);
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
+
+  // Open on screen: what the other person wrote counts as read.
+  const nuevos = mensajes.data.filter((m) => m.autorId !== perfil.uid && !m.leido);
+  const idsNuevos = nuevos.map((m) => m.id).join();
+  useEffect(() => {
+    if (idsNuevos) void marcarLeidos(nuevos).catch(() => {});
+    // `idsNuevos` identifies the list; the array is recreated every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsNuevos]);
 
   const enviar = async () => {
     if (!texto.trim()) return;

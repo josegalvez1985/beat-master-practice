@@ -1,18 +1,43 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { MessageSquarePlus, Repeat, Trash2, X } from "lucide-react";
+import { MessageSquarePlus, Mic, Repeat, Target, Trash2, X } from "lucide-react";
 import { Opciones } from "@/components/plan/comunes";
 import { Button, buttonForeground } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useDownloadUrl, type Material } from "@/lib/files";
 import { colors, fonts, radius } from "@/lib/theme";
 
 // Practice player: slower playback without changing the pitch, and an A-B loop to repeat a
 // passage. Used for every audio and video of the classes and deliveries. `marcas` are the
 // profesor's comments at a point of the file (tap one to go there); `onComentar` lets the
 // profesor add one at the current time; `onResponder` lets the alumno answer each one.
+// `grabarRespuesta` draws the recorder for an answer in audio or video; `onConvertirEnMeta` turns
+// a comment into a goal of the week.
 
 export type Respuesta = "entendido" | "corregido";
-export type Marca = { id: string; segundo: number; texto: string; respuesta?: Respuesta };
+export type Marca = {
+  id: string;
+  segundo: number;
+  texto: string;
+  respuesta?: Respuesta;
+  media?: Pick<Material, "ruta" | "tipo">;
+};
+
+// The profesor's recorded answer, with its own small player.
+function GrabacionDeMarca({ media }: { media: NonNullable<Marca["media"]> }) {
+  const url = useDownloadUrl(media.ruta);
+  if (!url) return <Text style={styles.respondida}>Cargando la respuesta grabada…</Text>;
+  return media.tipo === "video" ? (
+    <video
+      controls
+      playsInline
+      src={url}
+      style={{ width: "100%", maxHeight: 280, borderRadius: 8 }}
+    />
+  ) : (
+    <audio controls src={url} style={{ width: "100%" }} />
+  );
+}
 
 const RESPUESTAS: { value: Respuesta; label: string }[] = [
   { value: "entendido", label: "Entendido" },
@@ -30,6 +55,8 @@ export function Reproductor({
   onComentar,
   onQuitarMarca,
   onResponder,
+  grabarRespuesta,
+  onConvertirEnMeta,
 }: {
   url: string;
   tipo: "audio" | "video";
@@ -38,8 +65,11 @@ export function Reproductor({
   onComentar?: (segundo: number, texto: string) => Promise<void>;
   onQuitarMarca?: (id: string) => void;
   onResponder?: (id: string, respuesta: Respuesta | null) => void;
+  grabarRespuesta?: (segundo: number, texto: string, terminar: () => void) => ReactNode;
+  onConvertirEnMeta?: (marca: Marca) => void;
 }) {
   const [nueva, setNueva] = useState<number | null>(null);
+  const [grabando, setGrabando] = useState(false);
   const [texto, setTexto] = useState("");
   const [guardando, setGuardando] = useState(false);
   const media = useRef<HTMLVideoElement & HTMLAudioElement>(null);
@@ -122,8 +152,18 @@ export function Reproductor({
                     style={styles.marcaBoton}
                   >
                     <Text style={styles.marcaTiempo}>{minutosYSegundos(marca.segundo)}</Text>
-                    <Text style={styles.marcaTexto}>{marca.texto}</Text>
+                    <Text style={styles.marcaTexto}>{marca.texto || "Respuesta grabada"}</Text>
                   </Pressable>
+                  {onConvertirEnMeta ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Convertir en meta de la semana"
+                      onPress={() => onConvertirEnMeta(marca)}
+                      style={styles.quitar}
+                    >
+                      <Target size={14} color={colors.mutedForeground} />
+                    </Pressable>
+                  ) : null}
                   {onQuitarMarca ? (
                     <Pressable
                       accessibilityRole="button"
@@ -135,6 +175,7 @@ export function Reproductor({
                     </Pressable>
                   ) : null}
                 </View>
+                {marca.media ? <GrabacionDeMarca media={marca.media} /> : null}
                 {onResponder ? (
                   <View accessibilityRole="radiogroup" style={styles.respuestas}>
                     {RESPUESTAS.map((r) => {
@@ -203,10 +244,30 @@ export function Reproductor({
               >
                 Guardar comentario
               </Button>
-              <Button variant="secondary" size="sm" onPress={() => setNueva(null)}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onPress={() => {
+                  setNueva(null);
+                  setGrabando(false);
+                }}
+              >
                 Cancelar
               </Button>
+              {grabarRespuesta && !grabando ? (
+                <Button variant="secondary" size="sm" onPress={() => setGrabando(true)}>
+                  <Mic size={14} color={buttonForeground("secondary")} />
+                  Grabar mi respuesta
+                </Button>
+              ) : null}
             </View>
+            {grabarRespuesta && grabando
+              ? grabarRespuesta(nueva, texto.trim(), () => {
+                  setNueva(null);
+                  setTexto("");
+                  setGrabando(false);
+                })
+              : null}
           </View>
         )
       ) : null}

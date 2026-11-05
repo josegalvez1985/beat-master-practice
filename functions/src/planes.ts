@@ -94,6 +94,17 @@ function sumarMeses(fecha: Date, meses: number) {
 const creadoEnDe = (usuario: FirebaseFirestore.DocumentData) =>
   usuario.creadoEn instanceof Timestamp ? usuario.creadoEn.toDate() : LANZAMIENTO;
 
+// Same answer as `habilitado` in the rules, for what only a Function can do.
+export async function planHabilitado(uid: string) {
+  const [admin, suscripcion] = await Promise.all([
+    refAdmin().get(),
+    db().doc(`suscripciones/${uid}`).get(),
+  ]);
+  if (admin.get("uid") === uid) return true;
+  const s = suscripcion.data() as Suscripcion | undefined;
+  return !!s && Date.now() < bloqueoDe(venceDe(s)).getTime();
+}
+
 // --- Adding an alumno to a list ---
 
 export const agregarAlumno = onCall({ region: REGION, maxInstances: 10 }, async (request) => {
@@ -318,14 +329,16 @@ export const habilitarDias = onCall({ region: REGION, maxInstances: 2 }, async (
 // --- Admin: the profesores and their plans ---
 
 async function listar() {
-  const [profesores, suscripciones, inscripciones, pagos, telefonos, admin] = await Promise.all([
-    db().collection("usuarios").where("rol", "==", "profesor").get(),
-    db().collection("suscripciones").get(),
-    db().collection("inscripciones").select("profesorId", "alumnoId").get(),
-    db().collection("pagos").orderBy("registradoEn", "desc").limit(100).get(),
-    db().collection("telefonos").get(),
-    refAdmin().get(),
-  ]);
+  const [profesores, suscripciones, inscripciones, pagos, telefonos, admin, preparar] =
+    await Promise.all([
+      db().collection("usuarios").where("rol", "==", "profesor").get(),
+      db().collection("suscripciones").get(),
+      db().collection("inscripciones").select("profesorId", "alumnoId").get(),
+      db().collection("pagos").orderBy("registradoEn", "desc").limit(100).get(),
+      db().collection("telefonos").get(),
+      refAdmin().get(),
+      leerPorPreparar(),
+    ]);
   const uidAdmin = admin.get("uid") as string | undefined;
   const telefonoDe = new Map(telefonos.docs.map((d) => [d.id, d.get("telefono") as string]));
   const planDe = new Map(suscripciones.docs.map((d) => [d.id, d.data() as Suscripcion]));
@@ -337,6 +350,7 @@ async function listar() {
   }
   const nombres = new Map(profesores.docs.map((d) => [d.id, d.get("nombre") as string]));
   return {
+    porPreparar: { clases: preparar.clases.length, entregas: preparar.entregas.length },
     profesores: profesores.docs
       .map((d) => {
         const s = planDe.get(d.id);
@@ -376,6 +390,43 @@ async function listar() {
   };
 }
 
+// What came before these fields existed. Classes without a destination go to their whole list, as
+// they always did (an alumno lists classes by `paraTodos`, so without it they would not see them).
+// Deliveries the profesor already evaluated or commented count as reviewed, so the tray does not
+// start full of old work. Running it again changes nothing.
+const porPreparar = {
+  clases: (d: FirebaseFirestore.QueryDocumentSnapshot) =>
+    d.get("paraTodos") === undefined && d.get("alumnos") === undefined,
+  entregas: (d: FirebaseFirestore.QueryDocumentSnapshot) =>
+    d.get("revisadaEn") === undefined &&
+    (d.get("evaluacion") !== undefined || (d.get("devoluciones") ?? []).length > 0),
+};
+
+async function leerPorPreparar() {
+  const [clases, entregas] = await Promise.all([
+    db().collection("clases").select("paraTodos", "alumnos").get(),
+    db().collection("entregas").select("revisadaEn", "evaluacion", "devoluciones").get(),
+  ]);
+  return {
+    clases: clases.docs.filter(porPreparar.clases),
+    entregas: entregas.docs.filter(porPreparar.entregas),
+  };
+}
+
+async function prepararDatos() {
+  const { clases, entregas } = await leerPorPreparar();
+  const cambios = [
+    ...clases.map((d) => ({ ref: d.ref, datos: { paraTodos: true } })),
+    ...entregas.map((d) => ({ ref: d.ref, datos: { revisadaEn: FieldValue.serverTimestamp() } })),
+  ];
+  for (let i = 0; i < cambios.length; i += 400) {
+    const batch = db().batch();
+    for (const { ref, datos } of cambios.slice(i, i + 400)) batch.update(ref, datos);
+    await batch.commit();
+  }
+  return { clases: clases.length, entregas: entregas.length };
+}
+
 // Profesores without a plan record (registered before the plans): a trial from the later of their
 // registration and the launch day. `create` never overwrites a plan that appeared meanwhile.
 async function crearPruebas() {
@@ -406,6 +457,7 @@ export const planesAdmin = onCall(
     const { que } = (request.data ?? {}) as { que?: unknown };
     if (que === "listar") return listar();
     if (que === "crearPruebas") return crearPruebas();
+    if (que === "prepararDatos") return prepararDatos();
     throw new HttpsError("invalid-argument", "Pedido no válido.");
   },
 );

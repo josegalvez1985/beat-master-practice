@@ -99,6 +99,21 @@ cambiar una colección, un campo, una regla o un flujo que cree o borre registro
   `preguntarAsistente`; las reglas niegan todo desde la app y se ve solo en `/admin`.
 - Polca, guarania y galopa son formas por grados (`src/lib/progresiones.ts`): sin canciones ni letras.
 
+## Clases por alumno y seguimiento
+
+- Una clase tiene `paraTodos: true` **o** `alumnos: [uid]`, nunca los dos: el alumno lista con dos
+  consultas porque las reglas deben probar cada resultado. Toda clase nueva lleva uno (también
+  `duplicarClase`), y todo lo que lea clases para un alumno usa `esParaAlumno` (copiado en
+  `functions/src/herramientas.ts`, `firestore.rules` y `storage.rules`).
+- `progreso()` es "al día" (clases desde su ingreso hasta hoy); el avance real es la ruta
+  (`avanceDeNivel`). Nada de números sobre clases futuras.
+- `practicas`, `notasAlumno` y `bibliotecaArchivos` están en la cascada (`eliminarClase`,
+  `quitarInscripcion`, `eliminarCuenta`; ver `docs/backend.md`). Las notas nunca las lee el alumno ni
+  el asistente. Las respuestas grabadas (`devoluciones[].media`) se borran antes que su devolución.
+- Una clase es dueña de sus archivos: `usarArchivoBiblioteca` los **copia**, nunca los referencia.
+- La afinación solo se mide y se muestra donde la hace quien toca (`mideAfinacion`: arco, viento y
+  voz).
+
 ## Herramientas y batería
 
 - Instrumentos (17): la lista vive en `src/lib/instruments.ts` y está copiada en `firestore.rules`

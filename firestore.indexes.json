@@ -4,6 +4,22 @@
       "collectionGroup": "asistenteConsultas",
       "queryScope": "COLLECTION",
       "fields": [{ "fieldPath": "__name__", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "mensajes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "profesorId", "order": "ASCENDING" },
+        { "fieldPath": "creadoEn", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "mensajes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "alumnoId", "order": "ASCENDING" },
+        { "fieldPath": "creadoEn", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

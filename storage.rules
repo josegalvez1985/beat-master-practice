@@ -42,9 +42,15 @@ service firebase.storage {
       return request.resource.size < 200 * 1024 * 1024;
     }
 
+    // The class is for the alumno signed in (without `alumnos`, for the whole list).
+    function paraElAlumno(claseId) {
+      return !('alumnos' in clase(claseId)) || request.auth.uid in clase(claseId).alumnos;
+    }
+
     // Class materials: audio, video, PDF, images and sheet music (MusicXML).
     match /clases/{claseId}/{archivo} {
-      allow read: if signedIn() && (esDelProfesor(claseId) || inscripto(claseId));
+      allow read: if signedIn()
+        && (esDelProfesor(claseId) || (inscripto(claseId) && paraElAlumno(claseId)));
       allow create: if signedIn() && esDelProfesor(claseId) && tamanoValido()
         && request.resource.contentType.matches('audio/.*|video/.*|image/.*|application/pdf|application/vnd[.]recordare[.].*|application/xml|text/xml|application/octet-stream')
         && habilitado(request.auth.uid);
@@ -55,12 +61,34 @@ service firebase.storage {
     // (up to 20 MB; keep in sync with MAX_BYTES_DOCUMENTO in src/lib/files.ts).
     match /entregas/{claseId}/{alumnoId}/{archivo} {
       allow read: if signedIn() && (alumnoId == request.auth.uid || esDelProfesor(claseId));
-      allow create: if signedIn() && alumnoId == request.auth.uid && inscripto(claseId) && tamanoValido()
+      allow create: if signedIn() && alumnoId == request.auth.uid && inscripto(claseId)
+        && paraElAlumno(claseId) && tamanoValido()
         && (request.resource.contentType.matches('audio/.*|video/.*')
           || (request.resource.contentType.matches('image/.*|application/pdf')
             && request.resource.size < 20 * 1024 * 1024));
       // The profesor too: deleting a class deletes its deliveries.
       allow delete: if signedIn() && (alumnoId == request.auth.uid || esDelProfesor(claseId));
+    }
+
+    // The profesor's answer in audio or video to a delivery (entregas.devoluciones[].media). It
+    // lives under the alumno's folder, so deleting that folder takes it too. The alumno can delete
+    // it: removing their file removes the comments on it, with their recordings.
+    match /entregas/{claseId}/{alumnoId}/devoluciones/{archivo} {
+      allow read: if signedIn() && (alumnoId == request.auth.uid || esDelProfesor(claseId));
+      allow create: if signedIn() && esDelProfesor(claseId) && tamanoValido()
+        && request.resource.contentType.matches('audio/.*|video/.*')
+        && habilitado(request.auth.uid);
+      allow delete: if signedIn() && (alumnoId == request.auth.uid || esDelProfesor(claseId));
+    }
+
+    // Files a profesor keeps to reuse (bibliotecaArchivos): only they see them. Using one copies it
+    // into the class, so deleting it here never touches a class.
+    match /biblioteca/{uid}/{archivo} {
+      allow read: if signedIn() && uid == request.auth.uid;
+      allow create: if signedIn() && uid == request.auth.uid && tamanoValido()
+        && request.resource.contentType.matches('audio/.*|video/.*|image/.*|application/pdf|application/vnd[.]recordare[.].*|application/xml|text/xml|application/octet-stream')
+        && habilitado(request.auth.uid);
+      allow delete: if signedIn() && uid == request.auth.uid;
     }
 
     // Profile photo: one fixed file per user (usuarios/{uid}/foto.jpg, as in usuarios.foto).

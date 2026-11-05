@@ -1,11 +1,23 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { ArrowRight, Check, Target } from "lucide-react";
+import { ArrowRight, CalendarCheck, Check, Play, Target } from "lucide-react";
 import { Link } from "@/components/Link";
 import { Opciones } from "@/components/plan/comunes";
+import { Button, buttonForeground } from "@/components/ui/button";
 import { avisar } from "@/components/ui/toast";
-import { cambiarObra, type Clase, type Entrega, type Meta, type Obra } from "@/lib/data";
-import { hoy, inicioDeSemana } from "@/lib/dates";
+import { diasPracticados, minutosEntre } from "@/lib/avance";
+import {
+  cambiarObra,
+  useDiarioAlumno,
+  type Clase,
+  type Entrega,
+  type Meta,
+  type Obra,
+} from "@/lib/data";
+import { formatoLargo, hoy, inicioDeSemana, rango } from "@/lib/dates";
+import { instrumento } from "@/lib/instruments";
+import { minutosTotales } from "@/lib/plan";
+import { cuandoEs, proximaClase } from "@/lib/practica";
 import type { InstrumentId } from "@/lib/instruments";
 import { metasPendientes, rutinaDeHoy } from "@/lib/rutina";
 import { colors, fonts, radius } from "@/lib/theme";
@@ -16,15 +28,19 @@ const TIEMPOS = [
   { value: "40", label: "40 min" },
 ] as const;
 
-// "Tu práctica de hoy": tell it how much time you have and it builds the routine (see
-// src/lib/rutina.ts). The chosen time is remembered in this browser.
+// "Tu práctica de hoy", the one place that says what to do: the class to practice, one tap away,
+// and the routine for the time they have (see src/lib/rutina.ts). `clases`: without the ones from
+// before they joined (desdeSuIngreso). The days and minutes come from the diary, so they are the
+// same on every device. The chosen time is remembered in this browser.
 export function PracticaDeHoy({
+  alumnoId,
   instrumentos,
   clases,
   entregas,
   obras,
   metas,
 }: {
+  alumnoId: string;
   instrumentos: InstrumentId[];
   clases: Clase[];
   entregas: Entrega[];
@@ -48,6 +64,13 @@ export function PracticaDeHoy({
     }
   };
 
+  const diario = useDiarioAlumno(alumnoId);
+  const [lunes, domingo] = rango("semana", hoy());
+  const dias = diasPracticados(diario.data, lunes, domingo);
+  const minutos = minutosEntre(diario.data, lunes, domingo);
+
+  const clase = proximaClase(clases, entregas);
+  const cuando = clase ? cuandoEs(clase.fecha) : null;
   const pasos = rutinaDeHoy({ minutos: Number(tiempo), instrumentos, clases, entregas, obras });
   const pendientes = metasPendientes(metas, inicioDeSemana(hoy()));
   if (!pasos.length) return null;
@@ -58,6 +81,42 @@ export function PracticaDeHoy({
         <Text style={styles.titulo}>Tu práctica de hoy</Text>
         <Opciones chico opciones={TIEMPOS} valor={tiempo} onChange={elegir} />
       </View>
+
+      {clase ? (
+        <View style={styles.proxima}>
+          <View style={styles.flex}>
+            <Text style={styles.proximaTitulo} numberOfLines={2}>
+              {clase.titulo}
+            </Text>
+            <Text style={styles.detalle}>
+              {cuando ? (
+                <Text
+                  style={[styles.cuando, cuando === "Atrasada" && { color: colors.destructive }]}
+                >
+                  {cuando} ·{" "}
+                </Text>
+              ) : null}
+              {formatoLargo(clase.fecha)} · {instrumento(clase.instrumento).name} · Prof.{" "}
+              {clase.profesorNombre}
+              {clase.bloques?.length
+                ? ` · ${clase.bloques.length} bloques, ${minutosTotales(clase.bloques)} min`
+                : ""}
+            </Text>
+          </View>
+          <Link href={`/clases/${clase.id}${clase.bloques?.length ? "?practicar=1" : ""}`}>
+            <Button size="lg">
+              <Play size={18} color={buttonForeground()} />
+              {clase.bloques?.length ? "Practicar ahora" : "Ver la clase"}
+            </Button>
+          </Link>
+        </View>
+      ) : (
+        <View style={styles.alDia}>
+          <CalendarCheck size={20} color={colors.success} />
+          <Text style={styles.detalle}>¡Estás al día con tus clases! Repasa cuando quieras.</Text>
+        </View>
+      )}
+
       {pasos.map((paso, i) => {
         const contenido = (
           <>
@@ -109,6 +168,10 @@ export function PracticaDeHoy({
           </Text>
         </View>
       ) : null}
+
+      <Text style={styles.semana}>
+        Esta semana: {dias} de 7 días · {minutos} min
+      </Text>
     </View>
   );
 }
@@ -119,7 +182,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.primary,
     backgroundColor: colors.card,
   },
   cabecera: {
@@ -134,6 +197,29 @@ const styles = StyleSheet.create({
     fontFamily: fonts.heading,
     fontSize: 20,
     color: colors.foreground,
+  },
+  proxima: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 6,
+  },
+  proximaTitulo: {
+    fontFamily: fonts.headingBold,
+    fontSize: 24,
+    lineHeight: 29,
+    color: colors.foreground,
+  },
+  cuando: {
+    fontFamily: fonts.semibold,
+    color: colors.primary,
+  },
+  alDia: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 6,
   },
   paso: {
     flexDirection: "row",
@@ -151,7 +237,7 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
-    minWidth: 0,
+    minWidth: 200,
   },
   pasoTitulo: {
     fontFamily: fonts.semibold,
@@ -191,5 +277,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingTop: 4,
+  },
+  semana: {
+    paddingTop: 4,
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    fontVariant: ["tabular-nums"],
+    color: colors.mutedForeground,
   },
 });

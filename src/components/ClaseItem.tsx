@@ -8,7 +8,16 @@ import { instrumento } from "@/lib/instruments";
 import { colors, fonts, radius } from "@/lib/theme";
 
 // Compact class row: date chip, title, instrument and optional delivery status. Opens the class.
-export function ClaseItem({ clase, estado }: { clase: Clase; estado?: "entregada" | "pendiente" }) {
+// `destino`: who it is for (nombreDestino), for the profesor to tell apart classes of the same day.
+export function ClaseItem({
+  clase,
+  estado,
+  destino,
+}: {
+  clase: Clase;
+  estado?: "entregada" | "pendiente";
+  destino?: string;
+}) {
   return (
     <Link href={`/clases/${clase.id}`}>
       <Pressable style={styles.row}>
@@ -23,6 +32,7 @@ export function ClaseItem({ clase, estado }: { clase: Clase; estado?: "entregada
           <Text numberOfLines={1} style={styles.meta}>
             {formatoDia(clase.fecha)}
             {clase.hora ? ` · ${clase.hora} h` : ""} · {instrumento(clase.instrumento).name}
+            {destino ? ` · ${destino}` : ""}
             {clase.evento ? " · Recital" : ""}
             {clase.modalidad === "virtual" ? " · Virtual" : ""}
             {clase.materiales.length

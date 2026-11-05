@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { mensajeDeMicrofono } from "@/lib/afinador";
 import { aFecha } from "@/lib/dates";
 
-// Records audio or video in the browser (MediaRecorder). The take stays in memory until the
-// student sends it as a delivery or downloads it; nothing is uploaded on its own.
+// Records audio or video in the browser (MediaRecorder). The take stays here until the student
+// sends it as a delivery or downloads it; nothing is uploaded without them asking.
 
 export type ModoGrabacion = "audio" | "video";
 
@@ -25,7 +25,7 @@ const extension = (tipo: string) =>
       : "webm";
 
 export type Toma = { file: File; url: string; modo: ModoGrabacion; segundos: number };
-export type EstadoGrabadora = "inactiva" | "pidiendo" | "grabando" | "lista";
+export type EstadoGrabadora = "inactiva" | "pidiendo" | "contando" | "grabando" | "lista";
 
 export function useGrabadora() {
   const [estado, setEstado] = useState<EstadoGrabadora>("inactiva");
@@ -36,6 +36,7 @@ export function useGrabadora() {
   const recorder = useRef<MediaRecorder | null>(null);
   const intento = useRef(0);
   const tomaActual = useRef<Toma | null>(null);
+  const flujo = useRef<MediaStream | null>(null);
 
   useEffect(
     () => () => {
@@ -46,7 +47,9 @@ export function useGrabadora() {
     [],
   );
 
-  async function grabar(modo: ModoGrabacion) {
+  // `preparar`: runs once the permission is granted, before recording (the count-in, so the first
+  // seconds of the take are not the hands going back to the instrument).
+  async function grabar(modo: ModoGrabacion, preparar?: () => Promise<void>) {
     if (typeof MediaRecorder === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       setError("Tu navegador no puede grabar en esta página. Prueba con Chrome, Edge o Safari.");
       return;
@@ -78,6 +81,16 @@ export function useGrabadora() {
     if (actual !== intento.current) {
       stream.getTracks().forEach((track) => track.stop());
       return;
+    }
+    flujo.current = stream;
+    if (preparar) {
+      setVista(modo === "video" ? stream : null);
+      setEstado("contando");
+      await preparar();
+      if (actual !== intento.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
     }
 
     const tipo = TIPOS[modo].find((t) => MediaRecorder.isTypeSupported(t)) ?? "";
@@ -138,5 +151,22 @@ export function useGrabadora() {
     setSegundos(0);
   }
 
-  return { estado, error, segundos, vista, toma, grabar, detener, descartar };
+  // Backs out during the count-in: nothing was recorded.
+  function cancelar() {
+    intento.current += 1;
+    flujo.current?.getTracks().forEach((track) => track.stop());
+    setVista(null);
+    setEstado("inactiva");
+  }
+
+  // A take kept in this browser (src/lib/borrador.ts) comes back ready to listen to and send.
+  function restaurar(file: File, modo: ModoGrabacion, duracion: number) {
+    if (tomaActual.current) URL.revokeObjectURL(tomaActual.current.url);
+    const nueva = { file, url: URL.createObjectURL(file), modo, segundos: duracion };
+    tomaActual.current = nueva;
+    setToma(nueva);
+    setEstado("lista");
+  }
+
+  return { estado, error, segundos, vista, toma, grabar, detener, descartar, cancelar, restaurar };
 }

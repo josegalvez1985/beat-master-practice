@@ -16,6 +16,7 @@ import {
   activarPlan,
   crearPruebasFaltantes,
   habilitarDias,
+  prepararDatos,
   verPlanes,
   type PlanProfesorAdmin,
 } from "@/lib/admin";
@@ -63,8 +64,10 @@ export function PlanesAdmin() {
   const [pagando, setPagando] = useState<PlanProfesorAdmin | null>(null);
   const [habilitando, setHabilitando] = useState<PlanProfesorAdmin | null>(null);
   const [creando, setCreando] = useState(false);
+  const [preparando, setPreparando] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const profesores = consulta.data?.profesores ?? [];
+  const porPreparar = consulta.data?.porPreparar;
   const sinPlan = profesores.filter((p) => !p.plan && !p.admin);
   const recargar = () => queryClient.invalidateQueries({ queryKey: ["admin"] });
 
@@ -103,6 +106,19 @@ export function PlanesAdmin() {
     }
   };
 
+  const preparar = async () => {
+    setPreparando(true);
+    try {
+      const { clases, entregas } = await prepararDatos();
+      avisar({ texto: `Listo: ${clases} clases y ${entregas} entregas actualizadas.` });
+      await recargar();
+    } catch (error) {
+      avisar({ texto: mensaje(error), tipo: "error" });
+    } finally {
+      setPreparando(false);
+    }
+  };
+
   return (
     <>
       <Section
@@ -111,6 +127,18 @@ export function PlanesAdmin() {
       >
         {consulta.error ? <Text style={styles.error}>{mensaje(consulta.error)}</Text> : null}
         {consulta.isPending ? <ActivityIndicator color={colors.primary} /> : null}
+
+        {porPreparar && (porPreparar.clases || porPreparar.entregas) ? (
+          <View style={styles.aviso}>
+            <Text style={[styles.avisoTexto, styles.info]}>
+              Hay {porPreparar.clases} clases anteriores que los alumnos no ven hasta prepararlas, y{" "}
+              {porPreparar.entregas} entregas ya evaluadas para marcar como revisadas.
+            </Text>
+            <Button size="sm" disabled={preparando} onPress={preparar}>
+              {preparando ? "Preparando…" : "Preparar datos anteriores"}
+            </Button>
+          </View>
+        ) : null}
 
         {sinPlan.length ? (
           <View style={styles.aviso}>

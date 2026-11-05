@@ -96,7 +96,7 @@ export default function Admin() {
           />
           <Stat
             icon={FileText}
-            label="Documentos"
+            label="Registros"
             value={resumen.data ? documentos.toLocaleString("es-PY") : "…"}
           />
         </View>

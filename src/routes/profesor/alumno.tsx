@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useParams } from "react-router";
-import { ChevronLeft, UserX } from "lucide-react";
+import { ChevronLeft, Plus, UserX } from "lucide-react";
 import { shellStyles } from "@/components/AppShell";
+import { ClaseFormDialog } from "@/components/ClaseFormDialog";
 import { ClaseItem } from "@/components/ClaseItem";
+import { usePlanProfesor } from "@/components/PlanAviso";
+import { PrepararClase } from "@/components/PrepararClase";
 import { DiarioDelAlumno } from "@/components/herramientas/Diario";
 import { RecordsDelAlumno } from "@/components/bateria/RecordsDelAlumno";
 import { MetasSemana } from "@/components/MetasSemana";
@@ -12,22 +16,26 @@ import { RutaAprendizaje } from "@/components/RutaAprendizaje";
 import { Avatar } from "@/components/ui/avatar";
 import { Link } from "@/components/Link";
 import { PageMeta } from "@/components/PageMeta";
+import { Button, buttonForeground } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Progress } from "@/components/ui/progress";
 import { Section } from "@/components/ui/section";
 import { usePerfil } from "@/lib/auth";
 import {
+  esParaAlumno,
   progreso,
+  textoAlDia,
   useClasesProfesor,
   useEntregasProfesor,
   useInscripcionesProfesor,
   useLogrosProfesor,
   useMetasDe,
+  usePracticasDeAlumno,
   useRepertorioDe,
   useUsuario,
 } from "@/lib/data";
+import { hoy } from "@/lib/dates";
 import { formatearDocumento } from "@/lib/documento";
-import { instrumento } from "@/lib/instruments";
+import { instrumento, type InstrumentId } from "@/lib/instruments";
 import { colors, fonts } from "@/lib/theme";
 
 // Profesor view of one alumno: progress per instrument and every class with its delivery status.
@@ -41,6 +49,9 @@ export default function AlumnoDetalle() {
   const logros = useLogrosProfesor(perfil.uid);
   const obras = useRepertorioDe(perfil.uid, alumnoId);
   const metas = useMetasDe(perfil.uid, alumnoId);
+  const practicas = usePracticasDeAlumno(perfil.uid, alumnoId);
+  const puedeCrear = !usePlanProfesor(perfil.uid).bloqueado;
+  const [nuevaPara, setNuevaPara] = useState<InstrumentId | null>(null);
 
   const propias = inscripciones.data.filter((i) => i.alumnoId === alumnoId);
   const [primera] = propias;
@@ -80,9 +91,22 @@ export default function AlumnoDetalle() {
             </View>
           </View>
 
+          {nuevaPara ? (
+            <ClaseFormDialog
+              visible
+              onClose={() => setNuevaPara(null)}
+              perfil={perfil}
+              fechaInicial={hoy()}
+              instrumentoInicial={nuevaPara}
+              alumnoInicial={alumnoId}
+            />
+          ) : null}
+
           {propias.map((inscripcion) => {
-            const p = progreso(clases.data, entregas.data, alumnoId, inscripcion.instrumento);
-            const lista = clases.data.filter((c) => c.instrumento === inscripcion.instrumento);
+            const p = progreso(clases.data, entregas.data, inscripcion);
+            const lista = clases.data.filter(
+              (c) => c.instrumento === inscripcion.instrumento && esParaAlumno(c, alumnoId),
+            );
             const marcadas = lista.filter((c) => c.asistencia?.[alumnoId]);
             const presentes = marcadas.filter((c) => c.asistencia![alumnoId] !== "ausente");
             const suyas = entregas.data.filter((e) => e.alumnoId === alumnoId);
@@ -90,10 +114,28 @@ export default function AlumnoDetalle() {
               <Section
                 key={inscripcion.id}
                 title={instrumento(inscripcion.instrumento).name}
-                subtitle={`${p.hechas} de ${p.total} clases entregadas${marcadas.length ? ` · asistió a ${presentes.length} de ${marcadas.length}` : ""}`}
-                actions={<Text style={styles.percent}>{p.porcentaje}%</Text>}
+                subtitle={`${textoAlDia(p)}${marcadas.length ? ` · asistió a ${presentes.length} de ${marcadas.length}` : ""}`}
+                actions={
+                  puedeCrear ? (
+                    <Button
+                      variant="secondary"
+                      onPress={() => setNuevaPara(inscripcion.instrumento)}
+                    >
+                      <Plus size={16} color={buttonForeground("secondary")} />
+                      Nueva clase
+                    </Button>
+                  ) : null
+                }
               >
-                <Progress value={p.porcentaje} />
+                <PrepararClase
+                  inscripcion={inscripcion}
+                  clases={clases.data}
+                  entregas={entregas.data}
+                  practicas={practicas.data}
+                  metas={metas.data}
+                  obras={obras.data}
+                  logros={logros.data.find((l) => l.id === inscripcion.id)}
+                />
                 <RutaAprendizaje
                   inscripcion={inscripcion}
                   logros={logros.data.find((l) => l.id === inscripcion.id)}
@@ -104,9 +146,7 @@ export default function AlumnoDetalle() {
                 <Repertorio inscripcion={inscripcion} obras={obras.data} />
                 <Habilidades instrumento={inscripcion.instrumento} entregas={suyas} />
                 {lista.length === 0 ? (
-                  <Text style={styles.muted}>
-                    Todavía no planificaste clases de este instrumento.
-                  </Text>
+                  <Text style={styles.muted}>Todavía no tiene clases de este instrumento.</Text>
                 ) : null}
                 {lista.map((clase) => (
                   <ClaseItem
@@ -142,11 +182,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
-  },
-  percent: {
-    fontFamily: fonts.display,
-    fontSize: 28,
-    color: colors.primary,
   },
   muted: {
     fontFamily: fonts.sans,

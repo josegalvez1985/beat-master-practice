@@ -10,7 +10,7 @@ type Paso = { titulo: string; detalle: string };
 
 const registro: Paso[] = [
   { titulo: "Toca «Crea tu cuenta»", detalle: "Está debajo del botón Entrar." },
-  { titulo: "Elige tu rol", detalle: "Alumno si vas a aprender, Profesor si vas a enseñar." },
+  { titulo: "Elige tu rol", detalle: "Profesor si vas a enseñar, Alumno si vas a aprender." },
   {
     titulo: "Completa tus datos",
     detalle:
@@ -37,27 +37,27 @@ const despues: Record<Role, Paso[]> = {
     {
       titulo: "Arma tus listas de alumnos",
       detalle:
-        "En Inicio, carga el número de documento de cada alumno (su nombre aparece al lado) y agrégalo al instrumento que le enseñas.",
+        "En Inicio, toca Agregar alumno y carga su número de documento (su nombre aparece al lado). ¿Todavía no tiene cuenta? Invítalo por WhatsApp desde ahí mismo.",
     },
     {
       titulo: "Planifica tus clases",
       detalle:
-        "En Planificación, crea clases por semana, mes o año, con hora y modalidad (presencial o virtual con su enlace). Puedes repetirlas cada semana, duplicarlas o marcar una como recital con su programa.",
+        "En Planificación, crea clases por semana, mes o año, y elige para quién es cada una: uno o varios alumnos, o toda la lista de ese instrumento. Con hora y modalidad (presencial o virtual con su enlace). Puedes repetirlas cada semana, duplicarlas para otro alumno o marcar una como recital con su programa.",
     },
     {
       titulo: "Arma el plan de cada clase",
       detalle:
-        "Abre la clase y usa la plantilla de 60 min o suma bloques: partituras y tablaturas con sonido, escalas, acordes, rasgueos, respiración, grooves y rudimentos de batería, tempo, videos y archivos. Guarda en tu biblioteca los bloques que repites y reúsalos en otra clase.",
+        "Abre la clase y usa la plantilla de 60 min o suma bloques: partituras y tablaturas con sonido, escalas, acordes, rasgueos, respiración, grooves y rudimentos de batería, tempo, videos y archivos. Guarda en tu biblioteca los bloques y archivos que repites y reúsalos en otra clase.",
     },
     {
       titulo: "Revisa las entregas",
       detalle:
-        "Escucha o mira la grabación de cada alumno, más lento o en bucle, y comenta en el segundo exacto. Mira su análisis de afinación y tiempo, evalúa con la rúbrica, marca la asistencia y escríbele por mensajes.",
+        "En Inicio, Para hoy te muestra lo urgente y te lleva a Por revisar: las entregas una tras otra. Escucha o mira cada grabación, más lento o en bucle, y comenta en el segundo exacto, por escrito o grabándole tu respuesta. Evalúa con la rúbrica y márcala como revisada. En la clase, Pasar lista marca la asistencia.",
     },
     {
       titulo: "Sigue el progreso",
       detalle:
-        "En Mis alumnos ves el avance de cada uno, su diario de práctica, sus habilidades y, en batería, sus récords. Marca los objetivos de su ruta de aprendizaje por nivel. En Herramientas tienes afinador, metrónomo, polca y guarania y más.",
+        "En Mis alumnos ves el avance de cada uno. Al tocar uno, Para preparar la clase resume en qué quedaron, con tus notas privadas y un resumen para enviar a la familia. Marca los objetivos de su ruta de aprendizaje por nivel. En Herramientas tienes afinador, metrónomo, polca y guarania y más.",
     },
     {
       titulo: "Pregúntale al asistente",
@@ -84,12 +84,12 @@ const despues: Record<Role, Paso[]> = {
     {
       titulo: "Practica tus clases",
       detalle:
-        "En Inicio elige cuánto tiempo tienes en Tu práctica de hoy, o toca Practicar ahora: el plan de la clase bloque por bloque, con cronómetro y sonido (un pedal Bluetooth o las flechas pasan de bloque). En las partituras, el Entrenador sube el tempo en cada vuelta.",
+        "En Inicio, Hoy te muestra lo que dijo tu profesor y Tu práctica de hoy: elige cuánto tiempo tienes y toca Practicar ahora. Es el plan de la clase bloque por bloque, con cronómetro y sonido; al terminar cada uno dices Me salió o Me costó (un pedal Bluetooth o las flechas también pasan de bloque). La pantalla queda encendida. En las partituras, el Entrenador sube el tempo en cada vuelta.",
     },
     {
       titulo: "Grábate y entrega",
       detalle:
-        "En la clase, graba tu práctica en audio o video (con click en los auriculares si quieres) o sube un archivo (también fotos o PDF de una tarea escrita; en el celular, «Sacar foto» abre la cámara), y envíala. Pulso mide tu afinación y tu tiempo; tu profesor la ve al instante, la comenta y la evalúa. Si tienes una duda, escríbele en Mensajes. Responde cada comentario con Entendido o Ya lo corregí, y si no puedes ir a una clase, toca No puedo ir.",
+        "En la clase, graba tu práctica en audio o video (con click en los auriculares si quieres) o sube un archivo (también fotos o PDF de una tarea escrita; en el celular, «Sacar foto» abre la cámara), y envíala. Antes de grabar hay una cuenta para volver al instrumento, y si te quedas sin internet tu grabación se guarda y se envía sola. Pulso la analiza; tu profesor la ve al instante, la comenta y la evalúa. Si tienes una duda, escríbele en Mensajes. Responde cada comentario con Entendido o Ya lo corregí, y si no puedes ir a una clase, toca No puedo ir.",
     },
     {
       titulo: "Usa tus herramientas",
@@ -99,7 +99,7 @@ const despues: Record<Role, Paso[]> = {
     {
       titulo: "Mira tu avance",
       detalle:
-        "Cada entrega suma al progreso de tu instrumento, y el anillo del inicio muestra tu semana. Ahí ves también tu ruta de aprendizaje, tus metas de la semana, tu repertorio, tus habilidades, tus insignias y Mi evolución. En Mi perfil activa los avisos y tu recordatorio de práctica.",
+        "En Mis clases ves si estás al día con tus entregas, y el anillo del inicio muestra tu semana. En Mi progreso están tu ruta de aprendizaje, tus metas de la semana, tu repertorio con su tempo, tus habilidades, tus insignias, Mi evolución y todo lo que te dijo tu profesor. En Mi perfil activa los avisos y tu recordatorio de práctica.",
     },
     {
       titulo: "Pregúntale al asistente",

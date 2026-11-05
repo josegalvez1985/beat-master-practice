@@ -1,9 +1,10 @@
 import { useSyncExternalStore } from "react";
 import type { Clase, Entrega } from "@/lib/data";
-import { hoy, inicioDeSemana, sumarDias } from "@/lib/dates";
+import { hoy, sumarDias } from "@/lib/dates";
 
-// Practice log of an alumno: which plan blocks they marked done, and when. It lives in this
-// browser (a personal aid, not graded data), so the streak and weekly minutes are per device.
+// Which plan blocks an alumno marked done in this browser. It opens at once and keeps what was
+// marked before `practicas` existed; what counts on every device, and what the profesor sees, is
+// that collection (marcarBloque). The days and minutes of the week come from the diary.
 
 type Registro = { fecha: string; clase: string; bloque: string; minutos: number };
 
@@ -25,7 +26,7 @@ function leer(uid: string): Registro[] {
 }
 
 function escribir(uid: string, registros: Registro[]) {
-  // Only the last 6 months matter for streaks and weekly totals.
+  // Only the last 6 months matter.
   const desde = sumarDias(hoy(), -180);
   const vigentes = registros.filter((r) => r.fecha >= desde);
   cache.set(uid, vigentes);
@@ -62,23 +63,6 @@ export function marcarHecho(
     uid,
     hecho ? [...sinEste, { fecha: hoy(), clase: claseId, bloque: bloqueId, minutos }] : sinEste,
   );
-}
-
-// Consecutive days with practice, ending today (or yesterday, if today has nothing yet).
-export function racha(registros: Registro[]) {
-  const dias = new Set(registros.map((r) => r.fecha));
-  let dia = dias.has(hoy()) ? hoy() : sumarDias(hoy(), -1);
-  let total = 0;
-  while (dias.has(dia)) {
-    total += 1;
-    dia = sumarDias(dia, -1);
-  }
-  return total;
-}
-
-export function minutosDeLaSemana(registros: Registro[]) {
-  const desde = inicioDeSemana(hoy());
-  return registros.filter((r) => r.fecha >= desde).reduce((total, r) => total + r.minutos, 0);
 }
 
 // The class to practice next: not delivered yet, today or the closest upcoming one; if none,
