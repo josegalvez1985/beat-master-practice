@@ -234,6 +234,7 @@ const styles = StyleSheet.create({
   periodNav: {
     flexDirection: "row",
     alignItems: "center",
+    maxWidth: "100%",
     gap: 4,
   },
   navButton: {
@@ -243,16 +244,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: radius.md,
   },
+  // A week label does not fit on a narrow phone: it goes to two lines.
   periodLabel: {
-    minWidth: 150,
+    flexShrink: 1,
+    minWidth: 120,
     textAlign: "center",
     fontFamily: fonts.semibold,
     fontSize: 15,
     color: colors.foreground,
   },
+  // Inside the wrapping toolbar: without the cap it takes the width of all the chips on one line
+  // (react-native-web does not shrink a View) and never wraps.
   chips: {
     flexDirection: "row",
     flexWrap: "wrap",
+    maxWidth: "100%",
     gap: 8,
   },
   groups: {
